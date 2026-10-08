@@ -8,7 +8,9 @@ export const MAIN_STEPS = [
   { sel: ['#w-kg'], text: 'Weight is asked once a day, then confirmed.' },
   { sel: ['#headache-start'], text: 'Press when a headache begins. Press again to change or resolve it.' },
   { sel: ['.active-card #hd-h'], text: 'A headache is active. Doctor-written text appears here when set.' },
+  { sel: ['#rx-card'], text: 'Medicines today: Taken or Skipped for each dose. A reminder bar at the top offers the same buttons.' },
   { sel: ['#acts-h'], text: 'Today so far: every activity, with where and how long.' },
+  { sel: ['.quick-foods'], text: 'Most used: the five foods and drinks logged most often. One tap opens the form filled in.' },
   { sel: ['.tiles'], text: 'Food and drink: tap a meal type, then fill in what was had.' },
   { sel: ['#in-h'], text: 'Eaten today: totals. A coloured word and sign show the doctor\'s limits.' },
   { sel: ['#g-mmol'], text: 'Type a glucose reading from the meter, then Save.' },
@@ -39,10 +41,34 @@ export const FORM_STEPS = {
   intake: [
     { sel: ['#back'], text: 'Goes back without saving anything.' },
     { sel: ['#f-name'], text: 'Type or tap the food or drink. Past choices are remembered.' },
+    { sel: ['#scan-open'], text: 'Scan a barcode with the camera, or type its number. The name and numbers fill in to check.' },
     { sel: ['.time-panel'], text: 'The time it was had.' },
     { sel: ['#f-amount'], text: 'How many servings, or how much for a drink.' },
-    { sel: ['#f-nutrition'], text: 'Numbers from the label. All optional, and remembered for next time.' },
+    { sel: ['#f-nutrition'], text: 'Numbers from the label, per serving or per 100 g. All optional, and remembered for next time.' },
     { sel: ['#save'], text: 'Saves it to today\'s list.' },
+  ],
+  'options-prefs': [
+    { sel: ['#back'], text: 'Goes back to the diary.' },
+    { sel: ['.tabs'], text: 'Options sections. Doctors and Admin are for the family and doctors.' },
+    { sel: ['#own-reminders'], text: 'Optional reminders for waking up, blood glucose and sitting too long. All start off.' },
+  ],
+  'options-admin': [
+    { sel: ['#back'], text: 'Goes back to the diary.' },
+    { sel: ['#weight-switch'], text: 'Shows or hides weight on the diary. Doctors always see it.' },
+    { sel: ['#admin-accounts'], text: 'Doctor accounts are added and removed here.' },
+    { sel: ['#reset-zone'], text: 'Master reset: deletes everything on this tablet. DELETE has to be typed first.' },
+  ],
+  'options-doctors': [
+    { sel: ['#back'], text: 'Goes back to the diary.' },
+    { sel: ['#targets'], text: 'Targets and limits. They colour the totals on the diary.' },
+    { sel: ['#prescriptions'], text: 'Medicines, with exact times or ranges, and an optional fixed reminder level.' },
+    { sel: ['#notes'], text: 'Clinical notes. Entries are added, never changed.' },
+  ],
+  'options-tester': [
+    { sel: ['#back'], text: 'Goes back to the diary.' },
+    { sel: ['#tn-about'], text: 'Pick the part of the diary a comment is about, then type it below.' },
+    { sel: ['#tn-add'], text: 'Saves the comment on this tablet.' },
+    { sel: ['#tn-share'], text: 'Sends the checklist and comments. Save as file keeps a copy instead.' },
   ],
 };
 for (const k of Object.keys(FORM_STEPS)) FORM_STEPS[k].push(HELP);

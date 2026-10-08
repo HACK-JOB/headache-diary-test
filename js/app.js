@@ -192,7 +192,8 @@ function renderOptions() {
     h('header', { class: 'topbar' },
       h('div', { class: 'page-head' },
         h('button', { class: 'icon-btn', id: 'back', 'aria-label': 'Back to diary', onclick: () => { aui.leave(); dcui.leave(); state.view = 'main'; render(); } }, icon('back')),
-        h('h2', {}, 'Options'))),
+        h('h2', {}, 'Options'),
+        helpButton('options-' + state.optTab))),
     h('main', {},
       h('div', { class: 'tabs', role: 'tablist', 'aria-label': 'Options sections' },
         ...TABS.map(([k, t]) =>

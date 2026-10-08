@@ -59,6 +59,9 @@ export function createTour({ h }) {
   }
 
   // Plan the stops: each feature belongs to the first stop where its top edge is clearly on screen. Empty stops are dropped.
+  /** Height of the fixed medicine-reminder bar when it is showing, so callouts never sit under it. */
+  const barH = () => { const b = document.getElementById('reminder-bar'); return b && getComputedStyle(b).display !== 'none' ? Math.ceil(b.getBoundingClientRect().height) : 0; };
+
   function plan() {
     const vh = window.innerHeight;
     const docH = document.documentElement.scrollHeight;
@@ -86,7 +89,7 @@ export function createTour({ h }) {
     stop = Math.min(stop, stops - 1);
     const cur = stopsPlan[stop];
     window.scrollTo(0, cur.top);
-    const clipTop = 4; const clipBot = vh - BAR;
+    const clipTop = 4 + barH(); const clipBot = vh - BAR;
     const todo = cur.feats.map((f) => {
       const y = f.doc.y - window.scrollY; const top = Math.max(y, clipTop); const bottom = Math.min(y + f.doc.h, clipBot - 4);
       const tall = f.doc.h > 130;
@@ -105,12 +108,12 @@ export function createTour({ h }) {
     const items = shortOnes.map((v) => ({ id: v.n, rect: v.rect, cw, ch: hts.get(v.n) || 78 }));
     // lay out; if some points do not fit they go in a list above the bar, so lay out again above that list
     let listH = 0;
-    let { placed, overflow } = layoutCallouts(items, { w: vw, h: vh - BAR, top: 8 });
+    let { placed, overflow } = layoutCallouts(items, { w: vw, h: vh - BAR, top: 8 + barH() });
     for (let pass = 0; pass < 3 && overflow.length; pass++) {
       const need = Math.max(listHint, 62 + overflow.length * Math.ceil(30 * (window.innerWidth < 700 ? 1.6 : 1.25)) + 16);
       if (need === listH) break;
       listH = need;
-      ({ placed, overflow } = layoutCallouts(items, { w: vw, h: vh - BAR - listH, top: 8 }));
+      ({ placed, overflow } = layoutCallouts(items, { w: vw, h: vh - BAR - listH, top: 8 + barH() }));
     }
     const byN = new Map(todo.map((v) => [v.n, v]));
     const kids = [];

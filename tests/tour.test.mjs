@@ -55,7 +55,7 @@ test('every main-page step has a selector list, a short plain sentence and no pe
 });
 
 test('there is a tour for the main page and each form, all short, plain and impersonal', () => {
-  assert.deepEqual(Object.keys(TOURS).sort(), ['activity', 'headache', 'intake', 'main']);
+  assert.deepEqual(Object.keys(TOURS).sort(), ['activity', 'headache', 'intake', 'main', 'options-admin', 'options-doctors', 'options-prefs', 'options-tester']);
   assert.equal(TOURS.main, MAIN_STEPS);
   for (const [name, steps] of Object.entries(TOURS)) {
     assert.ok(steps.length >= 4, name);
@@ -74,4 +74,18 @@ test('callouts avoid obstacles when there is free space, but are still placed wh
   const wall = layoutCallouts([item('a', 100, 200)], vp, [{ x: 0, y: 0, w: 1280, h: 800 }]);
   assert.equal(wall.placed.length, 1);
   assert.equal(wall.overflow.length, 0);
+});
+
+test('the tours mention the newer features: chips, medicines, reminders, barcode, per 100 g, reset, tester notes', () => {
+  const all = (k) => TOURS[k].flatMap((x) => x.sel).join(' ');
+  const text = (k) => TOURS[k].map((x) => x.text).join(' ');
+  assert.match(all('main'), /quick-foods/);
+  assert.match(all('main'), /rx-card/);
+  assert.match(text('main'), /reminder/i);
+  assert.ok(!all('main').includes('reminder-bar'));      // a fixed, short-lived bar is described in the Medicines step, not pointed at
+  assert.match(all('intake'), /scan-open/);
+  assert.match(text('intake'), /100 g/);
+  assert.match(all('options-admin'), /reset-zone/);
+  assert.match(all('options-tester'), /tn-share/);
+  assert.match(all('options-prefs'), /own-reminders/);
 });
