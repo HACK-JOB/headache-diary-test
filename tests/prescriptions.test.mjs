@@ -142,7 +142,7 @@ test('rxChanges lists exactly what changed, field by field, naming the reminder 
   const b = { ...base, dose: '1000 mg', nag: 'persistent', instructions: 'Different.' };
   const c = rxChanges({ ...base }, b);
   assert.deepEqual(c.map((x) => x.what), ['dose', 'instructions', 'reminder level']);
-  assert.equal(c.find((x) => x.what === 'reminder level').from, 'her setting');
+  assert.equal(c.find((x) => x.what === 'reminder level').from, "user's own setting");
   assert.equal(c.find((x) => x.what === 'reminder level').to, 'Persistent');
   assert.deepEqual(rxChanges({ ...base }, { ...base }), []);
 });
@@ -154,7 +154,7 @@ test('the change log records a new prescription and each later change, by name',
   const log = changeLog(evs).map((l) => `${l.what}|${l.from}|${l.to}|${l.byName}`);
   assert.ok(log.includes('Added prescription Metformin (500 mg)|||Dr Lee'), log.join('\n'));
   assert.ok(log.includes('Metformin: dose|500 mg|1000 mg|Dr Lee'), log.join('\n'));
-  assert.ok(log.includes('Metformin: reminder level|her setting|Persistent|Dr Lee'), log.join('\n'));
+  assert.ok(log.includes('Metformin: reminder level|user\'s own setting|Persistent|Dr Lee'), log.join('\n'));
   assert.ok(log.includes('Metformin: status|active|paused|Dr Lee'), log.join('\n'));
 });
 

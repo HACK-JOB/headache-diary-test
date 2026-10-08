@@ -4,6 +4,7 @@ import { validPinFormat, makeRecord, checkPin, afterFail, afterSuccess, lockedFo
 import { doctors, validateDoctor, changeLog, needsLogin, targets, validateTarget, TARGET_KEYS, DEFAULT_MARGIN, MAX_MARGIN,
   reliefTypes, reliefFor, validateRelief, RELIEF_MAX, urgentGlucose, validateUrgent, URGENT_MAX, fasting, notes } from './doctors.js';
 import { formatLongDate } from './time.js';
+import { createRxDoctor } from './rx-ui.js';
 
 const TRIES = 'hd.doctorTries';
 const readTries = () => { try { return JSON.parse(localStorage.getItem(TRIES)) ?? {}; } catch { return {}; } };
@@ -153,6 +154,7 @@ export function createDoctorUI(ctx) {
 
 
   /* Sections fold away so the tab is not one very long page; the open/closed choice survives re-rendering. */
+  const rxDoc = createRxDoctor(ctx, () => ({ actor, foldAttrs, say, complain }));
   const foldAttrs = (id) => ({ open: !!st.openFold[id], ontoggle: (ev) => { st.openFold[id] = ev.target.open; } });
 
   /* ----- targets (5b) ----- */
@@ -259,6 +261,7 @@ export function createDoctorUI(ctx) {
         h('button', { class: 'btn quiet', id: 'ug-save', onclick: saveUrgent }, 'Save urgent message'),
         h('label', { class: 'check', style: 'margin-top:0.9rem' }, h('input', { type: 'checkbox', id: 'fasting-on', checked: fasting(state.events), onchange: (ev) => flipFasting(ev.target.checked) }), 'Ask whether a reading was fasting, before a meal or after a meal'),
         h('p', { class: 'hint' }, 'Off by default. No fasting instructions are given by the app.')),
+      rxDoc.section(),
       h('details', { class: 'setting fold', id: 'notes', ...foldAttrs('notes') }, h('summary', {}, 'Clinical notes'),
         h('p', { class: 'hint' }, 'For doctors. These are not shown on the diary screens. Notes cannot be edited after they are added.'),
         area('note-text', 'New note', '', 'e.g. what you want the next doctor to know'),

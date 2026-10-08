@@ -118,7 +118,7 @@ export function describeRx(rx, clock = '12') {
   return `${daysText(rx.days)} · ${rx.slots.map((s) => t(s.at)).join(', ')}`;
 }
 
-const nagText = (n) => (n ? NAGS[n].label : 'her setting');
+const nagText = (n) => (n ? NAGS[n].label : "user's own setting");
 const fields = [
   ['dose', 'dose', (r) => r.dose], ['food', 'food instruction', (r) => FOOD.find((f) => f.key === r.food)?.label ?? ''],
   ['days', 'days', (r) => daysText(r.days)], ['slots', 'times', (r) => r.slots.map((s) => `${s.start}-${s.end} (${s.at})`).join(', ')],

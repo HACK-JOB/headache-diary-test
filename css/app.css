@@ -379,4 +379,18 @@ input[type="time"].text { width: auto; min-width: 9rem; }
 .tour-card, .tour-more { font-size: 17px; }
 
 .page-head .help-btn { margin-left: auto; }
+.rx-list, .rx-doc-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.8rem; }
+.rx-row { display: flex; flex-wrap: wrap; gap: 0.8rem; align-items: center; justify-content: space-between; padding: 0.8rem 1rem; border: 2px solid var(--line); border-radius: var(--radius); background: var(--card); }
+.rx-row[data-state="overdue"] { border-color: var(--ink); border-style: dashed; }
+.rx-main { flex: 1 1 14rem; min-width: 0; }
+.rx-main p { margin: 0.15rem 0; }
+.rx-actions { display: flex; gap: 0.6rem; flex: 0 0 auto; }
+.rx-actions .btn, .rx-actions .btn.primary { width: auto; min-width: 7rem; min-height: 3.6rem; font-size: 1.1rem; }
+.rx-doc { padding: 0.7rem 0.9rem; border: 2px solid var(--line); border-radius: var(--radius); }
+.rx-doc p { margin: 0.2rem 0 0.5rem; }
+.rx-form { margin-top: 1rem; display: grid; gap: 0.9rem; }
+.rx-days, .rx-slots { border: 2px solid var(--line); border-radius: var(--radius); padding: 0.6rem 0.9rem; margin: 0; }
+.rx-slot { display: flex; flex-wrap: wrap; gap: 0.8rem; align-items: flex-end; padding: 0.5rem 0; border-top: 1px solid var(--line); }
 .tour-badge { position: absolute; display: grid; place-items: center; width: 2rem; height: 2rem; border-radius: 50%; background: #fff; color: #1b1b1b; border: 3px solid #1b1b1b; font-weight: 800; font-size: 1rem; }
+.rx-doc-actions { display: flex; flex-wrap: wrap; gap: 0.6rem; }
+.rx-doc-actions .btn { width: auto; min-width: 6rem; }

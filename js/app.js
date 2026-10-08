@@ -10,6 +10,7 @@ import { createAdminUI } from './admin-ui.js';
 import { createDoctorUI } from './doctor-ui.js';
 import { createMeasuresUI } from './measures-ui.js';
 import { createTour } from './tour-ui.js';
+import { rxMainCard } from './rx-ui.js';
 import { dayStatuses } from './doctors.js';
 import { STYLES, artElement, ART_KEYS } from './type-art.js';
 
@@ -24,6 +25,7 @@ let iui;
 let aui;
 let dcui;
 let mui;
+let rxCard;
 const tour = createTour({ h });
 const helpButton = (key) => h('button', { class: 'help-btn', id: 'help', onclick: (ev) => tour.open(ev.currentTarget, key) }, icon('help'), h('span', {}, 'Help'));
 
@@ -254,6 +256,7 @@ function render() {
     h('main', {},
       dui.mainCard(),
       mui.weightCard(),
+      rxCard(),
       hui.mainCard(),
       dui.todayList(),
       iui.mainCard(),
@@ -313,6 +316,7 @@ async function start() {
     dui = createDayUI({ h, state, log, reload, render, toast, time, icon, fmt, helpButton });
     aui = createAdminUI({ h, state, log, reload, render, toast, time, icon });
     dcui = createDoctorUI({ h, state, log, reload, render, toast, time, icon, ask });
+    rxCard = rxMainCard({ h, state, log, reload, render, toast, time, icon, fmt, ask });
     mui = createMeasuresUI({ h, state, log, reload, render, toast, time, icon, fmt, ask });
     iui = createIntakeUI({ h, state, log, reload, render, toast, time, icon, fmt, ask, helpButton });
     await reload();
