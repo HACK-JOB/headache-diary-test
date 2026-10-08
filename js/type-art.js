@@ -148,9 +148,9 @@ function scoped(st) {
   return SCOPED[st];
 }
 
-export function typeArtMarkup(key, style = 'line') {
+export function typeArtMarkup(key, style = 'frontOutline') {
   if (!PAIN[key]) return '';
-  const st = STYLE_CSS[style] ? style : 'line';
+  const st = STYLE_CSS[style] ? style : 'frontOutline';
   const front = FRONT_STYLES.includes(st) && PAIN_FRONT[key];
   const headD = front ? FRONT_D : HEAD_D;
   const head = front ? FRONT_HEAD : HEAD;

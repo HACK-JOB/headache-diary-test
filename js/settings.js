@@ -6,7 +6,7 @@ const LIGHT = ['paper', 'bright'];
 
 export const DEFAULTS = Object.freeze({
   theme: 'paper', lightTheme: 'paper', followSystem: false,
-  text: 'normal', clock: '12', savedCue: true, artStyle: 'line',
+  text: 'normal', clock: '12', savedCue: true, artStyle: 'frontOutline',
 });
 
 export function normalise(raw) {

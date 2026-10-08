@@ -45,9 +45,9 @@ test('toggleDark while following the tablet takes manual control', () => {
 });
 
 
-test('head picture style defaults to the line drawing and survives normalise', () => {
-  assert.equal(DEFAULTS.artStyle, 'line');
+test('head picture style defaults to the front outline and survives normalise', () => {
+  assert.equal(DEFAULTS.artStyle, 'frontOutline');
   assert.equal(normalise({ artStyle: 'frontHeat' }).artStyle, 'frontHeat');
-  assert.equal(normalise({ artStyle: 'neon' }).artStyle, 'line');
-  assert.equal(normalise(null).artStyle, 'line');
+  assert.equal(normalise({ artStyle: 'neon' }).artStyle, 'frontOutline');
+  assert.equal(normalise(null).artStyle, 'frontOutline');
 });

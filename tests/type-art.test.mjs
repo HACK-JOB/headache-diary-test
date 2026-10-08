@@ -46,8 +46,8 @@ test('six styles exist and each works for every type with theme colours only', (
   }
 });
 
-test('an unknown style falls back to the line style', () => {
-  assert.ok(typeArtMarkup('cluster', 'bogus').includes('art-line'));
+test('an unknown style falls back to the front outline style', () => {
+  assert.ok(typeArtMarkup('cluster', 'bogus').includes('art-frontOutline'));
 });
 
 test('the pain placements are identical across the three side-view styles', () => {
