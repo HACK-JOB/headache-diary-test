@@ -131,12 +131,30 @@ export function createHeadacheUI(ctx) {
 
   function typeField() {
     const d = state.draft;
+    const tile = (k, t) => h('button', { class: 'type', id: 'type-' + k, role: 'radio', 'aria-checked': String(d.headacheType === k), onclick: () => choose('headacheType', k) },
+      artElement(k, state.settings.artStyle) ?? h('span', { class: 'type-other', 'aria-hidden': 'true' }, '?'),
+      h('span', { class: 'type-name' }, t.name), h('span', { class: 'type-hint' }, t.hint));
+    const preset = Object.entries(TYPES).filter(([k]) => k !== 'other');
+    const needed = d.headacheType === 'other';
+    const notesBad = d.errors.includes('notes');
     return field('headacheType', h('div', {},
       wasTag('headacheType', (t) => TYPES[t]?.name ?? t),
-      h('div', { class: 'types', role: 'radiogroup', 'aria-labelledby': 'l-headacheType' },
-        ...Object.entries(TYPES).map(([k, t]) => h('button', { class: 'type', role: 'radio', 'aria-checked': String(d.headacheType === k), onclick: () => choose('headacheType', k) },
-          artElement(k, state.settings.artStyle) ?? h('span', { class: 'type-other', 'aria-hidden': 'true' }, '?'),
-          h('span', { class: 'type-name' }, t.name), h('span', { class: 'type-hint' }, t.hint))))));
+      h('div', { class: 'types', role: 'radiogroup', 'aria-labelledby': 'l-headacheType', 'aria-owns': 'type-other' },
+        ...preset.map(([k, t]) => tile(k, t))),
+      h('div', { class: 'other-row' },
+        tile('other', TYPES.other),
+        h('div', { class: 'other-notes' + (notesBad ? ' has-error' : ''), id: 'f-notes' },
+          h('label', { class: 'notes-label', for: 'notes' }, needed ? 'Please describe it' : 'Anything else to add?', h('span', { class: 'opt' }, needed ? ' Needed for "Other"' : ' Optional')),
+          notesBad ? h('p', { class: 'error', role: 'alert' }, 'Please tell us a little about it.') : null,
+          h('textarea', { id: 'notes', class: 'text area', rows: '3', placeholder: needed ? 'Tell us what it feels like' : 'Optional',
+            oninput: (ev) => {
+              d.notes = ev.target.value;
+              if (d.errors.includes('notes') && d.notes.trim()) {
+                d.errors = d.errors.filter((e) => e !== 'notes');
+                document.getElementById('f-notes')?.classList.remove('has-error');
+                document.querySelector('#f-notes .error')?.remove();
+              }
+            } }, d.notes)))));
   }
 
   function symptomField() {
@@ -146,13 +164,6 @@ export function createHeadacheUI(ctx) {
       h('div', { class: 'seg wrap' },
         ...SYMPTOMS.map((s) => h('button', { 'aria-pressed': String(d.symptoms.includes(s)),
           onclick: () => { d.symptoms = d.symptoms.includes(s) ? d.symptoms.filter((x) => x !== s) : [...d.symptoms, s]; render(); } }, s))));
-  }
-
-  function notesField() {
-    const d = state.draft;
-    const needed = d.headacheType === 'other';
-    return field('notes', h('textarea', { id: 'notes', class: 'text area', rows: '3', placeholder: needed ? 'Tell us what it feels like' : 'Anything else? (optional)',
-      oninput: (ev) => { d.notes = ev.target.value; d.errors = d.errors.filter((e) => e !== 'notes'); } }, d.notes), needed ? 'Needed for "Other"' : 'Optional');
   }
 
   /* Remembering chips: last 5 + type-ahead. kind = 'meds' | 'relief' */
@@ -208,10 +219,9 @@ export function createHeadacheUI(ctx) {
             h('p', { class: 'hint' }, 'Set to now. Change it only if it started earlier.')),
           severityField()),
         h('div', { class: 'form-grid' },
-          h('div', { class: 'form-col' }, typeField(), symptomField()),
-          h('div', { class: 'form-col' }, weatherField(), notesField(),
-            memoryField('meds', 'Medicine taken', 'Type a medicine name'),
-            memoryField('relief', 'Other things that helped', 'e.g. ice pack, rest, water'))),
+          h('div', { class: 'form-col' }, typeField(), memoryField('relief', 'Other things that helped', 'e.g. ice pack, rest, water')),
+          h('div', { class: 'form-col' }, weatherField(), symptomField(),
+            memoryField('meds', 'Medicine taken', 'Type a medicine name'))),
         d.errors.length ? h('p', { class: 'error big-error', role: 'alert' }, 'A few things still need an answer. They are marked above.') : null,
         h('div', { class: 'form-actions' },
           h('button', { class: 'btn quiet', onclick: () => { state.view = 'main'; render(); } }, 'Cancel'),
