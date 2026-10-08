@@ -41,6 +41,7 @@ async function refill() {
   if (!state.recent.includes(state.selected)) state.recent = addSizeToRecent(state.recent, state.selected);
   await reload();
   render();
+  toast(`Saved · ${fmt(state.selected)} ml added`);
 }
 
 function useCustom() {
@@ -86,7 +87,7 @@ async function removeEntry(e) {
   await log.remove(e.id, reason);
   await reload();
   render();
-  toast('Entry removed.');
+  toast('Saved · entry removed');
 }
 
 let toastTimer;
@@ -139,20 +140,11 @@ function render() {
             h('option', { value: 'ml', selected: state.unit === 'ml' }, 'ml'),
             h('option', { value: 'L', selected: state.unit === 'L' }, 'L')),
           h('button', { class: 'btn quiet', onclick: useCustom }, 'Use this size')),
-        h('button', { class: 'btn primary', id: 'refill', onclick: refill }, `+1 Refill · ${fmt(state.selected)} ml`)),
-      h('section', { class: 'panel', 'aria-labelledby': 'log-h' },
-        h('h2', { id: 'log-h' }, "Today's water"),
-        entries.length === 0
-          ? h('p', { class: 'empty' }, 'Nothing logged yet today.')
-          : h('ul', { class: 'log' }, ...entries.map((e) =>
-              h('li', {},
-                h('span', { class: 't num' }, formatTime(e.ms)),
-                h('span', { class: 'v num' }, `${fmt(e.ml)} ml`),
-                h('button', {
-                  class: 'btn quiet small',
-                  'aria-label': `Remove ${fmt(e.ml)} ml entry at ${formatTime(e.ms)}`,
-                  onclick: () => removeEntry(e),
-                }, 'Remove')))))),
+        h('button', { class: 'btn primary', id: 'refill', onclick: refill }, `+1 Refill · ${fmt(state.selected)} ml`),
+        entries.length
+          ? h('button', { class: 'btn quiet small undo', id: 'undo', onclick: () => removeEntry(entries[0]) },
+              `Undo last refill (${fmt(entries[0].ml)} ml at ${formatTime(entries[0].ms)})`)
+          : null)),
     state.toast ? h('div', { class: 'toast', role: 'status' }, state.toast) : null);
 
   app.replaceChildren(view);
@@ -188,6 +180,25 @@ async function start() {
   render();
   scheduleMidnight();
   navigator.storage?.persist?.();
-  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+  watchForUpdates();
 }
 start();
+
+/* ---------- app updates ---------- */
+function watchForUpdates() {
+  if (!('serviceWorker' in navigator)) return;
+  const hadController = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker.addEventListener('controllerchange', () => { if (hadController) showUpdateBanner(); });
+  navigator.serviceWorker.register('sw.js').then((reg) => {
+    const check = () => reg.update().catch(() => {});
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) check(); });
+    setInterval(check, 60 * 60 * 1000);
+  }).catch(() => {});
+}
+function showUpdateBanner() {
+  if (document.getElementById('update-banner')) return;
+  const b = h('div', { id: 'update-banner', class: 'update', role: 'status' },
+    h('span', {}, 'A new version is ready.'),
+    h('button', { class: 'btn small', onclick: () => location.reload() }, 'Tap to refresh'));
+  document.body.prepend(b);
+}

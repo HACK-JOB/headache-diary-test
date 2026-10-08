@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en-AU"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Look options</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,"Segoe UI",Roboto,sans-serif}
+.wrap{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;padding:24px;background:#888}
+.phone{border-radius:22px;overflow:hidden;min-height:760px;position:relative;display:flex;flex-direction:column}
+.lbl{color:#fff;font:700 20px system-ui;text-align:center;margin:0 0 8px}
+.col{display:flex;flex-direction:column}
+.num{font-variant-numeric:tabular-nums}
+
+/* A: Warm paper */
+.A{background:#f3e9d6;color:#33271c;font-family:Georgia,"Times New Roman",serif}
+.A .top{padding:22px 24px 8px}.A .top small{font:600 15px system-ui;color:#7a6650;letter-spacing:.04em;text-transform:uppercase}
+.A .top h1{margin:2px 0 0;font-size:34px}
+.A .card{margin:14px 20px;background:#fffaf0;border:2px solid #d8c7a4;border-radius:18px;padding:22px;box-shadow:0 3px 0 #d8c7a4}
+.A .big{font-size:84px;font-weight:700;line-height:1;color:#2d5a4c}.A .u{font:600 24px system-ui;color:#7a6650}
+.A .sub{font:18px system-ui;color:#6b5a46;margin-top:6px}
+.A .chips{display:flex;gap:10px;margin:18px 0}.A .chip{flex:1;padding:16px 4px;text-align:center;border:2px solid #d8c7a4;border-radius:14px;background:#fff;font:700 20px system-ui}
+.A .chip.on{background:#d6e6dc;border-color:#2d5a4c}
+.A .go{display:block;width:100%;background:#2d5a4c;color:#fff;border:0;border-radius:16px;padding:24px;font:700 28px system-ui}
+.A .tiles{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:0 20px}
+.A .tile{background:#fffaf0;border:2px solid #d8c7a4;border-radius:18px;padding:22px 10px;text-align:center;font:700 22px system-ui}
+.A .tile.head{background:#b5472f;border-color:#b5472f;color:#fff}
+
+/* B: Bright and large */
+.B{background:#ffffff;color:#10222b;font-family:system-ui,"Segoe UI",Roboto,sans-serif}
+.B .top{background:#0b5cad;color:#fff;padding:24px}.B .top small{font-size:17px;opacity:.9}.B .top h1{margin:2px 0 0;font-size:36px}
+.B .card{margin:18px 20px;border-radius:24px;padding:24px;background:#eaf3fc}
+.B .big{font-size:110px;font-weight:800;line-height:.95;color:#0b5cad}.B .u{font-size:30px;font-weight:700;color:#35546b}
+.B .sub{font-size:20px;margin-top:8px;color:#35546b}
+.B .chips{display:flex;gap:10px;margin:20px 0}.B .chip{flex:1;padding:20px 4px;text-align:center;border-radius:18px;background:#fff;font-size:24px;font-weight:800;border:3px solid #fff}
+.B .chip.on{border-color:#0b5cad;color:#0b5cad}
+.B .go{display:block;width:100%;background:#0b5cad;color:#fff;border:0;border-radius:22px;padding:30px;font-size:32px;font-weight:800}
+.B .tiles{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:0 20px}
+.B .tile{background:#eaf3fc;border-radius:22px;padding:30px 10px;text-align:center;font-size:26px;font-weight:800}
+.B .tile.head{background:#c6361f;color:#fff}
+
+/* C: Calm dark */
+.C{background:#17232b;color:#e8eef0;font-family:system-ui,"Segoe UI",Roboto,sans-serif}
+.C .top{padding:24px}.C .top small{font-size:16px;color:#9db4bd}.C .top h1{margin:2px 0 0;font-size:32px;font-weight:600}
+.C .card{margin:14px 20px;background:#21323c;border-radius:22px;padding:24px}
+.C .big{font-size:92px;font-weight:600;line-height:1;color:#8fd6c9}.C .u{font-size:26px;color:#9db4bd}
+.C .sub{font-size:18px;margin-top:6px;color:#9db4bd}
+.C .chips{display:flex;gap:10px;margin:18px 0}.C .chip{flex:1;padding:18px 4px;text-align:center;border-radius:16px;background:#2b4150;font-size:22px;font-weight:600}
+.C .chip.on{background:#8fd6c9;color:#10222b}
+.C .go{display:block;width:100%;background:#8fd6c9;color:#10222b;border:0;border-radius:18px;padding:26px;font-size:28px;font-weight:700}
+.C .tiles{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:0 20px}
+.C .tile{background:#21323c;border-radius:20px;padding:26px 10px;text-align:center;font-size:24px;font-weight:600}
+.C .tile.head{background:#e0735a;color:#17232b}
+.note{margin:auto 20px 16px;font-size:15px;opacity:.7}
+</style></head><body>
+<div class="wrap">
+ <div class="col"><p class="lbl">A · Warm paper</p>
+  <div class="phone A">
+   <div class="top"><small>Thursday 8 October</small><h1>Headache Diary</h1></div>
+   <div class="card"><div><span class="big num">1,850</span> <span class="u">ml today</span></div><div class="sub">Water · 3 refills</div>
+    <div class="chips"><div class="chip">250</div><div class="chip">500</div><div class="chip on">600</div><div class="chip">750</div><div class="chip">1 L</div></div>
+    <button class="go">+1 Refill · 600 ml</button></div>
+   <div class="tiles"><div class="tile head">Headache</div><div class="tile">Activity</div><div class="tile">Food &amp; drink</div><div class="tile">Weight</div></div>
+   <p class="note">Serif heading, cream paper, soft green. Feels like a real diary.</p></div></div>
+ <div class="col"><p class="lbl">B · Bright and large</p>
+  <div class="phone B">
+   <div class="top"><small>Thursday 8 October</small><h1>Headache Diary</h1></div>
+   <div class="card"><div><span class="big num">1,850</span> <span class="u">ml</span></div><div class="sub">Water today · 3 refills</div>
+    <div class="chips"><div class="chip">250</div><div class="chip">500</div><div class="chip on">600</div><div class="chip">750</div><div class="chip">1 L</div></div>
+    <button class="go">+1 Refill · 600 ml</button></div>
+   <div class="tiles"><div class="tile head">Headache</div><div class="tile">Activity</div><div class="tile">Food &amp; drink</div><div class="tile">Weight</div></div>
+   <p class="note">White, strong blue, very big numbers. Easiest to read.</p></div></div>
+ <div class="col"><p class="lbl">C · Calm dark</p>
+  <div class="phone C">
+   <div class="top"><small>Thursday 8 October</small><h1>Headache Diary</h1></div>
+   <div class="card"><div><span class="big num">1,850</span> <span class="u">ml today</span></div><div class="sub">Water · 3 refills</div>
+    <div class="chips"><div class="chip">250</div><div class="chip">500</div><div class="chip on">600</div><div class="chip">750</div><div class="chip">1 L</div></div>
+    <button class="go">+1 Refill · 600 ml</button></div>
+   <div class="tiles"><div class="tile head">Headache</div><div class="tile">Activity</div><div class="tile">Food &amp; drink</div><div class="tile">Weight</div></div>
+   <p class="note">Dark and gentle on the eyes, good at night and for light sensitivity.</p></div></div>
+</div></body></html>
