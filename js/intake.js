@@ -57,7 +57,7 @@ export function myFoods(events) {
     if (!name) continue;
     const k = name.toLowerCase();
     const row = map.get(k) ?? { count: 0 };
-    map.set(k, { ...row, name, mealType: e.mealType, kind: e.kind, amountMl: e.amountMl, nutrition: e.nutrition ?? {}, last: e.ms, count: row.count + 1 });
+    map.set(k, { ...row, name, mealType: e.mealType, kind: e.kind, amountMl: e.amountMl, nutrition: e.nutrition ?? {}, last: e.ms, count: row.count + 1, ...((e.barcode ?? row.barcode) ? { barcode: e.barcode ?? row.barcode } : {}) });
   }
   return [...map.values()];
 }

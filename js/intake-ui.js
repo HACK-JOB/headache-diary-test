@@ -2,6 +2,8 @@
 import { dayStatuses } from './doctors.js';
 import { MEAL_TYPES, NUTRIENTS, perServing, validateIntake, myFoods, commonFoods, topFoods, suggestFoods, dayIntake, visibility, visibleNutrients, visibilityEvent, visibilityLog } from './intake.js';
 import { canonical } from './memory.js';
+import { provenance } from './barcode.js';
+import { createBarcodeUI } from './barcode-ui.js';
 import { parseVolume } from './hydration.js';
 import { clockPicker } from './clock-ui.js';
 import { msFromClock, clockValue, dayKey } from './time.js';
@@ -12,7 +14,7 @@ export function createIntakeUI(ctx) {
   const unitOf = (k) => NUTRIENTS.find((n) => n.key === k).unit;
 
   function openForm(mealType) {
-    state.draft = { mode: 'intake', mealType, name: '', servings: '1', amount: '', unit: 'ml', basis: 'serving', vals: {}, carried: {}, clock: clockValue(Date.now()), errors: [] };
+    state.draft = { mode: 'intake', mealType, name: '', servings: '1', amount: '', unit: 'ml', basis: 'serving', vals: {}, carried: {}, clock: clockValue(Date.now()), errors: [], barcode: '', scanned: {}, scan: null };
     state.view = 'intake';
     render();
     window.scrollTo(0, 0);
@@ -21,6 +23,7 @@ export function createIntakeUI(ctx) {
   /** Choosing a remembered food fills in what she saved before. Hidden nutrients are kept for the doctors but not shown. */
   function useFood(f) {
     const d = state.draft;
+    d.barcode = ''; d.scanned = {}; d.scan = null;
     d.name = f.name;
     d.servings = '1';
     d.basis = 'serving';
@@ -31,6 +34,15 @@ export function createIntakeUI(ctx) {
     d.errors = d.errors.filter((e) => e !== 'name');
     render();
   }
+
+  /** Result of a barcode scan or lookup goes into the open meal form; every value can still be edited. */
+  function setScan(o) {
+    const d = state.draft;
+    if (!o.keep) { d.vals = o.vals ?? d.vals; d.carried = o.carried ?? d.carried; d.servings = '1'; d.basis = 'serving'; if (o.name) d.name = o.name; d.errors = d.errors.filter((x) => x !== 'name' && x !== 'numbers'); }
+    d.barcode = o.barcode ?? ''; d.scanned = o.scanned ?? {};
+    d.scan = { message: o.message, tone: o.tone };
+  }
+  const bar = createBarcodeUI({ h, state, render: () => render(), useFood: (f) => useFood(f), setScan, shownKeys: () => visibleNutrients(state.events).map((n) => n.key) });
 
   async function save() {
     const d = state.draft;
@@ -45,7 +57,7 @@ export function createIntakeUI(ctx) {
     const at = d.clock === clockValue(now) ? now : (msFromClock(dayKey(now), d.clock, now) ?? now);
     const carried = {};
     for (const [k, v] of Object.entries(d.carried)) if (!(k in nutrition)) carried[k] = Number(v);
-    await log.add({ type: 'intake', kind: isDrink(d.mealType) ? 'drink' : 'food', mealType: d.mealType, name: canonical(d.name), servings, ...(amountMl ? { amountMl } : {}), nutrition: { ...carried, ...nutrition } }, at);
+    await log.add({ type: 'intake', kind: isDrink(d.mealType) ? 'drink' : 'food', mealType: d.mealType, name: canonical(d.name), servings, ...(amountMl ? { amountMl } : {}), nutrition: { ...carried, ...nutrition }, ...provenance({ barcode: d.barcode, scanned: d.scanned, nutrition: { ...carried, ...nutrition } }) }, at);
     await reload();
     state.view = 'main';
     render();
@@ -93,7 +105,8 @@ export function createIntakeUI(ctx) {
                 ...common.map((c) => h('button', { 'aria-pressed': String(canonical(d.name).toLowerCase() === c.toLowerCase()), onclick: () => useFood(known.find((f) => f.name === c)) }, c))) : h('p', { class: 'hint' }, 'Type it below. It will be remembered for next time.'),
               h('input', { id: 'in-name', type: 'text', class: 'text', autocomplete: 'off', placeholder: drink ? 'e.g. Tea with milk' : 'e.g. Chicken soup', value: d.name,
                 oninput: (ev) => { d.name = ev.target.value; d.errors = d.errors.filter((x) => x !== 'name'); showSugg(ev.target.value); } }),
-              sugg),
+              sugg,
+              bar.control(d.scan)),
             h('div', { class: 'meal-pair' },
               h('section', { class: 'panel field time-panel' },
                 h('h2', {}, 'What time?'),
