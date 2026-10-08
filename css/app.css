@@ -251,3 +251,20 @@ input[type="time"].text { width: auto; min-width: 9rem; }
 @media (min-width: 900px) and (orientation: landscape) {
   .top-row .field:last-child { min-width: 0; }
 }
+
+/* Food and drink */
+.tiles { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.6rem; }
+.tile { min-height: 4.6rem; padding: 0.4rem 0.6rem; border: 2px solid var(--line); border-radius: 0.9rem; background: var(--field); color: var(--ink); font: inherit; font-size: 1.15rem; font-weight: 700; cursor: pointer; }
+.tile:active { scale: 0.97; }
+.tile:hover { border-color: var(--teal); }
+@media (min-width: 700px) { .tiles { grid-template-columns: repeat(4, 1fr); } }
+.num-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.6rem 0.8rem; margin-top: 0.8rem; }
+.num-field { display: grid; gap: 0.25rem; }
+.num-field label { font-weight: 600; font-size: 0.9rem; }
+.totals { margin-top: 1rem; padding-top: 0.8rem; border-top: 1px solid var(--line); }
+.totals h3 { font-size: 0.95rem; margin: 0 0 0.4rem; }
+.totals dl { display: grid; grid-template-columns: max-content 1fr; gap: 0.3rem 1rem; margin: 0; }
+.totals dt { color: var(--muted); } .totals dd { margin: 0; font-weight: 700; }
+.switch-list { display: grid; gap: 0.2rem; margin-top: 0.6rem; }
+.changes { margin-top: 0.8rem; } .changes summary { min-height: 3rem; display: flex; align-items: center; cursor: pointer; }
+.changes ul { margin: 0.3rem 0 0; padding-left: 1.2rem; color: var(--muted); }
