@@ -1,11 +1,42 @@
 [
-  { "screen": "main", "text": "Text sizes are now Biggest, Medium and Small." },
-  { "screen": "main", "text": "Water sits on the left, with Headache, Day and Blood glucose on the right. Weight and Medicines run underneath." },
-  { "screen": "intake", "text": "A Most used row of five foods sits above the meal choices." },
-  { "screen": "intake", "text": "Nutrition can be entered per serving or per 100 g. Per 100 g asks for the grams in one serving." },
-  { "screen": "intake", "text": "Scan a barcode fills in the food name and nutrition from the pack. Only the number is looked up." },
-  { "screen": "admin", "text": "Admin now has side tabs: Diary screens, Doctor accounts, Admin PIN and Reset data." },
-  { "screen": "admin-reset", "text": "Water, meals, headaches, saved foods, readings and other data can now be reset one kind at a time. Each asks for DELETE." },
-  { "screen": "doctors", "text": "Doctors now has side tabs for people, targets, medicines, relief, clinical notes and the change log." },
-  { "screen": "tester", "text": "Tester notes has a checklist with barcode items, a comment box, and Share or Save as file." }
+  {
+    "screen": "main",
+    "text": "Text sizes are now Biggest, Medium and Small."
+  },
+  {
+    "screen": "main",
+    "text": "Water sits on the left, with Headache, Day and Blood glucose on the right. Weight and Medicines run underneath."
+  },
+  {
+    "screen": "intake",
+    "text": "A Most used row of five foods sits above the meal choices."
+  },
+  {
+    "screen": "intake",
+    "text": "Nutrition can be entered per serving or per 100 g. Per 100 g asks for the grams in one serving."
+  },
+  {
+    "screen": "intake",
+    "text": "Scan a barcode fills in the food name and nutrition from the pack. Only the number is looked up."
+  },
+  {
+    "screen": "admin",
+    "text": "Admin now has side tabs: Diary screens, Doctor accounts, Admin PIN and Reset data."
+  },
+  {
+    "screen": "admin-reset",
+    "text": "Water, meals, headaches, saved foods, readings and other data can now be reset one kind at a time. Each asks for DELETE."
+  },
+  {
+    "screen": "doctors",
+    "text": "Doctors now has side tabs for people, targets, medicines, relief, clinical notes and the change log."
+  },
+  {
+    "screen": "tester",
+    "text": "Tester notes has a checklist with barcode items, a comment box, and Share or Save as file."
+  },
+  {
+    "screen": "main",
+    "text": "New: this What's new card. It appears only on screens that changed. Got it hides it, and Tester notes keeps a Past updates list."
+  }
 ]
