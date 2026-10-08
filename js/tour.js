@@ -15,18 +15,51 @@ export const MAIN_STEPS = [
   { sel: ['#refill'], text: 'Adds one bottle of water. Undo is right below.' },
 ];
 
+const HELP = { sel: ['#help'], text: 'Opens this guide again.' };
+export const FORM_STEPS = {
+  headache: [
+    { sel: ['#back'], text: 'Goes back without saving anything.' },
+    { sel: ['.time-panel'], text: 'The time the headache started, or the time of this update.' },
+    { sel: ['#f-severity'], text: 'How strong the pain is, from 1 (mild) to 5 (very strong).' },
+    { sel: ['#f-headacheType'], text: 'Tap the picture closest to where it hurts. Other lets a description be typed.' },
+    { sel: ['#f-weather'], text: 'The weather right now.' },
+    { sel: ['#f-notes'], text: 'Tap a common note or type one. A description is needed for Other.' },
+    { sel: ['#f-meds'], text: 'Any medicine taken. Recent ones appear as buttons.' },
+    { sel: ['#f-relief'], text: 'Anything else that helped, such as an ice pack or rest.' },
+    { sel: ['#save'], text: 'Saves the headache. Missing items are pointed out first.' },
+  ],
+  activity: [
+    { sel: ['#back'], text: 'Goes back without saving anything.' },
+    { sel: ['.time-panel'], text: 'The time this started. It cannot be earlier than the last entry.' },
+    { sel: ['#f-activity'], text: 'What is being done. The five most used appear as buttons.' },
+    { sel: ['#f-location'], text: 'Where it is happening: outside, in the house, in bed, or another place.' },
+    { sel: ['#f-position'], text: 'Laying, sitting or standing.' },
+    { sel: ['#save'], text: 'Saves. Any activity still running is ended at this time.' },
+  ],
+  intake: [
+    { sel: ['#back'], text: 'Goes back without saving anything.' },
+    { sel: ['#f-name'], text: 'Type or tap the food or drink. Past choices are remembered.' },
+    { sel: ['.time-panel'], text: 'The time it was had.' },
+    { sel: ['#f-amount'], text: 'How many servings, or how much for a drink.' },
+    { sel: ['#f-nutrition'], text: 'Numbers from the label. All optional, and remembered for next time.' },
+    { sel: ['#save'], text: 'Saves it to today\'s list.' },
+  ],
+};
+for (const k of Object.keys(FORM_STEPS)) FORM_STEPS[k].push(HELP);
+export const TOURS = { main: MAIN_STEPS, ...FORM_STEPS };
+
 const GAP = 14;
 const hit = (a, b, pad = 0) => a.x < b.x + b.w + pad && a.x + a.w + pad > b.x && a.y < b.y + b.h + pad && a.y + a.h + pad > b.y;
 
 /* items: [{id, rect:{x,y,w,h}, cw, ch}] viewport vp:{w,h,top}. Returns {placed:[{id,x,y,side}], overflow:[id]} */
-export function layoutCallouts(items, vp) {
+export function layoutCallouts(items, vp, obstacles = []) {
   const placed = [];
   const overflow = [];
   const cards = [];
   const sorted = [...items].sort((a, b) => a.rect.y - b.rect.y || a.rect.x - b.rect.x);
   const clampX = (x, cw) => Math.max(8, Math.min(vp.w - cw - 8, x));
   const clampY = (y, ch) => Math.max(vp.top + 4, Math.min(vp.h - ch - 8, y));
-  for (const it of sorted) {
+  const attempt = (it, useObs) => {
     const { rect: r, cw, ch } = it;
     const cy = r.y + r.h / 2 - ch / 2;
     const cx = r.x + r.w / 2 - cw / 2;
@@ -35,8 +68,7 @@ export function layoutCallouts(items, vp) {
       ['below', cx, r.y + r.h + GAP + 24], ['above', cx, r.y - GAP - 24 - ch],
     ];
     const jitter = [0, ch + 8, -(ch + 8), 2 * (ch + 8), -2 * (ch + 8)];
-    let done = null;
-    outer: for (const [side, x0, y0] of tries) {
+    for (const [side, x0, y0] of tries) {
       for (const dy of (side === 'right' || side === 'left') ? jitter : [0]) {
         const x = clampX(x0, cw); const y = clampY(y0 + dy, ch);
         if ((side === 'right' || side === 'left') && x !== x0) continue;
@@ -45,10 +77,15 @@ export function layoutCallouts(items, vp) {
         if (!inside) continue;
         if (cards.some((o) => hit(c, o, 6))) continue;
         if (items.some((o) => hit(c, o.rect, 6))) continue;
-        done = { id: it.id, x, y, side }; cards.push(c); break outer;
+        if (useObs && obstacles.some((o) => hit(c, o, 2))) continue;
+        return { id: it.id, x, y, side, c };
       }
     }
-    if (done) placed.push(done); else overflow.push(it.id);
+    return null;
+  };
+  for (const it of sorted) {
+    const done = attempt(it, true) || attempt(it, false);
+    if (done) { cards.push(done.c); placed.push({ id: done.id, x: done.x, y: done.y, side: done.side }); } else overflow.push(it.id);
   }
   return { placed, overflow };
 }

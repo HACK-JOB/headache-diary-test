@@ -82,7 +82,7 @@ export function createIntakeUI(ctx) {
     return h('div', {},
       h('header', { class: 'topbar' }, h('div', { class: 'page-head' },
         h('button', { class: 'icon-btn', id: 'back', 'aria-label': 'Cancel and go back', onclick: () => { state.view = 'main'; render(); } }, icon('back')),
-        h('h2', {}, d.mealType))),
+        h('h2', {}, d.mealType), ctx.helpButton('intake'))),
       h('main', { class: 'form' },
         h('div', { class: 'meal-grid' + (nutrients.length ? '' : ' no-nutrition') },
           h('div', { class: 'meal-left' },

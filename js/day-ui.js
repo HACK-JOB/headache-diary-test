@@ -91,7 +91,7 @@ export function createDayUI(ctx) {
       h('header', { class: 'topbar' },
         h('div', { class: 'page-head' },
           h('button', { class: 'icon-btn', id: 'back', 'aria-label': 'Cancel and go back', onclick: () => { state.view = 'main'; render(); } }, icon('back')),
-          h('h2', {}, open ? 'Change activity' : 'Start activity'))),
+          h('h2', {}, open ? 'Change activity' : 'Start activity'), ctx.helpButton('activity'))),
       h('main', { class: 'form' },
         open ? h('p', { class: 'meta' }, `Now: ${open.activity} · ${open.location} · ${open.position}. Saving this ends it.`) : null,
         h('div', { class: 'top-row' },

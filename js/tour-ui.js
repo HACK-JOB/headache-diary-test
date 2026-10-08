@@ -1,5 +1,5 @@
 // Help tour overlay: dims the page, points arrows at real elements, scrolls through the page in stops.
-import { MAIN_STEPS, layoutCallouts, pagesFor } from './tour.js';
+import { TOURS, layoutCallouts, pagesFor } from './tour.js';
 
 const NS = 'http://www.w3.org/2000/svg';
 const BAR = 92;          // height reserved for the Back / Next / Close bar
@@ -10,6 +10,7 @@ export function createTour({ h }) {
   let stop = 0;
   let stops = 1;
   let opener = null;
+  let steps = TOURS.main;
 
   const close = () => {
     layer?.remove(); layer = null;
@@ -42,7 +43,7 @@ export function createTour({ h }) {
   function allSteps() {
     const out = [];
     const sy = window.scrollY;
-    MAIN_STEPS.forEach((s) => {
+    steps.forEach((s) => {
       for (const q of s.sel) {
         const el = document.querySelector(q);
         if (!el) continue;
@@ -52,6 +53,8 @@ export function createTour({ h }) {
         break;
       }
     });
+    out.sort((p, q) => (Math.round(p.doc.y / 40) - Math.round(q.doc.y / 40)) || (p.doc.x - q.doc.x));
+    out.forEach((f, i) => { f.n = i; });
     return out;
   }
 
@@ -73,6 +76,7 @@ export function createTour({ h }) {
   }
 
   let stopsPlan = [];
+  let listHint = 0;
 
   function draw() {
     if (!layer) return;
@@ -84,19 +88,30 @@ export function createTour({ h }) {
     window.scrollTo(0, cur.top);
     const clipTop = 4; const clipBot = vh - BAR;
     const todo = cur.feats.map((f) => {
-      const y = f.doc.y - window.scrollY; const bottom = Math.min(y + f.doc.h, clipBot - 4);
-      return { step: f.step, n: f.n, rect: { x: f.doc.x, y: Math.max(y, clipTop), w: f.doc.w, h: Math.max(24, bottom - Math.max(y, clipTop)) } };
+      const y = f.doc.y - window.scrollY; const top = Math.max(y, clipTop); const bottom = Math.min(y + f.doc.h, clipBot - 4);
+      const tall = f.doc.h > 130;
+      const full = Math.max(24, bottom - top);
+      return { step: f.step, n: f.n, rect: { x: f.doc.x, y: top, w: tall ? Math.min(f.doc.w, 260) : f.doc.w, h: tall ? Math.min(full, 52) : full } };
     });
+    const shortOnes = todo; const tallOnes = [];
     const cw = CW();
     // measure each card's real height first, so the layout never guesses
     const probe = h('div', { class: 'tour', style: 'visibility:hidden;background:none' },
-      ...todo.map((v) => h('div', { class: 'tour-card', 'data-n': String(v.n), style: `width:${cw}px;position:absolute;left:0;top:0` },
+      ...shortOnes.map((v) => h('div', { class: 'tour-card', 'data-n': String(v.n), style: `width:${cw}px;position:absolute;left:0;top:0` },
         h('span', { class: 'tour-num' }, '0'), h('p', {}, v.step.text))));
     document.body.appendChild(probe);
     const hts = new Map([...probe.querySelectorAll('.tour-card')].map((c) => [Number(c.dataset.n), Math.ceil(c.getBoundingClientRect().height)]));
     probe.remove();
-    const items = todo.map((v) => ({ id: v.n, rect: v.rect, cw, ch: hts.get(v.n) || 78 }));
-    const { placed, overflow } = layoutCallouts(items, { w: vw, h: vh - BAR, top: 8 });
+    const items = shortOnes.map((v) => ({ id: v.n, rect: v.rect, cw, ch: hts.get(v.n) || 78 }));
+    // lay out; if some points do not fit they go in a list above the bar, so lay out again above that list
+    let listH = 0;
+    let { placed, overflow } = layoutCallouts(items, { w: vw, h: vh - BAR, top: 8 });
+    for (let pass = 0; pass < 3 && overflow.length; pass++) {
+      const need = Math.max(listHint, 62 + overflow.length * Math.ceil(30 * (window.innerWidth < 700 ? 1.6 : 1.25)) + 16);
+      if (need === listH) break;
+      listH = need;
+      ({ placed, overflow } = layoutCallouts(items, { w: vw, h: vh - BAR - listH, top: 8 }));
+    }
     const byN = new Map(todo.map((v) => [v.n, v]));
     const kids = [];
     // numbered rings around the targets and arrows from callouts
@@ -131,10 +146,13 @@ export function createTour({ h }) {
         h('span', { class: 'tour-num', 'aria-hidden': 'true' }, String(p.id + 1)),
         h('p', {}, v.step.text)));
     }
-    if (overflow.length) {
-      kids.push(h('div', { class: 'tour-more' }, h('strong', {}, 'Also on this part of the page'),
-        h('ol', {}, ...overflow.map((id) => h('li', { value: id + 1 }, byN.get(id).step.text)))));
+    const listIds = [...overflow].sort((a, b) => a - b);
+    if (listIds.length) {
+      kids.push(h('div', { class: 'tour-more' }, h('strong', {}, 'Numbered on the page'),
+        h('ol', {}, ...listIds.map((id) => h('li', { value: id + 1 }, byN.get(id).step.text)))));
     }
+    for (const v of tallOnes) kids.push(h('span', { class: 'tour-badge', 'aria-hidden': 'true', style: `left:${v.rect.x + v.rect.w - 34}px;top:${v.rect.y - 12}px` }, String(v.n + 1)));
+    for (const id of overflow) { const v = byN.get(id); kids.push(h('span', { class: 'tour-badge', 'aria-hidden': 'true', style: `left:${v.rect.x + v.rect.w - 34}px;top:${v.rect.y - 12}px` }, String(v.n + 1))); }
     if (!todo.length) kids.push(h('p', { class: 'tour-empty' }, 'Nothing new to point at on this part of the page.'));
     kids.push(h('div', { class: 'tour-bar' },
       h('button', { class: 'btn quiet', id: 'tour-back', disabled: stop === 0, onclick: () => go(-1) }, 'Back'),
@@ -142,13 +160,24 @@ export function createTour({ h }) {
       h('button', { class: 'btn primary', id: 'tour-next', onclick: () => go(1) }, stop === stops - 1 ? 'Done' : 'Next'),
       h('button', { class: 'btn quiet', id: 'tour-close', onclick: close }, 'Close')));
     layer.replaceChildren(...kids);
+    const more = layer.querySelector('.tour-more');
+    if (more) {
+      const cardsEls = [...layer.querySelectorAll('.tour-card')];
+      const mt = more.getBoundingClientRect().top;
+      if (cardsEls.some((c) => c.getBoundingClientRect().bottom > mt)) {
+        // a card ended up under the list: shrink the area for cards by the list's real height and draw again
+        const need = Math.ceil(window.innerHeight - BAR - mt) + 12;
+        if (need > listHint) { listHint = need; draw(); }
+      }
+    }
   }
 
 
-  function open(from) {
+  function open(from, key = 'main') {
     if (layer) return;
+    steps = TOURS[key] || TOURS.main;
     opener = from || document.getElementById('help');
-    stopsPlan = []; stop = 0;
+    stopsPlan = []; stop = 0; listHint = 0;
     layer = h('div', { class: 'tour', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Guide to this page' });
     layer.addEventListener('click', (ev) => { if (ev.target === layer) close(); });
     document.body.classList.add('touring');

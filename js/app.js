@@ -25,6 +25,7 @@ let aui;
 let dcui;
 let mui;
 const tour = createTour({ h });
+const helpButton = (key) => h('button', { class: 'help-btn', id: 'help', onclick: (ev) => tour.open(ev.currentTarget, key) }, icon('help'), h('span', {}, 'Help'));
 
 /* ---------- small helpers ---------- */
 function h(tag, attrs = {}, ...kids) {
@@ -248,7 +249,7 @@ function render() {
           'aria-label': shown === 'dark' ? 'Dark mode is on. Tap to turn off' : 'Dark mode is off. Tap to turn on',
           onclick: () => saveSettings(toggleDark(state.settings, darkQuery.matches)),
         }, icon(shown === 'dark' ? 'moon' : 'sun')),
-        h('button', { class: 'help-btn', id: 'help', onclick: (ev) => tour.open(ev.currentTarget) }, icon('help'), h('span', {}, 'Help')),
+        helpButton('main'),
         h('button', { class: 'icon-btn', id: 'cog', 'aria-label': 'Options', onclick: () => { state.view = 'options'; render(); window.scrollTo(0, 0); } }, icon('cog')))),
     h('main', {},
       dui.mainCard(),
@@ -308,12 +309,12 @@ async function start() {
   applyLook();
   try {
     log = createEventLog(await createIdbStore());
-    hui = createHeadacheUI({ h, state, log, reload, render, toast, time, icon, fmt });
-    dui = createDayUI({ h, state, log, reload, render, toast, time, icon, fmt });
+    hui = createHeadacheUI({ h, state, log, reload, render, toast, time, icon, fmt, helpButton });
+    dui = createDayUI({ h, state, log, reload, render, toast, time, icon, fmt, helpButton });
     aui = createAdminUI({ h, state, log, reload, render, toast, time, icon });
     dcui = createDoctorUI({ h, state, log, reload, render, toast, time, icon, ask });
     mui = createMeasuresUI({ h, state, log, reload, render, toast, time, icon, fmt, ask });
-    iui = createIntakeUI({ h, state, log, reload, render, toast, time, icon, fmt, ask });
+    iui = createIntakeUI({ h, state, log, reload, render, toast, time, icon, fmt, ask, helpButton });
     await reload();
   } catch (err) {
     app.replaceChildren(h('p', { class: 'boot' }, 'Sorry, the diary could not open its storage on this device. ' + err.message));

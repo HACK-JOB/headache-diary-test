@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { layoutCallouts, pagesFor, MAIN_STEPS } from '../js/tour.js';
+import { layoutCallouts, pagesFor, MAIN_STEPS, TOURS } from '../js/tour.js';
 
 const vp = { w: 1280, h: 800, top: 70 };
 const hit = (a, b, pad = 0) => a.x < b.x + b.w + pad && a.x + a.w + pad > b.x && a.y < b.y + b.h + pad && a.y + a.h + pad > b.y;
@@ -52,4 +52,26 @@ test('every main-page step has a selector list, a short plain sentence and no pe
     assert.ok(s.text.length > 8 && s.text.length <= 110, s.text);
     assert.ok(!/\b(you|your|she|her|my)\b/i.test(s.text), s.text);
   }
+});
+
+test('there is a tour for the main page and each form, all short, plain and impersonal', () => {
+  assert.deepEqual(Object.keys(TOURS).sort(), ['activity', 'headache', 'intake', 'main']);
+  assert.equal(TOURS.main, MAIN_STEPS);
+  for (const [name, steps] of Object.entries(TOURS)) {
+    assert.ok(steps.length >= 4, name);
+    for (const st of steps) {
+      assert.ok(Array.isArray(st.sel) && st.sel.length >= 1, name);
+      assert.ok(st.text.length > 8 && st.text.length <= 110, st.text);
+      assert.ok(!/\b(you|your|she|her|my)\b/i.test(st.text), st.text);
+    }
+  }
+});
+
+test('callouts avoid obstacles when there is free space, but are still placed when there is not', () => {
+  const free = layoutCallouts([item('a', 100, 200)], vp, [{ x: 270, y: 150, w: 300, h: 200 }]);
+  assert.equal(free.placed.length, 1);
+  assert.ok(!hit({ x: free.placed[0].x, y: free.placed[0].y, w: 260, h: 90 }, { x: 270, y: 150, w: 300, h: 200 }, 0));
+  const wall = layoutCallouts([item('a', 100, 200)], vp, [{ x: 0, y: 0, w: 1280, h: 800 }]);
+  assert.equal(wall.placed.length, 1);
+  assert.equal(wall.overflow.length, 0);
 });

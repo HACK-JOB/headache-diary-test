@@ -228,7 +228,7 @@ export function createHeadacheUI(ctx) {
       h('header', { class: 'topbar' },
         h('div', { class: 'page-head' },
           h('button', { class: 'icon-btn', id: 'back', 'aria-label': 'Cancel and go back', onclick: () => { state.view = 'main'; render(); } }, icon('back')),
-          h('h2', {}, isStart ? 'Headache started' : 'Change status of headache'))),
+          h('h2', {}, isStart ? 'Headache started' : 'Change status of headache'), ctx.helpButton('headache'))),
       h('main', { class: 'form' },
         isStart ? null : h('p', { class: 'meta' }, 'Only change what is different. Leave the rest.'),
         h('div', { class: 'top-row' },
