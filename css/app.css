@@ -439,7 +439,7 @@ textarea.text { width: 100%; min-height: 6rem; resize: vertical; font: inherit; 
 .tn-notes { list-style: none; margin: 1rem 0 0; padding: 0; display: grid; gap: 0.7rem; }
 .tn-notes li { border: 2px solid var(--line); border-radius: var(--radius); padding: 0.7rem 0.9rem; }
 .tn-notes li p { margin: 0.2rem 0; }
-#tn-about { width: 100%; min-height: 3rem; padding: 0 0.7rem; font: inherit; color: var(--ink); background: var(--panel, #fff); border: 2px solid var(--line); border-radius: var(--radius); }
+#tn-about { width: 100%; min-height: 3rem; padding: 0 0.7rem; font: inherit; color: var(--ink); background: var(--field); border: 2px solid var(--line); border-radius: var(--radius); }
 
 /* Barcode scanning */
 .scan-row { margin: 0.7rem 0 0; display: grid; gap: 0.5rem; justify-items: start; }
