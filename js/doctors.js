@@ -8,6 +8,8 @@
 // The app never writes medical content itself: every word here comes from a named doctor.
 import { NUTRIENTS } from './intake.js';
 import { byTime } from './events.js';
+import { dayIntake } from './intake.js';
+import { dayWaterTotal } from './hydration.js';
 
 export const DEFAULT_MARGIN = 20;
 export const MAX_MARGIN = 50;
@@ -169,4 +171,27 @@ export function changeLog(events) {
     }
   }
   return out.reverse();
+}
+
+/** A shape or sign for each status, so colour is never the only cue. */
+export const STATUS_MARK = { in: '✓', near: '!', over: '▲', under: '▼', none: '' };
+
+/**
+ * Today's totals against the doctors' targets. Only items that have a target appear.
+ * Fluid = water refills + every drink logged in the meal log. An item nobody has logged yet gets no status.
+ */
+export function dayStatuses(events, key, opts = {}) {
+  const tg = targets(events);
+  const day = dayIntake(events, key);
+  const out = {};
+  for (const k of Object.keys(tg)) {
+    let value; let known = true;
+    if (k === 'fluid') value = dayWaterTotal(events, key) + day.drinkMl;
+    else { const t = day.totals[k]; known = !!t && t.known > 0; value = t?.value ?? 0; }
+    if (!known) continue;
+    const r = statusFor(value, tg[k], opts);
+    if (r.status === 'none') continue;
+    out[k] = { ...r, mark: STATUS_MARK[r.status], value, target: tg[k] };
+  }
+  return out;
 }

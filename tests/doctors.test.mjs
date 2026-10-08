@@ -145,3 +145,53 @@ test('changes made while open are labelled as open access, and a no-PIN add says
   assert.equal(changeLog(evs)[0].byName, 'Open access (no PIN set)');
   assert.equal(notes(evs)[0].byName, 'Open access (no PIN set)');
 });
+
+import { dayStatuses, STATUS_MARK } from '../js/doctors.js';
+
+const bne = (y, mo, d, h = 0, mi = 0) => Date.UTC(y, mo - 1, d, h - 10, mi);
+const meal = (ms, nutrition, extra = {}) => ev({ type: 'intake', kind: 'food', mealType: 'Lunch', name: 'Thing' + n, servings: 1, nutrition, ...extra }, ms);
+const water = (ms, ml) => ev({ type: 'water', ml }, ms);
+
+test('dayStatuses: only items with a target get a status; no target = nothing to colour', () => {
+  const evs = [meal(bne(2026, 10, 8, 8), { sugar: 20, iron: 3 })];
+  const s = dayStatuses(evs, '2026-10-08', { running: true });
+  assert.deepEqual(Object.keys(s), []);
+});
+
+test('dayStatuses: a total over the maximum is red-class "over", near the limit is "near", else "in"', () => {
+  const evs = [tgt('sugar', null, 30, 20, 'a', 1), tgt('iron', null, 20, 20, 'a', 2), tgt('protein', null, 100, 20, 'a', 3),
+    meal(bne(2026, 10, 8, 8), { sugar: 35, iron: 18, protein: 10 })];
+  const s = dayStatuses(evs, '2026-10-08', { running: true });
+  assert.equal(s.sugar.status, 'over');
+  assert.equal(s.iron.status, 'near');
+  assert.equal(s.protein.status, 'in');
+  assert.equal(s.sugar.value, 35);
+  assert.ok(s.sugar.word && s.sugar.mark);
+});
+
+test('dayStatuses: no entry has that nutrient yet = no status (not "under")', () => {
+  const evs = [tgt('iron', 8, 18, 20, 'a', 1), meal(bne(2026, 10, 8, 8), { sugar: 5 })];
+  assert.equal(dayStatuses(evs, '2026-10-08', { running: false }).iron, undefined);
+});
+
+test('dayStatuses: fluid is water refills plus other drinks, all in ml', () => {
+  const evs = [tgt('fluid', 1500, 2500, 20, 'a', 1), water(bne(2026, 10, 8, 7), 600), water(bne(2026, 10, 8, 9), 600),
+    ev({ type: 'intake', kind: 'drink', mealType: 'Beverages', name: 'Tea', servings: 2, amountMl: 250, nutrition: {} }, bne(2026, 10, 8, 10))];
+  const s = dayStatuses(evs, '2026-10-08', { running: true });
+  assert.equal(s.fluid.value, 1700);
+  assert.equal(s.fluid.status, 'in');
+  const over = [...evs, water(bne(2026, 10, 8, 12), 900)];
+  assert.equal(dayStatuses(over, '2026-10-08', { running: true }).fluid.status, 'over');
+});
+
+test('dayStatuses: a finished day can be under the minimum, a running day cannot', () => {
+  const evs = [tgt('fluid', 1500, 2500, 20, 'a', 1), water(bne(2026, 10, 8, 7), 600)];
+  assert.equal(dayStatuses(evs, '2026-10-08', { running: true }).fluid.status, 'in');
+  assert.equal(dayStatuses(evs, '2026-10-08', { running: false }).fluid.status, 'under');
+});
+
+test('every status has a word and a mark, so colour is never the only signal', () => {
+  for (const k of ['in', 'near', 'over', 'under']) assert.ok(STATUS_MARK[k].length > 0);
+  assert.notEqual(STATUS_MARK.in, STATUS_MARK.over);
+  assert.notEqual(STATUS_MARK.near, STATUS_MARK.under);
+});

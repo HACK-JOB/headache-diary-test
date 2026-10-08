@@ -1,5 +1,5 @@
 // Caches the app files so the diary opens offline. Bump VERSION whenever files change.
-const VERSION = 'hd-v33';
+const VERSION = 'hd-v35';
 const FILES = [
   './', 'index.html', 'manifest.webmanifest', 'css/app.css',
   'js/app.js', 'js/time.js', 'js/hydration.js', 'js/events.js', 'js/settings.js', 'js/episodes.js', 'js/memory.js', 'js/headache-ui.js', 'js/type-art.js', 'js/day.js', 'js/day-ui.js', 'js/intake.js', 'js/intake-ui.js', 'js/pin.js', 'js/clock-ui.js', 'js/admin-ui.js', 'js/doctors.js', 'js/doctor-ui.js',

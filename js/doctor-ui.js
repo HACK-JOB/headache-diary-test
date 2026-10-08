@@ -1,7 +1,7 @@
 // The Doctors tab (accounts + change log) and the family-admin tools for managing doctor accounts.
 // PINs are convenience locks (see pin.js). The family admin manages accounts but sees no clinical data.
 import { validPinFormat, makeRecord, checkPin, afterFail, afterSuccess, lockedFor, unlockUntil, isUnlocked } from './pin.js';
-import { doctors, validateDoctor, changeLog, needsLogin } from './doctors.js';
+import { doctors, validateDoctor, changeLog, needsLogin, targets, validateTarget, TARGET_KEYS, DEFAULT_MARGIN, MAX_MARGIN } from './doctors.js';
 import { formatLongDate } from './time.js';
 
 const TRIES = 'hd.doctorTries';
@@ -9,7 +9,7 @@ const readTries = () => { try { return JSON.parse(localStorage.getItem(TRIES)) ?
 
 export function createDoctorUI(ctx) {
   const { h, state, log, reload, render, icon, ask, time } = ctx;
-  const st = { mode: 'view', error: '', info: '', pick: '', resetId: '', setId: '' };   // view | add | mine
+  const st = { tmsg: '', terr: '', tbad: {}, mode: 'view', error: '', info: '', pick: '', resetId: '', setId: '' };   // view | add | mine
   let timer;
 
   const list = () => doctors(state.events);
@@ -150,6 +150,50 @@ export function createDoctorUI(ctx) {
         h('button', { class: 'btn primary', id: 'm-save', onclick: changeMine }, 'Save PIN')));
   }
 
+
+  /* ----- targets (5b) ----- */
+  async function saveTarget(key) {
+    const g = (p) => document.getElementById(`t-${key}-${p}`)?.value ?? '';
+    const raw = { min: g('min'), max: g('max'), margin: g('margin') };
+    const { errors, value } = validateTarget(raw);
+    const label = TARGET_KEYS.find((k) => k.key === key).label;
+    st.tmsg = ''; st.terr = ''; st.tbad = {};
+    if (errors.length) {
+      st.tbad = { [key]: errors };
+      st.terr = errors.includes('max') && !errors.includes('min') && raw.min !== '' && raw.max !== '' && Number(String(raw.min).replace(',', '.')) > Number(String(raw.max).replace(',', '.'))
+        ? `${label}: the minimum is higher than the maximum. Please check the two numbers.`
+        : errors.includes('margin') ? `${label}: the warning margin must be a number from 0 to ${MAX_MARGIN}.` : `${label}: please type numbers only, for example 1500.`;
+      st.draftT = raw; st.draftKey = key; render(); return;
+    }
+    const cur = targets(state.events)[key];
+    const same = cur ? cur.min === value.min && cur.max === value.max && cur.margin === value.margin : value.min == null && value.max == null;
+    if (same) { st.draftT = null; st.tmsg = `${label}: no change to save.`; render(); return; }
+    await log.add({ type: 'clinical', kind: 'target', key, min: value.min, max: value.max, margin: value.margin, by: actor() });
+    st.draftT = null; await reload();
+    st.tmsg = value.min == null && value.max == null ? `${label} target cleared.` : `${label} target saved.`;
+    render();
+  }
+
+  function targetsSection() {
+    const tg = targets(state.events);
+    return h('div', { class: 'setting', id: 'targets' }, h('h3', {}, 'Daily targets'),
+      h('p', { class: 'hint' }, 'Only what a doctor sets here is used. Leave both boxes empty for no target. A total turns orange when it is within the margin of a limit, and red when it is past it. Each status also shows a word and a sign.'),
+      st.tmsg ? h('p', { class: 'meta', role: 'status' }, st.tmsg) : null,
+      st.terr ? h('p', { class: 'error', role: 'alert' }, st.terr) : null,
+      h('ul', { class: 'target-list' }, ...TARGET_KEYS.map(({ key, label, unit }) => {
+        const t = tg[key]; const dr = st.draftKey === key && st.draftT ? st.draftT : null; const bad = st.tbad[key] ?? [];
+        const field = (p, lab, v, hint) => h('div', { class: 'num-field' }, h('label', { for: `t-${key}-${p}` }, lab),
+          h('input', { id: `t-${key}-${p}`, type: 'text', inputmode: 'decimal', class: 'text' + (bad.includes(p) ? ' bad' : ''), value: v, placeholder: hint, 'aria-invalid': String(bad.includes(p)) }));
+        return h('li', { class: 'target-row', 'data-key': key },
+          h('span', { class: 'who' }, `${label} (${unit})`, t ? h('span', { class: 'hint' }, ` set by ${t.by === 'open' ? 'open access' : (doctors(state.events).find((d) => d.id === t.by)?.name ?? 'a doctor')}`) : null),
+          h('div', { class: 'target-fields' },
+            field('min', 'At least', dr ? dr.min : (t?.min ?? ''), 'e.g. 1500'),
+            field('max', 'No more than', dr ? dr.max : (t?.max ?? ''), 'e.g. 2500'),
+            field('margin', 'Warn within %', dr ? dr.margin : (t?.margin ?? DEFAULT_MARGIN), '20'),
+            h('button', { class: 'btn quiet', 'data-save-target': key, onclick: () => saveTarget(key) }, 'Save')));
+      })));
+  }
+
   function openPanel(sections) {
     const ds = list();
     return panel(
@@ -166,6 +210,7 @@ export function createDoctorUI(ctx) {
             : h('button', { class: 'btn quiet', 'data-setpin': d.id, onclick: () => { st.setId = d.id; st.error = ''; st.info = ''; render(); } }, 'Set a PIN'))))) : null,
       st.mode === 'add' || !ds.length ? addForm('open', ds.length ? 'Add a new doctor' : 'Add the first doctor')
         : h('button', { class: 'btn quiet', id: 'd-add', onclick: () => { st.mode = 'add'; st.error = ''; st.info = ''; render(); } }, 'Add new doctor'),
+      targetsSection(),
       ...sections,
       logView());
   }
@@ -185,6 +230,7 @@ export function createDoctorUI(ctx) {
         : h('div', { class: 'setting' }, h('h3', {}, 'Doctors on this diary'),
           h('ul', { class: 'plain-list' }, ...list().map((x) => h('li', {}, `${x.name} (${x.role})${x.pin ? '' : ' - no PIN yet'}`))),
           h('button', { class: 'btn quiet', id: 'd-add', onclick: () => { st.mode = 'add'; st.error = ''; st.info = ''; render(); } }, 'Add new doctor')),
+      targetsSection(),
       ...sections,
       logView());
   }

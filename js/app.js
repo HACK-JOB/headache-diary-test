@@ -8,6 +8,7 @@ import { createDayUI } from './day-ui.js';
 import { createIntakeUI } from './intake-ui.js';
 import { createAdminUI } from './admin-ui.js';
 import { createDoctorUI } from './doctor-ui.js';
+import { dayStatuses } from './doctors.js';
 import { STYLES, artElement, ART_KEYS } from './type-art.js';
 
 const app = document.getElementById('app');
@@ -209,6 +210,14 @@ function renderOptions() {
 /* Admin: locked behind a PIN once the family has set one up inside Admin itself. */
 function adminPanel() { return aui.panel(state.adminUntil || !aui.hasPin() ? h('div', {}, iui.adminSwitches(), dcui.adminAccounts()) : null); }
 
+/* Fluid against the doctor's range: water refills plus every drink from the meal log. */
+function waterStatus(total) {
+  const st = dayStatuses(state.events, state.key, { running: true }).fluid;
+  if (!st) return null;
+  return h('p', { class: 'fluid-line' }, `All fluids today: ${fmt(st.value)} ml `, iui.statusBadge(st),
+    st.value !== total ? h('span', { class: 'hint' }, ` (water ${fmt(total)} ml + other drinks)`) : null);
+}
+
 /* ---------- view ---------- */
 function render() {
   if (state.view === 'options') { renderOptions(); return; }
@@ -247,6 +256,7 @@ function render() {
           h('span', { class: 'big num' }, fmt(total)),
           h('span', { class: 'unit' }, 'ml'),
           h('span', { class: 'alt num' }, `${(total / 1000).toFixed(1)} L`)),
+        waterStatus(total),
         h('p', { class: 'meta' }, entries.length === 1 ? '1 refill so far' : `${entries.length} refills so far`),
         h('div', { class: 'sizes', role: 'radiogroup', 'aria-label': 'Bottle size' },
           ...state.recent.map((ml) =>

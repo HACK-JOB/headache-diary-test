@@ -1,4 +1,5 @@
 // Meals and drinks screens: tiles on the main page, the entry form, today's intake list, and the Admin show/hide switches.
+import { dayStatuses } from './doctors.js';
 import { MEAL_TYPES, NUTRIENTS, perServing, validateIntake, myFoods, commonFoods, suggestFoods, dayIntake, visibility, visibleNutrients, visibilityEvent, visibilityLog } from './intake.js';
 import { canonical } from './memory.js';
 import { parseVolume } from './hydration.js';
@@ -122,6 +123,8 @@ export function createIntakeUI(ctx) {
           h('button', { class: 'btn alert-btn save-act', id: 'save', onclick: save }, 'Save'))));
   }
 
+  const statusBadge = (st) => h('span', { class: `badge st-${st.status}` }, h('span', { 'aria-hidden': 'true' }, st.mark + ' '), st.word);
+
   /* ---------- main page ---------- */
   function mainCard() {
     return h('section', { class: 'panel', 'aria-labelledby': 'meal-h' },
@@ -132,6 +135,7 @@ export function createIntakeUI(ctx) {
   function todayList() {
     const day = dayIntake(state.events, state.key);
     const shown = visibleNutrients(state.events);
+    const stat = dayStatuses(state.events, state.key, { running: true });
     if (!day.items.length) return h('section', { class: 'panel', 'aria-labelledby': 'in-h' }, h('h2', { id: 'in-h' }, 'Eaten today'), h('p', { class: 'hint' }, 'Nothing logged yet today.'));
     const dtext = (e) => `${e.servings !== 1 ? `${e.servings} × ` : ''}${e.name}${e.amountMl ? ` · ${e.amountMl >= 1000 && e.amountMl % 100 === 0 ? e.amountMl / 1000 + ' L' : e.amountMl + ' ml'}` : ''}`;
     return h('section', { class: 'panel', 'aria-labelledby': 'in-h' },
@@ -143,8 +147,8 @@ export function createIntakeUI(ctx) {
       shown.length ? h('div', { class: 'totals' },
         h('h3', {}, 'Totals so far'),
         h('dl', {}, ...shown.flatMap((n) => {
-          const t = day.totals[n.key];
-          return [h('dt', {}, n.label), h('dd', { class: 'num' }, t.known ? `${fmt(t.value)} ${n.unit}` : '–', t.known && t.known < t.of ? h('span', { class: 'hint' }, ` (${t.known} of ${t.of} entries had it)`) : null)];
+          const t = day.totals[n.key]; const st = stat[n.key];
+          return [h('dt', {}, n.label), h('dd', { class: 'num' + (st ? ` st-${st.status}` : '') }, t.known ? `${fmt(t.value)} ${n.unit}` : '–', st ? statusBadge(st) : null, t.known && t.known < t.of ? h('span', { class: 'hint' }, ` (${t.known} of ${t.of} entries had it)`) : null)];
         }))) : null,
       day.drinkMl ? h('p', { class: 'meta' }, `Drinks logged here: ${fmt(day.drinkMl)} ml (water refills are counted separately)`) : null);
   }
@@ -163,5 +167,5 @@ export function createIntakeUI(ctx) {
         h('ul', {}, ...changes.map((c) => h('li', {}, `${NUTRIENTS.find((n) => n.key === c.item)?.label}: ${c.shown ? 'shown' : 'hidden'} · ${time(c.ms)}`)))) : null);
   }
 
-  return { renderForm, mainCard, todayList, adminSwitches, openForm };
+  return { statusBadge, renderForm, mainCard, todayList, adminSwitches, openForm };
 }
