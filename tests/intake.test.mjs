@@ -6,9 +6,9 @@ const bne = (y, mo, d, h = 0, mi = 0) => Date.UTC(y, mo - 1, d, h - 10, mi);
 let n = 0;
 const eat = (ms, name, mealType = 'Lunch', extra = {}) => ({ id: 'i' + ++n, type: 'intake', ms, seq: n, kind: 'food', mealType, name, servings: 1, nutrition: {}, ...extra });
 
-test('there are eight meal tiles in the order she asked for, and eight nutrients', () => {
+test('there are eight meal tiles in the order she asked for, and eleven nutrients', () => {
   assert.deepEqual(MEAL_TYPES, ['Breakfast', 'Morning Tea', 'Lunch', 'Afternoon Tea', 'Dinner', 'Dessert', 'Snack', 'Beverages']);
-  assert.deepEqual(NUTRIENTS.map((x) => x.key), ['calories', 'carbs', 'sugar', 'protein', 'fat', 'transFat', 'iron', 'caffeine']);
+  assert.deepEqual(NUTRIENTS.map((x) => x.key), ['calories', 'carbs', 'sugar', 'fibre', 'protein', 'fat', 'satFat', 'transFat', 'sodium', 'iron', 'caffeine']);
 });
 
 test('perServing: per-serving values pass through, totals are divided by servings, blanks are dropped', () => {
@@ -89,7 +89,7 @@ test('dayIntake: drinks add up as fluid ml; foods do not', () => {
 });
 
 test('visibility: everything is shown until a switch says otherwise', () => {
-  assert.equal(visibleNutrients([]).length, 8);
+  assert.equal(visibleNutrients([]).length, NUTRIENTS.length);
   assert.deepEqual(visibility([]).calories, true);
 });
 

@@ -7,9 +7,11 @@ import { createHeadacheUI } from './headache-ui.js';
 import { createDayUI } from './day-ui.js';
 import { createIntakeUI } from './intake-ui.js';
 import { createAdminUI } from './admin-ui.js';
+import { createDoctorUI } from './doctor-ui.js';
 import { STYLES, artElement, ART_KEYS } from './type-art.js';
 
 const app = document.getElementById('app');
+const TABS = [['prefs', 'My preferences'], ['doctors', 'Doctors'], ['admin', 'Admin']];
 const state = { events: [], key: dayKey(Date.now()), recent: [], selected: 600, unit: 'ml', toast: '', view: 'main', draft: null, optTab: 'prefs', settings: null };
 const darkQuery = window.matchMedia('(prefers-color-scheme: dark)');
 let log;
@@ -17,6 +19,7 @@ let hui;
 let dui;
 let iui;
 let aui;
+let dcui;
 
 /* ---------- small helpers ---------- */
 function h(tag, attrs = {}, ...kids) {
@@ -172,15 +175,15 @@ function renderOptions() {
   const view = h('div', {},
     h('header', { class: 'topbar' },
       h('div', { class: 'page-head' },
-        h('button', { class: 'icon-btn', id: 'back', 'aria-label': 'Back to diary', onclick: () => { aui.leave(); state.view = 'main'; render(); } }, icon('back')),
+        h('button', { class: 'icon-btn', id: 'back', 'aria-label': 'Back to diary', onclick: () => { aui.leave(); dcui.leave(); state.view = 'main'; render(); } }, icon('back')),
         h('h2', {}, 'Options'))),
     h('main', {},
       h('div', { class: 'tabs', role: 'tablist', 'aria-label': 'Options sections' },
-        ...[['prefs', 'My preferences'], ['admin', 'Admin']].map(([k, t]) =>
+        ...TABS.map(([k, t]) =>
           h('button', { class: 'tab', role: 'tab', id: 'tab-' + k, 'aria-selected': String(state.optTab === k), 'aria-controls': 'tabpanel',
-            onclick: () => { if (k !== 'admin') aui.leave(); state.optTab = k; render(); document.getElementById('tab-' + k)?.focus(); },
-            onkeydown: (ev) => { if (ev.key === 'ArrowRight' || ev.key === 'ArrowLeft') { state.optTab = k === 'prefs' ? 'admin' : 'prefs'; render(); document.getElementById('tab-' + state.optTab)?.focus(); } } }, t))),
-      state.optTab === 'admin' ? adminPanel() : h('section', { class: 'panel', id: 'tabpanel', role: 'tabpanel', 'aria-labelledby': 'tab-prefs' },
+            onclick: () => { if (k !== 'admin') aui.leave(); if (k !== 'doctors') dcui.leave(); state.optTab = k; render(); document.getElementById('tab-' + k)?.focus(); },
+            onkeydown: (ev) => { if (ev.key === 'ArrowRight' || ev.key === 'ArrowLeft') { const i = TABS.findIndex(([x]) => x === k); state.optTab = TABS[(i + (ev.key === 'ArrowRight' ? 1 : TABS.length - 1)) % TABS.length][0]; render(); document.getElementById('tab-' + state.optTab)?.focus(); } } }, t))),
+      state.optTab === 'doctors' ? dcui.panel() : state.optTab === 'admin' ? adminPanel() : h('section', { class: 'panel', id: 'tabpanel', role: 'tabpanel', 'aria-labelledby': 'tab-prefs' },
         h('div', { class: 'setting' }, h('h3', {}, 'Colour theme'),
           h('div', { class: 'swatches' }, ...Object.entries(THEMES).map(([k, name]) =>
             h('button', { class: 'swatch', 'data-t': k, 'aria-pressed': String(st.theme === k), onclick: () => saveSettings({ theme: k, ...(k !== 'dark' ? { lightTheme: k } : {}) }) },
@@ -203,7 +206,7 @@ function renderOptions() {
 }
 
 /* Admin: locked behind a PIN once the family has set one up inside Admin itself. */
-function adminPanel() { return aui.panel(state.adminUntil || !aui.hasPin() ? iui.adminSwitches() : null); }
+function adminPanel() { return aui.panel(state.adminUntil || !aui.hasPin() ? h('div', {}, iui.adminSwitches(), dcui.adminAccounts()) : null); }
 
 /* ---------- view ---------- */
 function render() {
@@ -289,6 +292,7 @@ async function start() {
     hui = createHeadacheUI({ h, state, log, reload, render, toast, time, icon, fmt });
     dui = createDayUI({ h, state, log, reload, render, toast, time, icon, fmt });
     aui = createAdminUI({ h, state, log, reload, render, toast, time, icon });
+    dcui = createDoctorUI({ h, state, log, reload, render, toast, time, icon, ask });
     iui = createIntakeUI({ h, state, log, reload, render, toast, time, icon, fmt, ask });
     await reload();
   } catch (err) {

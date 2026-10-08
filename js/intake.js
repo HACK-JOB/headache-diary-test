@@ -12,9 +12,12 @@ export const NUTRIENTS = [
   { key: 'calories', label: 'Calories', unit: 'kcal' },
   { key: 'carbs', label: 'Carbs', unit: 'g' },
   { key: 'sugar', label: 'Sugar', unit: 'g' },
+  { key: 'fibre', label: 'Fibre', unit: 'g' },
   { key: 'protein', label: 'Protein', unit: 'g' },
   { key: 'fat', label: 'Fat', unit: 'g' },
+  { key: 'satFat', label: 'Saturated fat', unit: 'g' },
   { key: 'transFat', label: 'Trans fat', unit: 'g' },
+  { key: 'sodium', label: 'Sodium', unit: 'mg' },
   { key: 'iron', label: 'Iron', unit: 'mg' },
   { key: 'caffeine', label: 'Caffeine', unit: 'mg' },
 ];
