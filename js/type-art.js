@@ -46,18 +46,60 @@ const CLIPPED = ['tension', 'oneSided'];
 
 export const ART_KEYS = Object.keys(PAIN);
 
-export function typeArtMarkup(key) {
-  if (!PAIN[key]) return '';
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 230 240" class="head-art" aria-hidden="true" focusable="false">
-  <style>
+export const STYLES = {
+  line: 'Line drawing',
+  solid: 'Bold solid',
+  soft: 'Soft glow',
+};
+
+// Each style is only CSS (plus a blur for "soft"), so the pain placements stay identical across styles.
+const STYLE_CSS = {
+  line: `
     .head{fill:var(--head-fill);stroke:var(--head-line);stroke-width:4;stroke-linejoin:round}
     .ear,.brow{fill:none;stroke:var(--head-line);stroke-width:3.5;stroke-linecap:round}
     .eye{fill:var(--head-line)}
     .pain{fill:var(--pain);stroke:var(--pain-line);stroke-width:3}
     .pain .ray{fill:none;stroke:var(--pain);stroke-width:5;stroke-linecap:round}
-    .pain .band{fill:none;stroke:var(--pain);stroke-width:12;stroke-linecap:round}
-  </style>${HEAD}
-  <clipPath id="clip-${key}"><path d="${HEAD_D}"/></clipPath>
-  <g class="pain"${CLIPPED.includes(key) ? ` clip-path="url(#clip-${key})"` : ''}>${PAIN[key]}</g>
+    .pain .band{fill:none;stroke:var(--pain);stroke-width:12;stroke-linecap:round}`,
+  solid: `
+    .head{fill:var(--head-line);stroke:none}
+    .ear,.brow{display:none}
+    .eye{fill:var(--head-fill)}
+    .pain{fill:var(--pain);stroke:var(--head-fill);stroke-width:5;paint-order:stroke;stroke-linejoin:round}
+    .pain .ray{fill:none;stroke:var(--pain);stroke-width:9;stroke-linecap:round}
+    .pain .band{fill:none;stroke:var(--pain);stroke-width:16;stroke-linecap:butt}`,
+  soft: `
+    .head{fill:var(--head-fill);stroke:var(--head-line);stroke-width:2;stroke-linejoin:round;opacity:.95}
+    .ear,.brow{fill:none;stroke:var(--head-line);stroke-width:2;stroke-linecap:round;opacity:.6}
+    .eye{fill:var(--head-line);opacity:.8}
+    .pain{fill:var(--pain);stroke:none;opacity:.8}
+    .pain .ray{fill:none;stroke:var(--pain);stroke-width:7;stroke-linecap:round;stroke-dasharray:1 14}
+    .pain .band{fill:none;stroke:var(--pain);stroke-width:20;stroke-linecap:round}`,
+};
+
+// Inline SVG <style> rules apply to the whole page, so scope every rule to this style's own class.
+const SCOPED = {};
+function scoped(st) {
+  SCOPED[st] ??= STYLE_CSS[st].split('\n').map((line) => {
+    const m = /^(\s*)([^{]+)\{(.*)\}\s*$/.exec(line);
+    if (!m) return line;
+    return m[1] + m[2].split(',').map((x) => `.art-${st} ${x.trim()}`).join(', ') + '{' + m[3] + '}';
+  }).join('\n');
+  return SCOPED[st];
+}
+
+export function typeArtMarkup(key, style = 'line') {
+  if (!PAIN[key]) return '';
+  const st = STYLE_CSS[style] ? style : 'line';
+  const clip = CLIPPED.includes(key) ? ` clip-path="url(#clip-${st}-${key})"` : '';
+  const blur = st === 'soft' ? ' filter="url(#glow-' + key + ')"' : '';
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 230 240" class="head-art art-${st}" aria-hidden="true" focusable="false">
+  <style>${scoped(st)}
+  </style>
+  <defs>
+    <clipPath id="clip-${st}-${key}"><path d="${HEAD_D}"/></clipPath>
+    <filter id="glow-${key}" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="6"/></filter>
+  </defs>${HEAD}
+  <g class="pain"${clip}${blur}>${PAIN[key]}</g>
 </svg>`;
 }
