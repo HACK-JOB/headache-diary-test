@@ -6,7 +6,7 @@ const LIGHT = ['paper', 'bright'];
 
 export const DEFAULTS = Object.freeze({
   theme: 'paper', lightTheme: 'paper', followSystem: false,
-  text: 'normal', clock: '12', savedCue: true, artStyle: 'frontOutline',
+  text: 'normal', clock: '12', savedCue: true, artStyle: 'frontOutline', nag: 'normal', chime: true,
 });
 
 export function normalise(raw) {
@@ -20,6 +20,8 @@ export function normalise(raw) {
     clock: pick(r.clock, ['12', '24'], DEFAULTS.clock),
     artStyle: pick(r.artStyle, Object.keys(STYLES), DEFAULTS.artStyle),
     savedCue: typeof r.savedCue === 'boolean' ? r.savedCue : DEFAULTS.savedCue,
+    nag: pick(r.nag, ['gentle', 'normal', 'persistent'], DEFAULTS.nag),
+    chime: typeof r.chime === 'boolean' ? r.chime : DEFAULTS.chime,
   };
 }
 

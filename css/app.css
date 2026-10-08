@@ -394,3 +394,12 @@ input[type="time"].text { width: auto; min-width: 9rem; }
 .tour-badge { position: absolute; display: grid; place-items: center; width: 2rem; height: 2rem; border-radius: 50%; background: #fff; color: #1b1b1b; border: 3px solid #1b1b1b; font-weight: 800; font-size: 1rem; }
 .rx-doc-actions { display: flex; flex-wrap: wrap; gap: 0.6rem; }
 .rx-doc-actions .btn { width: auto; min-width: 6rem; }
+
+.reminder-bar { position: fixed; top: 0; left: 0; right: 0; z-index: 60; display: flex; flex-wrap: wrap; align-items: center; gap: 0.8rem 1.2rem; padding: 0.8rem 1rem; background: var(--card); color: var(--ink); border-bottom: 4px solid var(--accent); box-shadow: 0 4px 14px rgba(0,0,0,0.25); }
+.reminder-bar[hidden] { display: none; }
+.reminder-bar .rb-text { flex: 1 1 22rem; min-width: 0; }
+.reminder-bar .rb-title { margin: 0; font-size: 1.25rem; font-weight: 700; }
+.reminder-bar .rb-instr { margin: 0.2rem 0 0; }
+.reminder-bar .rb-actions { display: flex; flex-wrap: wrap; gap: 0.6rem; }
+.reminder-bar .rb-actions .btn { width: auto; min-width: 7rem; min-height: 56px; }
+body { padding-top: var(--rb-h, 0px); }

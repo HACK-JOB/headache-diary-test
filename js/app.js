@@ -11,6 +11,7 @@ import { createDoctorUI } from './doctor-ui.js';
 import { createMeasuresUI } from './measures-ui.js';
 import { createTour } from './tour-ui.js';
 import { rxMainCard } from './rx-ui.js';
+import { createReminderUI } from './reminder-ui.js';
 import { dayStatuses } from './doctors.js';
 import { STYLES, artElement, ART_KEYS } from './type-art.js';
 
@@ -26,6 +27,7 @@ let aui;
 let dcui;
 let mui;
 let rxCard;
+let rem;
 const tour = createTour({ h });
 const helpButton = (key) => h('button', { class: 'help-btn', id: 'help', onclick: (ev) => tour.open(ev.currentTarget, key) }, icon('help'), h('span', {}, 'Help'));
 
@@ -208,6 +210,11 @@ function renderOptions() {
         h('div', { class: 'setting' },
           h('label', { class: 'check' }, h('input', { type: 'checkbox', checked: st.followSystem, onchange: (ev) => saveSettings({ followSystem: ev.target.checked }) }), 'Switch to dark when the tablet does'),
           h('p', { class: 'hint' }, 'Off by default. The moon button on the main page always works.')),
+        h('div', { class: 'setting', id: 'reminder-prefs' }, h('h3', {}, 'Medicine reminders'),
+          seg('Reminder level', 'nag', [['gentle', 'Gentle'], ['normal', 'Normal'], ['persistent', 'Persistent']]),
+          h('p', { class: 'hint' }, 'Gentle reminds once. Normal reminds 4 times, 10 minutes apart. Persistent reminds every 5 minutes until answered. A doctor can fix the level for a particular medicine.'),
+          h('label', { class: 'check' }, h('input', { type: 'checkbox', checked: st.chime, onchange: (ev) => saveSettings({ chime: ev.target.checked }) }), 'Play a chime with each reminder'),
+          h('p', { class: 'hint' }, 'Reminders only appear while the diary is open, so keep the tablet on its charger with the diary open.')),
         h('div', { class: 'setting' },
           h('label', { class: 'check' }, h('input', { type: 'checkbox', checked: st.savedCue, onchange: (ev) => saveSettings({ savedCue: ev.target.checked }) }), 'Show "Saved" message'))),
       state.optTab === 'prefs' ? h('p', { class: 'meta' }, 'These are only display preferences. Health settings are kept separate.') : null));
@@ -228,6 +235,7 @@ function waterStatus(total) {
 
 /* ---------- view ---------- */
 function render() {
+  queueMicrotask(() => rem?.tick());
   if (state.view === 'options') { renderOptions(); return; }
   if (state.view === 'headache') { renderHeadache(); return; }
   if (state.view === 'activity') { renderActivity(); return; }
@@ -316,6 +324,7 @@ async function start() {
     dui = createDayUI({ h, state, log, reload, render, toast, time, icon, fmt, helpButton });
     aui = createAdminUI({ h, state, log, reload, render, toast, time, icon });
     dcui = createDoctorUI({ h, state, log, reload, render, toast, time, icon, ask });
+    rem = createReminderUI({ h, state, log, reload, render, time });
     rxCard = rxMainCard({ h, state, log, reload, render, toast, time, icon, fmt, ask });
     mui = createMeasuresUI({ h, state, log, reload, render, toast, time, icon, fmt, ask });
     iui = createIntakeUI({ h, state, log, reload, render, toast, time, icon, fmt, ask, helpButton });
@@ -329,6 +338,7 @@ async function start() {
   state.selected = Number.isFinite(saved) && saved > 0 ? saved : state.recent[0];
   if (!state.recent.includes(state.selected)) state.recent = addSizeToRecent(state.recent, state.selected);
   render();
+  rem.start();
   scheduleMidnight();
   navigator.storage?.persist?.();
   watchForUpdates();
