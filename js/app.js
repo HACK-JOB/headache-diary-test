@@ -7,6 +7,7 @@ import { createHeadacheUI } from './headache-ui.js';
 import { createDayUI } from './day-ui.js';
 import { createIntakeUI } from './intake-ui.js';
 import { createAdminUI } from './admin-ui.js';
+import { createPatchUI } from './patchnotes-ui.js';
 import { createTesterUI } from './tester-ui.js';
 import { createDoctorUI } from './doctor-ui.js';
 import { createMeasuresUI } from './measures-ui.js';
@@ -27,6 +28,7 @@ let hui;
 let dui;
 let iui;
 let aui;
+let pn;
 let tui;
 let dcui;
 let mui;
@@ -255,7 +257,7 @@ function waterStatus(total) {
 
 /* ---------- view ---------- */
 function render() {
-  queueMicrotask(() => rem?.tick());
+  queueMicrotask(() => { rem?.tick(); pn?.place(); });
   if (state.view === 'options') { renderOptions(); return; }
   if (state.view === 'headache') { renderHeadache(); return; }
   if (state.view === 'activity') { renderActivity(); return; }
@@ -342,7 +344,8 @@ async function start() {
     log = createEventLog(await createIdbStore());
     hui = createHeadacheUI({ h, state, log, reload, render, toast, time, icon, fmt, helpButton });
     dui = createDayUI({ h, state, log, reload, render, toast, time, icon, fmt, helpButton });
-    tui = createTesterUI({ h, render, toast, time });
+    tui = createTesterUI({ h, render, toast, time, pastUpdates: () => pn.pastList() });
+    pn = createPatchUI({ h, state, render });
     aui = createAdminUI({ h, state, log, reload, render, toast, time, icon, doctorInfo: () => dcui.resetInfo() });
     dcui = createDoctorUI({ h, state, log, reload, render, toast, time, icon, ask });
     rem = createReminderUI({ h, state, log, reload, render, time });

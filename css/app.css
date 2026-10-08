@@ -481,3 +481,11 @@ body.scan-open { overflow: hidden; }
 @media (max-width: 699px) { .reset-row { grid-template-columns: 1fr; } }
 #one-zone .btn, #reset-zone .btn { margin-top: 0.6rem; }
 #one-zone .two .btn { margin-top: 0; }
+
+/* What's new cards */
+.pn-card { border: 2px solid var(--teal); background: var(--teal-soft); color: var(--ink); border-radius: var(--radius); padding: 0.8rem 1rem; margin: 0 0 1rem; }
+.pn-card h3 { margin: 0 0 0.3rem; font-size: 1.05rem; }
+.pn-card h3::before { content: "★ "; }
+.pn-card ul { margin: 0.3rem 0 0.6rem; padding-left: 1.2rem; }
+.pn-card li { margin: 0.25rem 0; }
+.pn-rel ul { margin: 0.3rem 0 0.6rem; padding-left: 1.2rem; }

@@ -47,6 +47,7 @@ export function createTesterUI(ctx) {
       h('h2', {}, 'Tester notes'),
       h('p', { class: 'hint' }, 'This is a test copy. Please use made-up details only, with no real health information.'),
 
+      ctx.pastUpdates?.(),
       h('div', { class: 'setting' },
         h('h3', {}, 'What to try'),
         h('p', { class: 'meta', 'aria-live': 'polite' }, `${p.done} of ${p.total} done`),
