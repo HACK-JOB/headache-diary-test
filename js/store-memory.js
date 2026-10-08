@@ -8,6 +8,7 @@ export function createMemoryStore() {
     async allEvents() { return [...events.values()].map((e) => structuredClone(e)); },
     async addHistory(h) { history.push(structuredClone(h)); },
     async clearAll() { events.clear(); history.length = 0; },
+    async purgeEvents(ids) { const gone = new Set(ids); for (const id of gone) events.delete(id); for (let i = history.length - 1; i >= 0; i--) if (gone.has(history[i].eventId)) history.splice(i, 1); },
     async allHistory() { return history.map((h) => structuredClone(h)); },
     async historyFor(id) { return history.filter((h) => h.eventId === id).map((h) => structuredClone(h)); },
   };

@@ -470,3 +470,14 @@ body.scan-open { overflow: hidden; }
 /* The four Options tabs never push the page wider than the screen */
 .tabs { overflow-x: auto; overflow-y: hidden; max-width: 100%; scrollbar-width: thin; }
 .tab { flex: 0 0 auto; white-space: nowrap; }
+
+/* Individual resets */
+.reset-rows { list-style: none; margin: 0.6rem 0 0; padding: 0; display: grid; gap: 0.7rem; }
+.reset-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0.4rem 1rem; align-items: center; border: 2px solid var(--line); border-radius: var(--radius); padding: 0.7rem 0.9rem; }
+.reset-info p { margin: 0.2rem 0 0; }
+.reset-row > .hint { grid-column: 1 / -1; margin: 0; }
+.reset-row .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+#one-zone { margin-top: 0.8rem; }
+@media (max-width: 699px) { .reset-row { grid-template-columns: 1fr; } }
+#one-zone .btn, #reset-zone .btn { margin-top: 0.6rem; }
+#one-zone .two .btn { margin-top: 0; }

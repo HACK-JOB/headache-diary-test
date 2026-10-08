@@ -343,7 +343,7 @@ async function start() {
     hui = createHeadacheUI({ h, state, log, reload, render, toast, time, icon, fmt, helpButton });
     dui = createDayUI({ h, state, log, reload, render, toast, time, icon, fmt, helpButton });
     tui = createTesterUI({ h, render, toast, time });
-    aui = createAdminUI({ h, state, log, reload, render, toast, time, icon });
+    aui = createAdminUI({ h, state, log, reload, render, toast, time, icon, doctorInfo: () => dcui.resetInfo() });
     dcui = createDoctorUI({ h, state, log, reload, render, toast, time, icon, ask });
     rem = createReminderUI({ h, state, log, reload, render, time });
     rxCard = rxMainCard({ h, state, log, reload, render, toast, time, icon, fmt, ask });

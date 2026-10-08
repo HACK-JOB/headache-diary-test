@@ -349,5 +349,7 @@ export function createDoctorUI(ctx) {
       st.mode !== 'add' ? h('button', { class: 'btn quiet', id: 'a-add', onclick: () => { st.mode = 'add'; st.error = ''; st.info = ''; render(); } }, 'Add a doctor') : null);
   }
 
-  return { panel: doctorsPanel, adminAccounts, leave, lock };
+  /** For the Admin reset screen: has any doctor got a PIN, and is a doctor signed in right now? */
+  const resetInfo = () => ({ pinHolders: list().filter((d) => d.pin).length, doctorSignedIn: !!me() && isUnlocked(state.doctorUntil, Date.now()) });
+  return { panel: doctorsPanel, adminAccounts, leave, lock, resetInfo };
 }

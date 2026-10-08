@@ -21,3 +21,54 @@ export function backupName(now = Date.now()) {
   const d = new Date(now + 10 * 3600 * 1000).toISOString().slice(0, 10);
   return `headache-diary-backup-${d}.json`;
 }
+
+/* ---------- individual resets ---------- */
+import { myFoods } from './intake.js';
+import { recentItems } from './memory.js';
+
+/** What each reset removes, and what it deliberately keeps. `types` are entry types in the diary log;
+ *  `storage` are settings kept on this tablet; `forget` hides remembered lists without touching the log. */
+export const SCOPES = [
+  { key: 'water', label: 'Water', what: 'Every water refill.', keeps: 'Everything else.', types: ['water'] },
+  { key: 'food', label: 'Food and drink log', what: 'Every meal and drink entry, including the totals.', keeps: 'Nothing is kept of the meals. Saved foods are cleared separately.', types: ['intake'] },
+  { key: 'saved', label: 'Saved foods and notes', what: 'The Most used buttons and remembered foods, medicines, notes and relief items.', keeps: 'The meal and headache entries stay, and so do the doctors\' totals. Typing an item again brings it back.', forget: ['foods', 'notes'] },
+  { key: 'headaches', label: 'Headaches', what: 'Every headache record.', keeps: 'Medicine answers, meals and everything else.', types: ['headache'] },
+  { key: 'days', label: 'Days and activities', what: 'WOKE UP, END THE DAY and every activity.', keeps: 'Everything else.', types: ['day', 'activity'] },
+  { key: 'measures', label: 'Weight and blood glucose', what: 'Every weight and glucose reading.', keeps: 'Targets and the urgent message.', types: ['measure'] },
+  { key: 'doses', label: 'Medicine answers', what: 'Every Taken, Skipped and Undo answer.', keeps: 'The prescriptions themselves.', types: ['dose'] },
+  { key: 'tester', label: 'Tester notes', what: 'The checklist ticks and every comment.', keeps: 'The diary itself.', storage: ['hd.tester'] },
+  { key: 'display', label: 'Display settings', what: 'Colours, text size, clock, reminder levels and the bottle sizes go back to the starting choices.', keeps: 'The diary and all PINs.', storage: ['hd.settings', 'hd.selected', 'hd.text'] },
+  { key: 'doctors', label: 'Doctor data', what: 'Doctor accounts and PINs, targets, prescriptions, relief text, urgent message and clinical notes.', keeps: 'The diary entries.', types: ['doctor', 'clinical'], storage: ['hd.doctorTries'] },
+];
+export const scopeByKey = (k) => SCOPES.find((s) => s.key === k);
+
+/** How many things a reset would remove (entries, or stored settings, or remembered items). */
+export function countScope(events, scope, storage) {
+  let n = 0;
+  if (scope.types) n += events.filter((e) => scope.types.includes(e.type) && !e.deleted).length;
+  if (scope.storage) n += scope.storage.filter((k) => storage?.getItem?.(k) != null).length;
+  if (scope.forget) n += myFoods(events).length + ['meds', 'phrases', 'relief'].reduce((s, k) => s + recentItems(events, k).length, 0);
+  return n;
+}
+
+/** Doctor data cannot be wiped quietly: not while any doctor has a PIN, unless a doctor is signed in. */
+export const scopeAllowed = (scope, { pinHolders = 0, doctorSignedIn = false } = {}) =>
+  scope.key !== 'doctors' || pinHolders === 0 || doctorSignedIn;
+
+/** Do the reset and leave a small record of it. Returns how many things were removed. */
+export async function applyScope(scope, { log, storage, now = Date.now() }) {
+  const count = countScope(await log.all(), scope, storage);
+  if (scope.types) await log.purge((e) => scope.types.includes(e.type));
+  for (const k of scope.storage ?? []) storage?.removeItem?.(k);
+  for (const what of scope.forget ?? []) await log.add({ type: 'config', kind: 'forget', what }, now);
+  await log.add({ type: 'config', kind: 'reset', scope: scope.key, count }, now);
+  return count;
+}
+
+export function resetNote(e) {
+  const s = scopeByKey(e?.scope);
+  if (!s) return '';
+  if (s.forget) return `${s.label} reset: forgotten`;
+  if (!s.types) return `${s.label} reset`;
+  return `${s.label} reset: ${e.count} ${e.count === 1 ? 'entry' : 'entries'} removed`;
+}

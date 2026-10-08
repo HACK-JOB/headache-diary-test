@@ -1,11 +1,13 @@
 // "Remember what she types": last-5 chips and type-ahead for medicines and relief measures.
 // No presets: the lists only ever contain things she (or a doctor) actually entered.
+import { forgottenAt } from './forget.js';
 export const canonical = (s) => String(s ?? '').trim().replace(/\s+/g, ' ');
 
 function used(events, kind) {
   const names = [];
+  const since = forgottenAt(events, 'notes');
   for (const e of events) {
-    if (e.type !== 'headache' || e.deleted) continue;
+    if (e.type !== 'headache' || e.deleted || e.ms <= since) continue;
     const list = kind === 'meds' ? (e.meds ?? []).map((m) => m.name) : kind === 'phrases' ? (e.phrases ?? []) : (e.relief ?? []);
     for (const n of list) names.push({ name: canonical(n), ms: e.ms });
   }

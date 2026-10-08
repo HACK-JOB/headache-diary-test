@@ -47,6 +47,8 @@ export function createEventLog(store) {
     },
     /** Master reset: remove every entry and every history record. */
     async clearAll() { await store.clearAll(); },
+    /** Physically remove every entry the test accepts, with its change history. Used only by the Admin reset screens. */
+    async purge(test) { const ids = (await store.allEvents()).filter(test).map((e) => e.id); await store.purgeEvents(ids); return ids.length; },
     async allHistory() { return store.allHistory(); },
     async history(id) {
       return store.historyFor(id);

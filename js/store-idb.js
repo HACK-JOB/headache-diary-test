@@ -31,6 +31,18 @@ export async function createIdbStore() {
     allEvents: () => wrap(tx('events').getAll()),
     addHistory: (h) => wrap(tx('history', 'readwrite').add(h)),
     clearAll: () => Promise.all([wrap(tx('events', 'readwrite').clear()), wrap(tx('history', 'readwrite').clear())]).then(() => undefined),
+    async purgeEvents(ids) {
+      const gone = new Set(ids);
+      const t = db.transaction(['events', 'history'], 'readwrite');
+      const ev = t.objectStore('events'), hs = t.objectStore('history');
+      for (const id of gone) ev.delete(id);
+      await new Promise((res, rej) => {
+        const cur = hs.openCursor();
+        cur.onsuccess = () => { const c = cur.result; if (!c) return res(); if (gone.has(c.value.eventId)) c.delete(); c.continue(); };
+        cur.onerror = () => rej(cur.error);
+      });
+      await new Promise((res, rej) => { t.oncomplete = res; t.onerror = () => rej(t.error); t.onabort = () => rej(t.error); });
+    },
     allHistory: () => wrap(tx('history').getAll()),
     historyFor: (id) => wrap(tx('history').index('eventId').getAll(id)),
   };

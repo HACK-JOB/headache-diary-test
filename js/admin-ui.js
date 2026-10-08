@@ -1,11 +1,12 @@
 // The Admin tab. Open until a PIN has been set up here; after that it is locked behind the PIN.
 // The PIN is a convenience lock for the family (see pin.js). There is no "forgot PIN" in v1.
 import { sideTabs } from './sidetabs.js';
-import { RESET_WORD, confirmsReset, diaryKeys, backupFile, backupName } from './reset.js';
+import { RESET_WORD, confirmsReset, diaryKeys, backupFile, backupName, SCOPES, scopeByKey, countScope, scopeAllowed, applyScope, resetNote } from './reset.js';
 import { validPinFormat, makeRecord, checkPin, afterFail, afterSuccess, lockedFor, unlockUntil, isUnlocked } from './pin.js';
 
 const KEY = 'hd.adminPin';
 const RESET_TEXT = { mode: 'closed', typed: '', error: '' };
+const ONE = { key: '', typed: '', error: '' };
 const TRIES = 'hd.adminTries';
 const read = (k) => { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } };
 
@@ -18,7 +19,7 @@ export function createAdminUI(ctx) {
   const hasPin = () => !!record();
   const unlocked = () => !hasPin() || isUnlocked(state.adminUntil, Date.now());
 
-  function lock() { RESET_TEXT.mode = 'closed'; RESET_TEXT.typed = ''; RESET_TEXT.error = ''; state.adminUntil = 0; st.mode = 'view'; st.error = ''; st.info = ''; clearTimeout(timer); }
+  function lock() { ONE.key = ''; ONE.typed = ''; ONE.error = ''; RESET_TEXT.mode = 'closed'; RESET_TEXT.typed = ''; RESET_TEXT.error = ''; state.adminUntil = 0; st.mode = 'view'; st.error = ''; st.info = ''; clearTimeout(timer); }
   function unlock() {
     state.adminUntil = unlockUntil(Date.now());
     clearTimeout(timer);
@@ -79,7 +80,7 @@ export function createAdminUI(ctx) {
     const a = h('a', { href: url, download: backupName() });
     document.body.append(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 4000);
-    RESET_TEXT.error = ''; st.info = 'Backup saved to the Downloads folder.'; render();
+    RESET_TEXT.error = ''; ONE.error = ''; st.info = 'Backup saved to the Downloads folder.'; render();
   }
   async function doReset() {
     if (!confirmsReset(RESET_TEXT.typed)) { RESET_TEXT.error = `Type ${RESET_WORD} in capital letters to reset.`; render(); return; }
@@ -88,6 +89,58 @@ export function createAdminUI(ctx) {
     try { for (const c of await caches.keys()) await caches.delete(c); } catch { /* no cache to clear */ }
     location.reload();
   }
+  /* ---------- individual resets ---------- */
+  const doctorGate = () => ctx.doctorInfo?.() ?? { pinHolders: 0, doctorSignedIn: false };
+  const closeOne = () => { ONE.key = ''; ONE.typed = ''; ONE.error = ''; };
+  async function doOne() {
+    const scope = scopeByKey(ONE.key);
+    if (!scope) return;
+    if (!confirmsReset(ONE.typed)) { ONE.error = `Type ${RESET_WORD} in capital letters to reset.`; render(); return; }
+    if (!scopeAllowed(scope, doctorGate())) { ONE.error = 'Doctor data is locked while a doctor has a PIN. A doctor can sign in under Doctors first.'; render(); return; }
+    const n = await applyScope(scope, { log, storage: localStorage });
+    closeOne();
+    await reload();
+    st.info = scope.forget ? `${scope.label} cleared.` : `${scope.label} reset${scope.types ? `: ${n} ${n === 1 ? 'entry' : 'entries'} removed` : ''}.`;
+    render();
+  }
+  function oneRow(scope) {
+    const n = countScope(state.events, scope, localStorage);
+    const allowed = scopeAllowed(scope, doctorGate());
+    return h('li', { class: 'reset-row', 'data-scope': scope.key },
+      h('div', { class: 'reset-info' }, h('strong', {}, scope.label), h('span', { class: 'meta' }, n === 0 ? ' · nothing to remove' : scope.types ? ` · ${n} ${n === 1 ? 'entry' : 'entries'}` : scope.forget ? ` · ${n} remembered` : ` · ${n} saved`),
+        h('p', { class: 'hint' }, scope.what)),
+      h('button', { class: 'btn quiet', id: `reset-${scope.key}`, disabled: n === 0 || !allowed, 'aria-disabled': String(n === 0 || !allowed),
+        'aria-label': `Reset ${scope.label}`, onclick: () => { closeOne(); ONE.key = scope.key; st.info = ''; render(); document.getElementById('one-type')?.focus(); } }, 'Reset…'),
+      !allowed ? h('p', { class: 'hint' }, 'Locked while a doctor has a PIN. Sign in under Doctors to allow it.') : null);
+  }
+  function oneConfirm() {
+    const scope = scopeByKey(ONE.key);
+    const n = countScope(state.events, scope, localStorage);
+    const ok = confirmsReset(ONE.typed);
+    return h('div', { class: 'setting danger', id: 'one-zone', role: 'group', 'aria-labelledby': 'one-h' },
+      h('h3', { id: 'one-h' }, `⚠ Reset ${scope.label}: this cannot be undone`),
+      h('p', {}, h('strong', {}, 'Removes: '), scope.what, scope.types ? ` (${n} ${n === 1 ? 'entry' : 'entries'} now.)` : ''),
+      h('p', {}, h('strong', {}, 'Keeps: '), scope.keeps),
+      scope.types ? h('p', { class: 'hint' }, 'The entries and their change history are deleted from this tablet. A backup file keeps them.') : null,
+      scope.types ? h('button', { class: 'btn', id: 'one-backup', onclick: saveBackup }, 'Save a backup file first') : null,
+      h('div', { class: 'num-field' }, h('label', { for: 'one-type' }, `To continue, type ${RESET_WORD}`),
+        h('input', { id: 'one-type', class: 'text', type: 'text', autocomplete: 'off', autocapitalize: 'characters', spellcheck: 'false', value: ONE.typed,
+          oninput: (ev) => { ONE.typed = ev.target.value; const b = document.getElementById('one-go'); if (b) { const yes = confirmsReset(ONE.typed); b.disabled = !yes; b.setAttribute('aria-disabled', String(!yes)); } } })),
+      ONE.error ? h('p', { class: 'error', role: 'alert' }, ONE.error) : null,
+      h('div', { class: 'two' },
+        h('button', { class: 'btn quiet', id: 'one-cancel', onclick: () => { closeOne(); render(); } }, 'Cancel'),
+        h('button', { class: 'btn danger', id: 'one-go', disabled: !ok, 'aria-disabled': String(!ok), onclick: doOne }, "Delete these")));
+  }
+  function oneSection() {
+    const recent = state.events.filter((e) => e.type === 'config' && e.kind === 'reset').slice(-5).reverse();
+    return h('div', { class: 'setting', id: 'one-resets' },
+      h('h3', {}, 'Reset one kind of data'),
+      h('p', { class: 'hint' }, 'Each reset removes only what is listed, asks for DELETE, and leaves everything else alone.'),
+      ONE.key ? oneConfirm() : h('ul', { class: 'reset-rows' }, ...SCOPES.map(oneRow)),
+      recent.length ? h('details', { class: 'changes' }, h('summary', {}, 'Recent resets'),
+        h('ul', {}, ...recent.map((e) => h('li', {}, `${resetNote(e)} · ${new Date(e.ms).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })}, ${time(e.ms)}`)))) : null);
+  }
+
   function resetSection() {
     if (RESET_TEXT.mode === 'closed') {
       return h('div', { class: 'setting danger', id: 'reset-zone' }, h('h3', {}, 'Master reset'),
@@ -160,7 +213,7 @@ export function createAdminUI(ctx) {
       { key: 'screens', label: 'Diary screens', nodes: [extra?.screens] },
       { key: 'accounts', label: 'Doctor accounts', nodes: [extra?.accounts] },
       { key: 'pin', label: 'Admin PIN', nodes: [pinSection()] },
-      { key: 'reset', label: 'Reset data', nodes: [resetSection()] },
+      { key: 'reset', label: 'Reset data', nodes: [oneSection(), resetSection()] },
     ];
     const active = st.mode !== 'view' ? 'pin' : state.side.admin;
     return wrap(

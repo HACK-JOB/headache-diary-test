@@ -5,6 +5,7 @@
 import { dayKey } from './time.js';
 import { canonical } from './memory.js';
 import { byTime } from './events.js';
+import { forgottenAt } from './forget.js';
 
 export const MEAL_TYPES = ['Breakfast', 'Morning Tea', 'Lunch', 'Afternoon Tea', 'Dinner', 'Dessert', 'Snack', 'Beverages'];
 
@@ -59,7 +60,9 @@ export function validateIntake(f) {
 /* ---------- My foods ---------- */
 export function myFoods(events) {
   const map = new Map();
+  const since = forgottenAt(events, 'foods');
   for (const e of live(events, 'intake')) {
+    if (e.ms <= since) continue;
     const name = canonical(e.name);
     if (!name) continue;
     const k = name.toLowerCase();
