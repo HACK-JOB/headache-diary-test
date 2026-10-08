@@ -307,12 +307,11 @@ function render() {
         helpButton('main'),
         h('button', { class: 'icon-btn', id: 'cog', 'aria-label': 'Options', onclick: () => { state.view = 'options'; render(); window.scrollTo(0, 0); } }, icon('cog')))),
     h('main', { class: 'home' },
-      h('div', { class: 'home-row' }, waterPanel, h('div', { class: 'home-col' }, hui.mainCard(), dui.mainCard(), mui.weightCard())),
+      h('div', { class: 'home-row' }, waterPanel, h('div', { class: 'home-col' }, hui.mainCard(), dui.mainCard(), mui.glucoseCard(), mui.weightCard())),
       rxCard(),
       dui.todayList(),
       iui.mainCard(),
-      iui.todayList(),
-      mui.glucoseCard()),
+      iui.todayList()),
     state.toast ? h('div', { class: 'toast', role: 'status' }, state.toast) : null);
 
   app.replaceChildren(view);
