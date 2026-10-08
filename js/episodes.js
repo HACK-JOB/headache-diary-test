@@ -7,13 +7,13 @@ const byOrder = (a, b) => a.ms - b.ms || (a.createdAt ?? 0) - (b.createdAt ?? 0)
 
 // Plain-language descriptions only. The app never uses the word "migraine" and never diagnoses.
 export const TYPES = {
-  cluster: { name: 'Cluster', image: 'img/types/cluster.jpg', hint: 'Sharp pain behind or around one eye' },
-  sinus: { name: 'Sinus', image: 'img/types/sinus.jpg', hint: 'Pressure across the forehead, cheeks or nose' },
-  tension: { name: 'Tension', image: 'img/types/tension.jpg', hint: 'A tight band or pressure around the whole head' },
-  tmj: { name: 'TMJ', image: 'img/types/tmj.jpg', hint: 'Ache at the jaw joint, in front of the ear' },
-  oneSided: { name: 'One Sided', image: 'img/types/one-sided.png', hint: 'Pain mostly on one side of the head' },
-  neck: { name: 'Neck', image: 'img/types/neck.jpg', hint: 'Pain from the neck or the back of the head' },
-  other: { name: 'Other', image: null, hint: 'None of these fit. Please describe it.' },
+  cluster: { name: 'Cluster', hint: 'Sharp pain behind or around one eye' },
+  sinus: { name: 'Sinus', hint: 'Pressure across the forehead, cheeks or nose' },
+  tension: { name: 'Tension', hint: 'A tight band or pressure around the whole head' },
+  tmj: { name: 'TMJ', hint: 'Ache at the jaw joint, in front of the ear' },
+  oneSided: { name: 'One Sided', hint: 'Pain mostly on one side of the head' },
+  neck: { name: 'Neck', hint: 'Pain from the neck or the back of the head' },
+  other: { name: 'Other', hint: 'None of these fit. Please describe it.' },
 };
 export const SEVERITY = [
   { n: 1, name: 'Mild', hint: 'There, but easy to ignore' },

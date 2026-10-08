@@ -5,6 +5,7 @@
   --toast-bg: #33271c; --toast-ink: #ffffff; --update-bg: #fff3cd; --update-ink: #3d3000;
   --alert: #b5472f; --on-alert: #ffffff; --amber: #8a5a00; --on-amber: #ffffff;
   --was-bg: #fff3b8; --was-ink: #4a3d00; --changed-bg: #f7c9bf; --changed-ink: #6e1f10;
+  --head-fill: #ecd9bd; --head-line: #5a4632; --pain: #d6402f; --pain-line: #8f2417; --art-bg: #fffaf0;
   --head-font: Georgia, "Times New Roman", serif;
   --radius: 14px; --gap: 1rem;
 }
@@ -15,6 +16,7 @@ html[data-theme="bright"] {
   --toast-bg: #10222b; --toast-ink: #ffffff; --update-bg: #fff3cd; --update-ink: #3d3000;
   --alert: #b3301a; --on-alert: #ffffff; --amber: #8a5a00; --on-amber: #ffffff;
   --was-bg: #fff3b8; --was-ink: #4a3d00; --changed-bg: #f7c9bf; --changed-ink: #6e1f10;
+  --head-fill: #dbe8f5; --head-line: #1d4a78; --pain: #d6402f; --pain-line: #8f2417; --art-bg: #ffffff;
   --head-font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 html[data-theme="dark"] {
@@ -22,6 +24,7 @@ html[data-theme="dark"] {
   --teal: #8fd6c9; --teal-dark: #a8e3d8; --teal-soft: #2b4a52; --on-teal: #10222b;
   --red: #e0735a; --on-red: #17232b; --field: #17232b;
   --toast-bg: #e8eef0; --toast-ink: #17232b; --update-bg: #4a3f12; --update-ink: #fff3cd;
+  --head-fill: #3a5362; --head-line: #c5d6de; --pain: #ff7a63; --pain-line: #ffc2b5; --art-bg: #1b2a33;
   --alert: #e0735a; --alert-text: #f0a08e; --on-alert: #17232b; --amber: #e2b04a; --on-amber: #17232b;
   --was-bg: #4a3f12; --was-ink: #fff3b8; --changed-bg: #5a2a22; --changed-ink: #ffd6cc;
   --head-font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
@@ -187,10 +190,10 @@ input[type="time"].text { width: auto; min-width: 9rem; }
 .sev-n { font-size: 1.5rem; font-weight: 700; } .sev-name { font-weight: 700; } .sev-hint { font-size: 0.85rem; opacity: 0.85; }
 
 .types { display: grid; grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr)); gap: 0.7rem; }
-.type { display: flex; flex-direction: column; align-items: center; gap: 0.3rem; padding: 0.6rem; border: 3px solid var(--line); border-radius: 0.9rem; background: #f3e9d6; color: #33271c; font: inherit; cursor: pointer; text-align: center; }
-.type img { width: 100%; max-height: 9rem; object-fit: contain; }
-.type-other { display: grid; place-items: center; width: 100%; height: 6rem; font-size: 3rem; font-weight: 700; color: #6b5a46; }
-.type-name { font-weight: 700; } .type-hint { font-size: 0.8rem; color: #4d4030; }
+.type { display: flex; flex-direction: column; align-items: center; gap: 0.3rem; padding: 0.6rem; border: 3px solid var(--line); border-radius: 0.9rem; background: var(--art-bg); color: var(--ink); font: inherit; cursor: pointer; text-align: center; }
+.type .head-art { width: 100%; max-height: 9rem; height: auto; }
+.type-other { display: grid; place-items: center; width: 100%; height: 6rem; font-size: 3rem; font-weight: 700; color: var(--muted); }
+.type-name { font-weight: 700; } .type-hint { font-size: 0.8rem; color: var(--muted); }
 .type[aria-checked="true"] { border-color: var(--teal); box-shadow: 0 0 0 3px var(--teal); }
 .type[aria-checked="true"] .type-name::before { content: "\2713  "; }
 
