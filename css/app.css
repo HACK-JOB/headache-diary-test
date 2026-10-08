@@ -403,3 +403,6 @@ input[type="time"].text { width: auto; min-width: 9rem; }
 .reminder-bar .rb-actions { display: flex; flex-wrap: wrap; gap: 0.6rem; }
 .reminder-bar .rb-actions .btn { width: auto; min-width: 7rem; min-height: 56px; }
 body { padding-top: var(--rb-h, 0px); }
+
+.own-time { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; margin: 0.4rem 0; }
+#own-reminders .num-field { margin: 0.4rem 0 0.8rem 2.4rem; }

@@ -12,6 +12,8 @@ import { createMeasuresUI } from './measures-ui.js';
 import { createTour } from './tour-ui.js';
 import { rxMainCard } from './rx-ui.js';
 import { createReminderUI } from './reminder-ui.js';
+import { clockPicker } from './clock-ui.js';
+import { SIT_CHOICES, validTimes } from './nudges.js';
 import { dayStatuses } from './doctors.js';
 import { STYLES, artElement, ART_KEYS } from './type-art.js';
 
@@ -210,11 +212,26 @@ function renderOptions() {
         h('div', { class: 'setting' },
           h('label', { class: 'check' }, h('input', { type: 'checkbox', checked: st.followSystem, onchange: (ev) => saveSettings({ followSystem: ev.target.checked }) }), 'Switch to dark when the tablet does'),
           h('p', { class: 'hint' }, 'Off by default. The moon button on the main page always works.')),
-        h('div', { class: 'setting', id: 'reminder-prefs' }, h('h3', {}, 'Medicine reminders'),
+        h('div', { class: 'setting', id: 'reminder-prefs' }, h('h3', {}, 'Reminder level and sound'),
           seg('Reminder level', 'nag', [['gentle', 'Gentle'], ['normal', 'Normal'], ['persistent', 'Persistent']]),
           h('p', { class: 'hint' }, 'Gentle reminds once. Normal reminds 4 times, 10 minutes apart. Persistent reminds every 5 minutes until answered. A doctor can fix the level for a particular medicine.'),
-          h('label', { class: 'check' }, h('input', { type: 'checkbox', checked: st.chime, onchange: (ev) => saveSettings({ chime: ev.target.checked }) }), 'Play a chime with each reminder'),
+          h('label', { class: 'check' }, h('input', { type: 'checkbox', checked: st.chime, onchange: (ev) => saveSettings({ chime: ev.target.checked }) }), 'Play a chime with reminders'),
           h('p', { class: 'hint' }, 'Reminders only appear while the diary is open, so keep the tablet on its charger with the diary open.')),
+        h('div', { class: 'setting', id: 'own-reminders' }, h('h3', {}, 'Other reminders'),
+          h('p', { class: 'hint' }, 'All off until switched on. They use the reminder level above and give up after a while.'),
+          h('label', { class: 'check' }, h('input', { type: 'checkbox', id: 'own-wake', checked: st.wakeOn, onchange: (ev) => saveSettings({ wakeOn: ev.target.checked }) }), 'Remind to tap WOKE UP'),
+          st.wakeOn ? h('div', { class: 'num-field' }, h('span', { class: 'small-label' }, 'At'), clockPicker(h, { id: 'own-wake-at', value: st.wakeAt, clock: st.clock, onChange: (v) => saveSettings({ wakeAt: v }) })) : null,
+          h('label', { class: 'check' }, h('input', { type: 'checkbox', id: 'own-glucose', checked: st.glucoseOn, onchange: (ev) => saveSettings({ glucoseOn: ev.target.checked }) }), 'Remind to check blood glucose'),
+          st.glucoseOn ? h('div', { class: 'num-field' }, h('span', { class: 'small-label' }, 'At these times (up to 3)'),
+            ...st.glucoseTimes.map((t, i) => h('div', { class: 'own-time', 'data-gt': String(i) },
+              clockPicker(h, { id: `own-glucose-${i}`, value: t, clock: st.clock, onChange: (v) => saveSettings({ glucoseTimes: validTimes(st.glucoseTimes.map((x, j) => (j === i ? v : x))) }) }),
+              st.glucoseTimes.length > 1 ? h('button', { class: 'btn quiet small', 'aria-label': `Remove time ${i + 1}`, onclick: () => saveSettings({ glucoseTimes: st.glucoseTimes.filter((_, j) => j !== i) }) }, 'Remove') : null)),
+            st.glucoseTimes.length < 3 ? h('button', { class: 'btn quiet', id: 'own-glucose-add', onclick: () => { const used = new Set(st.glucoseTimes); const pick = ['12:00', '17:00', '20:00', '10:00', '15:00'].find((x) => !used.has(x)); saveSettings({ glucoseTimes: validTimes([...st.glucoseTimes, pick]) }); } }, 'Add a time') : null) : null,
+          h('label', { class: 'check' }, h('input', { type: 'checkbox', id: 'own-sit', checked: st.sitOn, onchange: (ev) => saveSettings({ sitOn: ev.target.checked }) }), 'Remind after sitting for a while'),
+          st.sitOn ? h('div', { class: 'num-field' }, h('label', { for: 'own-sit-mins' }, 'Sitting for'),
+            h('select', { id: 'own-sit-mins', class: 'text', onchange: (ev) => saveSettings({ sitMins: Number(ev.target.value) }) },
+              ...SIT_CHOICES.map((m) => h('option', { value: String(m), selected: m === st.sitMins }, m >= 60 && m % 60 === 0 ? `${m / 60} hour${m > 60 ? 's' : ''}` : `${m} minutes`))),
+            h('p', { class: 'hint' }, 'A plain note after this long in the position "Sitting". It gives no advice.')) : null),
         h('div', { class: 'setting' },
           h('label', { class: 'check' }, h('input', { type: 'checkbox', checked: st.savedCue, onchange: (ev) => saveSettings({ savedCue: ev.target.checked }) }), 'Show "Saved" message'))),
       state.optTab === 'prefs' ? h('p', { class: 'meta' }, 'These are only display preferences. Health settings are kept separate.') : null));

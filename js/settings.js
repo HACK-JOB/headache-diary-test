@@ -2,11 +2,13 @@ import { STYLES } from './type-art.js';
 
 // Personal preferences (not health settings). Pure logic, stored in localStorage by app.js.
 export const THEMES = { paper: 'Warm paper', bright: 'Bright', dark: 'Calm dark' };
+import { validTimes } from './nudges.js';
 const LIGHT = ['paper', 'bright'];
 
 export const DEFAULTS = Object.freeze({
   theme: 'paper', lightTheme: 'paper', followSystem: false,
   text: 'normal', clock: '12', savedCue: true, artStyle: 'frontOutline', nag: 'normal', chime: true,
+  wakeOn: false, wakeAt: '09:00', glucoseOn: false, glucoseTimes: ['07:30'], sitOn: false, sitMins: 60,
 });
 
 export function normalise(raw) {
@@ -22,6 +24,12 @@ export function normalise(raw) {
     savedCue: typeof r.savedCue === 'boolean' ? r.savedCue : DEFAULTS.savedCue,
     nag: pick(r.nag, ['gentle', 'normal', 'persistent'], DEFAULTS.nag),
     chime: typeof r.chime === 'boolean' ? r.chime : DEFAULTS.chime,
+    wakeOn: r.wakeOn === true,
+    wakeAt: typeof r.wakeAt === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(r.wakeAt) ? r.wakeAt : DEFAULTS.wakeAt,
+    glucoseOn: r.glucoseOn === true,
+    glucoseTimes: Array.isArray(r.glucoseTimes) ? validTimes(r.glucoseTimes) : DEFAULTS.glucoseTimes,
+    sitOn: r.sitOn === true,
+    sitMins: [15, 30, 45, 60, 90, 120].includes(r.sitMins) ? r.sitMins : DEFAULTS.sitMins,
   };
 }
 

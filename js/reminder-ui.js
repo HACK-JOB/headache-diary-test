@@ -1,6 +1,7 @@
 // The reminder banner: sits at the top of every screen while a medicine reminder is showing.
 // It follows js/reminders.js. It only works while the app is open (see the plan: keep the tablet on the charger).
 import { activeReminders } from './reminders.js';
+import { activeNudges } from './nudges.js';
 import { FOOD } from './prescriptions.js';
 
 export function createReminderUI(ctx) {
@@ -31,24 +32,34 @@ export function createReminderUI(ctx) {
 
   const draw = (list) => {
     if (!host) {
-      host = h('section', { id: 'reminder-bar', class: 'reminder-bar', 'aria-live': 'assertive', 'aria-label': 'Medicine reminder' });
+      host = h('section', { id: 'reminder-bar', class: 'reminder-bar', 'aria-live': 'assertive', 'aria-label': 'Reminder' });
       document.body.prepend(host);
     }
     if (!list.length) { host.replaceChildren(); host.hidden = true; document.documentElement.style.setProperty('--rb-h', '0px'); return; }
-    const r = list[0]; const d = r.dose;
-    const food = d.food ? FOOD.find((f) => f.key === d.food)?.label : '';
+    const r = list[0];
     host.hidden = false;
-    host.replaceChildren(
-      h('div', { class: 'rb-text' },
-        h('p', { class: 'rb-title' }, `Time for ${d.name} · ${d.dose}`),
-        h('p', { class: 'meta num' }, d.mode === 'exact' ? `At ${time(d.startMs)}` : `${time(d.startMs)} to ${time(d.endMs)}`, food ? ` · ${food}` : ''),
-        d.instructions ? h('p', { class: 'rb-instr' }, d.instructions) : null,
-        list.length > 1 ? h('p', { class: 'meta' }, `${list.length - 1} more to answer after this`) : null),
-      h('div', { class: 'rb-actions' },
-        h('button', { class: 'btn primary', 'data-rb': 'taken', onclick: () => answer(d, 'taken') }, 'Taken'),
-        h('button', { class: 'btn', 'data-rb': 'skipped', onclick: () => answer(d, 'skipped') }, 'Skipped'),
-        r.hasMore ? h('button', { class: 'btn quiet', 'data-rb': 'later', onclick: () => { dismissed.set(r.id, Date.now()); tick(); } }, 'Remind me later') : null));
-    requestAnimationFrame(() => document.documentElement.style.setProperty('--rb-h', `${host.getBoundingClientRect().height}px`));
+    const more = list.length > 1 ? h('p', { class: 'meta' }, `${list.length - 1} more after this`) : null;
+    const laterBtn = r.hasMore ? h('button', { class: 'btn quiet', 'data-rb': 'later', onclick: () => { dismissed.set(r.id, Date.now()); tick(); } }, 'Remind me later') : null;
+    if (r.dose) {
+      const d = r.dose;
+      const food = d.food ? FOOD.find((f) => f.key === d.food)?.label : '';
+      host.replaceChildren(
+        h('div', { class: 'rb-text' },
+          h('p', { class: 'rb-title' }, `Time for ${d.name} · ${d.dose}`),
+          h('p', { class: 'meta num' }, d.mode === 'exact' ? `At ${time(d.startMs)}` : `${time(d.startMs)} to ${time(d.endMs)}`, food ? ` · ${food}` : ''),
+          d.instructions ? h('p', { class: 'rb-instr' }, d.instructions) : null,
+          list.length > 1 ? h('p', { class: 'meta' }, `${list.length - 1} more to answer after this`) : null),
+        h('div', { class: 'rb-actions' },
+          h('button', { class: 'btn primary', 'data-rb': 'taken', onclick: () => answer(d, 'taken') }, 'Taken'),
+          h('button', { class: 'btn', 'data-rb': 'skipped', onclick: () => answer(d, 'skipped') }, 'Skipped'),
+          laterBtn));
+    } else {
+      host.replaceChildren(
+        h('div', { class: 'rb-text' }, h('p', { class: 'rb-title' }, r.title), more),
+        h('div', { class: 'rb-actions' },
+          h('button', { class: 'btn primary', 'data-rb': 'ok', onclick: () => { dismissed.set(r.id, Date.now()); tick(); } }, 'OK'),
+          r.kind === 'glucose' ? h('button', { class: 'btn', 'data-rb': 'enter', onclick: () => { dismissed.set(r.id, Date.now()); state.view = 'main'; render(); tick(); document.getElementById('glucose-card')?.scrollIntoView?.({ block: 'center' }); } }, 'Enter reading') : null));
+    }
     if (!watcher && window.ResizeObserver) {
       watcher = new ResizeObserver(() => { if (!host.hidden) document.documentElement.style.setProperty('--rb-h', `${host.getBoundingClientRect().height}px`); });
       watcher.observe(host);
@@ -58,7 +69,7 @@ export function createReminderUI(ctx) {
   function tick() {
     if (!state.events) return;
     const now = Date.now();
-    const list = activeReminders(state.events, state.key, now, { herNag: state.settings.nag, dismissed });
+    const list = [...activeReminders(state.events, state.key, now, { herNag: state.settings.nag, dismissed }), ...activeNudges(state.events, state.key, now, state.settings, dismissed)];
     const sig = list.map((r) => `${r.id}@${r.fireMs}`).join('|') + `|${state.settings.clock}|${state.view}`;
     if (sig === signature) return;
     signature = sig;

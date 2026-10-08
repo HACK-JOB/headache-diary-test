@@ -75,7 +75,7 @@ export function createMeasuresUI(ctx) {
     const tagOn = fasting(state.events);
     const latest = list[0];
     const urgent = latest ? urgentFor(state.events, latest.mmol) : null;
-    return h('section', { class: 'panel', 'aria-labelledby': 'gl-h' }, h('h2', { id: 'gl-h' }, 'Blood glucose'),
+    return h('section', { class: 'panel', id: 'glucose-card', 'aria-labelledby': 'gl-h' }, h('h2', { id: 'gl-h' }, 'Blood glucose'),
       st.gError ? h('p', { class: 'error', role: 'alert' }, st.gError) : null,
       urgent ? h('div', { class: 'urgent-box', role: 'alert', id: 'urgent' },
         h('h3', {}, 'From doctor'), h('p', { class: 'relief-text' }, urgent.text),
