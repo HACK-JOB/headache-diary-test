@@ -1,7 +1,7 @@
 // Headache screens: start form, status-change form, and the "headache active" card.
 // Receives the shared helpers from app.js so there is one place that owns state and rendering.
-import { TYPES, SEVERITY, WEATHER, SYMPTOMS, validateStart, validateUpdate, describeChanges, activeEpisode } from './episodes.js';
-import { recentItems, suggest, canonical } from './memory.js';
+import { TYPES, SEVERITY, WEATHER, validateStart, validateUpdate, describeChanges, activeEpisode } from './episodes.js';
+import { recentItems, commonItems, suggest, canonical, addPhrase, removePhrase, hasPhrase } from './memory.js';
 import { artElement } from './type-art.js';
 import { msFromClock, clockValue, dayKey } from './time.js';
 
@@ -14,7 +14,7 @@ export function createHeadacheUI(ctx) {
 
   /* ---------- opening the forms ---------- */
   function openStart() {
-    state.draft = { mode: 'start', severity: null, weather: '', headacheType: '', symptoms: [], notes: '', meds: [], relief: [], clock: clockValue(Date.now()), errors: [] };
+    state.draft = { mode: 'start', severity: null, weather: '', headacheType: '', notes: '', meds: [], relief: [], clock: clockValue(Date.now()), errors: [] };
     state.view = 'headache';
     render();
     window.scrollTo(0, 0);
@@ -26,7 +26,7 @@ export function createHeadacheUI(ctx) {
     state.draft = {
       mode: 'update', episodeId: ep.id, prev: { ...ep.current },
       severity: ep.current.severity, weather: ep.current.weather, headacheType: ep.current.headacheType,
-      symptoms: [...ep.symptoms], notes: '', meds: [], relief: [], clock: clockValue(Date.now()), errors: [],
+      notes: '', meds: [], relief: [], clock: clockValue(Date.now()), errors: [],
     };
     state.view = 'headache';
     render();
@@ -40,7 +40,8 @@ export function createHeadacheUI(ctx) {
     // If the clock still shows the current minute, use the exact time so entries keep their true order.
     const at = d.clock === clockValue(now) ? now : (msFromClock(dayKey(now), d.clock, now) ?? now);
     const medObjs = d.meds.map((name) => ({ name, at }));
-    const base = { type: 'headache', symptoms: d.symptoms, meds: medObjs, relief: d.relief };
+    const phrases = canonical(d.notes) ? d.notes.split(',').map(canonical).filter(Boolean) : [];
+    const base = { type: 'headache', phrases, meds: medObjs, relief: d.relief };
 
     if (d.mode === 'start') {
       const bad = validateStart({ severity: d.severity, weather: d.weather, headacheType: d.headacheType, notes: d.notes });
@@ -58,7 +59,7 @@ export function createHeadacheUI(ctx) {
     if (canonical(d.notes)) changes.notes = canonical(d.notes);
     const bad = validateUpdate(changes, d.prev);
     if (bad.length) { d.errors = bad; render(); focusFirstError(); return; }
-    const anything = Object.keys(changes).length || d.meds.length || d.relief.length || d.symptoms.length !== (activeEpisode(state.events)?.symptoms.length ?? 0);
+    const anything = Object.keys(changes).length || d.meds.length || d.relief.length;
     if (!anything) { state.view = 'main'; render(); return; }
     await log.add({ ...base, kind: 'update', episodeId: d.episodeId, ...changes }, at);
     await reload();
@@ -146,7 +147,8 @@ export function createHeadacheUI(ctx) {
         h('div', { class: 'other-notes' + (notesBad ? ' has-error' : ''), id: 'f-notes' },
           h('label', { class: 'notes-label', for: 'notes' }, needed ? 'Please describe it' : 'Anything else to add?', h('span', { class: 'opt' }, needed ? ' Needed for "Other"' : ' Optional')),
           notesBad ? h('p', { class: 'error', role: 'alert' }, 'Please tell us a little about it.') : null,
-          h('textarea', { id: 'notes', class: 'text area', rows: '3', placeholder: needed ? 'Tell us what it feels like' : 'Optional',
+          commonChips(),
+          h('textarea', { id: 'notes', class: 'text area', rows: '3', placeholder: needed ? 'Tell us what it feels like' : 'Tap one above, or type here',
             oninput: (ev) => {
               d.notes = ev.target.value;
               if (d.errors.includes('notes') && d.notes.trim()) {
@@ -154,16 +156,33 @@ export function createHeadacheUI(ctx) {
                 document.getElementById('f-notes')?.classList.remove('has-error');
                 document.querySelector('#f-notes .error')?.remove();
               }
-            } }, d.notes)))));
+              showNoteSugg(d.notes.split(',').pop());
+            } }, d.notes),
+          h('div', { class: 'sugg', id: 'note-sugg', role: 'listbox', 'aria-label': 'Matches from before' })))));
   }
 
-  function symptomField() {
+  /* The 5 phrases she uses most. Tap to add to / take out of the notes box. */
+  function commonChips() {
     const d = state.draft;
-    return h('section', { class: 'panel field', id: 'f-symptoms', 'aria-labelledby': 'l-symptoms' },
-      h('h2', { id: 'l-symptoms' }, 'Anything else you notice?', h('span', { class: 'opt' }, ' Optional')),
-      h('div', { class: 'seg wrap' },
-        ...SYMPTOMS.map((s) => h('button', { 'aria-pressed': String(d.symptoms.includes(s)),
-          onclick: () => { d.symptoms = d.symptoms.includes(s) ? d.symptoms.filter((x) => x !== s) : [...d.symptoms, s]; render(); } }, s))));
+    const common = commonItems(state.events, 'phrases');
+    if (!common.length) return h('p', { class: 'hint' }, 'What you type here is remembered, and your five most used appear as buttons.');
+    return h('div', { class: 'seg wrap', role: 'group', 'aria-label': 'Most used notes' },
+      ...common.map((c) => h('button', { 'aria-pressed': String(hasPhrase(d.notes, c)),
+        onclick: () => { d.notes = hasPhrase(d.notes, c) ? removePhrase(d.notes, c) : addPhrase(d.notes, c); clearNoteError(); render(); } }, c)));
+  }
+  function clearNoteError() { state.draft.errors = state.draft.errors.filter((e) => e !== 'notes'); }
+  function showNoteSugg(typed) {
+    const box = document.getElementById('note-sugg');
+    if (!box) return;
+    const d = state.draft;
+    box.replaceChildren(...suggest(state.events, 'phrases', typed).filter((x) => !hasPhrase(d.notes, x)).slice(0, 5).map((x) =>
+      h('button', { class: 'chip', role: 'option', onclick: () => {
+        const parts = d.notes.split(',');
+        parts.pop();
+        d.notes = addPhrase(parts.join(','), x);
+        clearNoteError(); render();
+        document.getElementById('notes')?.focus();
+      } }, x)));
   }
 
   /* Remembering chips: last 5 + type-ahead. kind = 'meds' | 'relief' */
@@ -219,9 +238,10 @@ export function createHeadacheUI(ctx) {
             h('p', { class: 'hint' }, 'Set to now. Change it only if it started earlier.')),
           severityField()),
         h('div', { class: 'form-grid' },
-          h('div', { class: 'form-col' }, typeField(), memoryField('relief', 'Other things that helped', 'e.g. ice pack, rest, water')),
-          h('div', { class: 'form-col' }, weatherField(), symptomField(),
-            memoryField('meds', 'Medicine taken', 'Type a medicine name'))),
+          h('div', { class: 'form-col' }, typeField()),
+          h('div', { class: 'form-col' }, weatherField(),
+            memoryField('meds', 'Medicine taken', 'Type a medicine name'),
+            memoryField('relief', 'Other things that helped', 'e.g. ice pack, rest, water'))),
         d.errors.length ? h('p', { class: 'error big-error', role: 'alert' }, 'A few things still need an answer. They are marked above.') : null,
         h('div', { class: 'form-actions' },
           h('button', { class: 'btn quiet', onclick: () => { state.view = 'main'; render(); } }, 'Cancel'),

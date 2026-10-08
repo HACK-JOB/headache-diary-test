@@ -23,10 +23,6 @@ export const SEVERITY = [
   { n: 5, name: 'Debilitating', hint: 'Cannot do anything' },
 ];
 export const WEATHER = ['Sunny', 'Partly cloudy', 'Overcast', 'Rain', 'Thunderstorm', 'Windy'];
-export const SYMPTOMS = [
-  'Sensitive to light', 'Sensitive to noise', 'Feeling sick', 'Dizzy', 'Blurry vision',
-  'Pain when chewing', 'Stiff neck', 'Runny or blocked nose', 'Tired', 'Thirsty',
-];
 
 const blank = (v) => v == null || String(v).trim() === '';
 const validSeverity = (n) => Number.isInteger(n) && n >= 1 && n <= 5;
@@ -76,7 +72,7 @@ export function buildEpisodes(events) {
     const current = {};
     const meds = [];
     const relief = [];
-    const symptoms = new Set();
+    const phrases = [];
     let peak = 0;
     let changeCount = 0;
     for (const e of list) {
@@ -85,12 +81,12 @@ export function buildEpisodes(events) {
       if (e.kind === 'update') changeCount += 1;
       for (const m of e.meds ?? []) meds.push(m);
       for (const r of e.relief ?? []) if (!relief.includes(r)) relief.push(r);
-      for (const s of e.symptoms ?? []) symptoms.add(s);
+      for (const ph of e.phrases ?? []) if (!phrases.includes(ph)) phrases.push(ph);
     }
     out.push({
       id, startMs: start.ms, endMs: resolve ? resolve.ms : null, active: !resolve,
       durationMs: resolve ? resolve.ms - start.ms : null, startDay: dayKey(start.ms),
-      current, peakSeverity: peak, changeCount, meds, relief, symptoms: [...symptoms], timeline: list,
+      current, peakSeverity: peak, changeCount, meds, relief, phrases, timeline: list,
     });
   }
   return out.sort((a, b) => a.startMs - b.startMs);
