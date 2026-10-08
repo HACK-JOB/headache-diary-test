@@ -1,12 +1,20 @@
 // Caches the app files so the diary opens offline. Bump VERSION whenever files change.
-const VERSION = 'hd-v8';
+const VERSION = 'hd-v10';
 const FILES = [
   './', 'index.html', 'manifest.webmanifest', 'css/app.css',
   'js/app.js', 'js/time.js', 'js/hydration.js', 'js/events.js', 'js/settings.js', 'js/episodes.js', 'js/memory.js', 'js/headache-ui.js', 'js/type-art.js',
   'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png',
 ];
 self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(VERSION).then((c) => c.addAll(FILES)).then(() => self.skipWaiting()));
+  // 'reload' skips the browser's own HTTP cache, so a new version never stores stale copies of its files.
+  e.waitUntil(
+    caches.open(VERSION)
+      .then((c) => Promise.all(FILES.map(async (f) => {
+        const res = await fetch(new Request(f, { cache: 'reload' }));
+        if (!res.ok) throw new Error(`Could not fetch ${f}`);
+        await c.put(f, res);
+      })))
+      .then(() => self.skipWaiting()));
 });
 self.addEventListener('activate', (e) => {
   e.waitUntil(

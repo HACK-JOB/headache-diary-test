@@ -194,7 +194,7 @@ export function createHeadacheUI(ctx) {
       h('header', { class: 'topbar' },
         h('div', { class: 'page-head' },
           h('button', { class: 'icon-btn', id: 'back', 'aria-label': 'Cancel and go back', onclick: () => { state.view = 'main'; render(); } }, icon('back')),
-          h('h2', {}, isStart ? 'Headache started' : 'Change how it is now'))),
+          h('h2', {}, isStart ? 'Headache started' : 'Change status of headache'))),
       h('main', { class: 'form' },
         isStart ? null : h('p', { class: 'meta' }, 'Only change what is different. Leave the rest.'),
         h('section', { class: 'panel field' },
@@ -203,13 +203,15 @@ export function createHeadacheUI(ctx) {
             h('input', { id: 'clock', type: 'time', class: 'text', value: d.clock, 'aria-label': 'Time', onchange: (ev) => { d.clock = ev.target.value; } }),
             h('button', { class: 'btn quiet', type: 'button', onclick: () => { d.clock = clockValue(Date.now()); render(); } }, 'Now')),
           h('p', { class: 'hint' }, 'Already set to now. Change it only if it started earlier.')),
-        severityField(), typeField(), weatherField(), symptomField(), notesField(),
-        memoryField('meds', 'Medicine taken', 'Type a medicine name'),
-        memoryField('relief', 'Other things that helped', 'e.g. ice pack, rest, water'),
+        h('div', { class: 'form-grid' },
+          h('div', { class: 'form-col' }, typeField(), severityField()),
+          h('div', { class: 'form-col' }, weatherField(), symptomField(), notesField(),
+            memoryField('meds', 'Medicine taken', 'Type a medicine name'),
+            memoryField('relief', 'Other things that helped', 'e.g. ice pack, rest, water'))),
         d.errors.length ? h('p', { class: 'error big-error', role: 'alert' }, 'A few things still need an answer. They are marked above.') : null,
         h('div', { class: 'form-actions' },
           h('button', { class: 'btn quiet', onclick: () => { state.view = 'main'; render(); } }, 'Cancel'),
-          h('button', { class: 'btn alert-btn', id: 'save', onclick: save }, isStart ? 'Start headache and save' : 'Save update'))));
+          h('button', { class: 'btn alert-btn', id: 'save', onclick: save }, isStart ? 'Start headache and save' : 'Save status update'))));
     return view;
   }
 
@@ -230,8 +232,8 @@ export function createHeadacheUI(ctx) {
       h('p', { class: 'active-line strong' }, `${ep.current.severity} of 5 · ${sev.name} · ${TYPES[ep.current.headacheType]?.name ?? ''}`),
       h('p', { class: 'meta' }, ep.changeCount ? `${ep.changeCount} update${ep.changeCount === 1 ? '' : 's'} so far` : 'No updates yet'),
       h('div', { class: 'two' },
-        h('button', { class: 'btn update', id: 'headache-update', onclick: openUpdate }, 'CHANGE HOW IT IS'),
-        h('button', { class: 'btn resolve', id: 'headache-resolve', onclick: resolve }, 'IT HAS GONE')));
+        h('button', { class: 'btn update', id: 'headache-update', onclick: openUpdate }, 'CHANGE STATUS'),
+        h('button', { class: 'btn resolve', id: 'headache-resolve', onclick: resolve }, 'RESOLVE')));
   }
 
   return { renderForm, mainCard, openStart, openUpdate, resolve };
