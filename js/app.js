@@ -2,9 +2,11 @@ import { dayKey, msUntilNextMidnight, formatLongDate, formatTime } from './time.
 import { parseVolume, recentSizes, addSizeToRecent } from './hydration.js';
 import { createEventLog } from './events.js';
 import { createIdbStore } from './store-idb.js';
+import { THEMES, normalise, activeTheme, toggleDark } from './settings.js';
 
 const app = document.getElementById('app');
-const state = { events: [], key: dayKey(Date.now()), recent: [], selected: 600, unit: 'ml', toast: '' };
+const state = { events: [], key: dayKey(Date.now()), recent: [], selected: 600, unit: 'ml', toast: '', view: 'main', settings: null };
+const darkQuery = window.matchMedia('(prefers-color-scheme: dark)');
 let log;
 
 /* ---------- small helpers ---------- */
@@ -28,10 +30,29 @@ const todaysWater = () =>
     .filter((e) => e.type === 'water' && !e.deleted && dayKey(e.ms) === state.key)
     .sort((a, b) => b.ms - a.ms);
 
-/* ---------- settings ---------- */
+/* ---------- settings (personal preferences only) ---------- */
 const getSetting = (k, d) => localStorage.getItem('hd.' + k) ?? d;
 const setSetting = (k, v) => localStorage.setItem('hd.' + k, v);
-const applyTextSize = (v) => { document.documentElement.dataset.text = v; };
+function loadSettings() {
+  let raw = null;
+  try { raw = JSON.parse(localStorage.getItem('hd.settings')); } catch { /* ignore */ }
+  if (!raw) { const old = localStorage.getItem('hd.text'); if (old) raw = { text: old }; }
+  state.settings = normalise(raw);
+}
+function saveSettings(patch) {
+  state.settings = normalise({ ...state.settings, ...patch });
+  localStorage.setItem('hd.settings', JSON.stringify(state.settings));
+  applyLook();
+  render();
+}
+function applyLook() {
+  const theme = activeTheme(state.settings, darkQuery.matches);
+  document.documentElement.dataset.theme = theme;
+  document.documentElement.dataset.text = state.settings.text;
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'dark' ? '#17232b' : theme === 'bright' ? '#0b5cad' : '#2d5a4c');
+}
+darkQuery.addEventListener?.('change', () => { if (state.settings?.followSystem) { applyLook(); render(); } });
+const time = (ms) => formatTime(ms, state.settings.clock);
 
 /* ---------- actions ---------- */
 async function reload() { state.events = await log.all(); }
@@ -41,7 +62,7 @@ async function refill() {
   if (!state.recent.includes(state.selected)) state.recent = addSizeToRecent(state.recent, state.selected);
   await reload();
   render();
-  toast(`Saved · ${fmt(state.selected)} ml added`);
+  if (state.settings.savedCue) toast(`Saved · ${fmt(state.selected)} ml added`);
 }
 
 function useCustom() {
@@ -87,7 +108,7 @@ async function removeEntry(e) {
   await log.remove(e.id, reason);
   await reload();
   render();
-  toast('Saved · entry removed');
+  if (state.settings.savedCue) toast('Saved · entry removed');
 }
 
 let toastTimer;
@@ -98,11 +119,56 @@ function toast(msg) {
   toastTimer = setTimeout(() => { state.toast = ''; render(); }, 3500);
 }
 
+/* ---------- icons ---------- */
+const ICONS = {
+  sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+  moon: '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>',
+  cog: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
+  back: '<path d="M15 18l-6-6 6-6"/>',
+};
+function icon(name) {
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('aria-hidden', 'true');
+  svg.innerHTML = ICONS[name]; // fixed strings above, never user input
+  return svg;
+}
+
+/* ---------- options screen ---------- */
+function renderOptions() {
+  const st = state.settings;
+  const seg = (label, key, opts) =>
+    h('div', { class: 'seg', role: 'group', 'aria-label': label },
+      ...opts.map(([v, t]) => h('button', { 'aria-pressed': String(st[key] === v), onclick: () => saveSettings({ [key]: v }) }, t)));
+  const view = h('div', {},
+    h('header', { class: 'topbar' },
+      h('div', { class: 'page-head' },
+        h('button', { class: 'icon-btn', id: 'back', 'aria-label': 'Back to diary', onclick: () => { state.view = 'main'; render(); } }, icon('back')),
+        h('h2', {}, 'Options'))),
+    h('main', {},
+      h('section', { class: 'panel' },
+        h('div', { class: 'setting' }, h('h3', {}, 'Colour theme'),
+          h('div', { class: 'swatches' }, ...Object.entries(THEMES).map(([k, name]) =>
+            h('button', { class: 'swatch', 'data-t': k, 'aria-pressed': String(st.theme === k), onclick: () => saveSettings({ theme: k, ...(k !== 'dark' ? { lightTheme: k } : {}) }) },
+              h('i', {}), name)))),
+        h('div', { class: 'setting' }, h('h3', {}, 'Text size'), seg('Text size', 'text', [['normal', 'Normal'], ['large', 'Large'], ['largest', 'Largest']])),
+        h('div', { class: 'setting' }, h('h3', {}, 'Clock'), seg('Clock', 'clock', [['12', '12 hour'], ['24', '24 hour']])),
+        h('div', { class: 'setting' },
+          h('label', { class: 'check' }, h('input', { type: 'checkbox', checked: st.followSystem, onchange: (ev) => saveSettings({ followSystem: ev.target.checked }) }), 'Switch to dark when the tablet does'),
+          h('p', { class: 'hint' }, 'Off by default. The moon button on the main page always works.')),
+        h('div', { class: 'setting' },
+          h('label', { class: 'check' }, h('input', { type: 'checkbox', checked: st.savedCue, onchange: (ev) => saveSettings({ savedCue: ev.target.checked }) }), 'Show "Saved" message'))),
+      h('p', { class: 'meta' }, 'These are only your own preferences. Health settings are kept separate.')));
+  app.replaceChildren(view);
+  document.getElementById('back')?.focus();
+}
+
 /* ---------- view ---------- */
 function render() {
+  if (state.view === 'options') { renderOptions(); return; }
   const entries = todaysWater();
   const total = entries.reduce((s, e) => s + e.ml, 0);
-  const text = getSetting('text', 'normal');
+  const shown = activeTheme(state.settings, darkQuery.matches);
   const keepFocus = document.activeElement?.id;
   const keepValue = document.getElementById('custom-ml')?.value;
 
@@ -113,12 +179,13 @@ function render() {
       h('div', { class: 'brand' },
         h('img', { src: 'icons/icon.svg', alt: '' }),
         h('div', {}, h('h1', {}, 'Headache Diary'), h('p', { class: 'date' }, formatLongDate(Date.now())))),
-      h('div', { class: 'textsize', role: 'group', 'aria-label': 'Text size' },
-        ...[['normal', 'a1'], ['large', 'a2'], ['largest', 'a3']].map(([v, c]) =>
-          h('button', {
-            class: c, 'aria-pressed': String(text === v), 'aria-label': `Text size ${v}`,
-            onclick: () => { setSetting('text', v); applyTextSize(v); render(); },
-          }, 'A')))),
+      h('div', { class: 'tools' },
+        h('button', {
+          class: 'icon-btn toggle', id: 'dark-toggle', 'aria-pressed': String(shown === 'dark'),
+          'aria-label': shown === 'dark' ? 'Dark mode is on. Tap to turn off' : 'Dark mode is off. Tap to turn on',
+          onclick: () => saveSettings(toggleDark(state.settings, darkQuery.matches)),
+        }, icon(shown === 'dark' ? 'moon' : 'sun')),
+        h('button', { class: 'icon-btn', id: 'cog', 'aria-label': 'Options', onclick: () => { state.view = 'options'; render(); window.scrollTo(0, 0); } }, icon('cog')))),
     h('main', {},
       h('section', { class: 'panel', 'aria-labelledby': 'water-h' },
         h('h2', { id: 'water-h' }, 'Water today'),
@@ -143,7 +210,7 @@ function render() {
         h('button', { class: 'btn primary', id: 'refill', onclick: refill }, `+1 Refill · ${fmt(state.selected)} ml`),
         entries.length
           ? h('button', { class: 'btn quiet small undo', id: 'undo', onclick: () => removeEntry(entries[0]) },
-              `Undo last refill (${fmt(entries[0].ml)} ml at ${formatTime(entries[0].ms)})`)
+              `Undo last refill (${fmt(entries[0].ml)} ml at ${time(entries[0].ms)})`)
           : null)),
     state.toast ? h('div', { class: 'toast', role: 'status' }, state.toast) : null);
 
@@ -165,7 +232,8 @@ document.addEventListener('visibilitychange', () => { if (!document.hidden) chec
 
 /* ---------- start ---------- */
 async function start() {
-  applyTextSize(getSetting('text', 'normal'));
+  loadSettings();
+  applyLook();
   try {
     log = createEventLog(await createIdbStore());
     await reload();

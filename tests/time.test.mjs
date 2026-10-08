@@ -33,3 +33,8 @@ test('formatTime uses 12 hour time with lowercase am/pm', () => {
   assert.equal(formatTime(brisbane(2026, 10, 8, 14, 5)), '2:05 pm');
   assert.equal(formatTime(brisbane(2026, 10, 8, 0, 7)), '12:07 am');
 });
+
+test('formatTime can show 24 hour time', () => {
+  assert.equal(formatTime(brisbane(2026, 10, 8, 14, 5), '24'), '14:05');
+  assert.equal(formatTime(brisbane(2026, 10, 8, 0, 7), '24'), '00:07');
+});

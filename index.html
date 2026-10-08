@@ -8,6 +8,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="css/app.css">
+<script>try{var s=JSON.parse(localStorage.getItem("hd.settings")||"{}");document.documentElement.dataset.theme=s.followSystem?(matchMedia("(prefers-color-scheme: dark)").matches?"dark":(s.lightTheme||"paper")):(s.theme||"paper");document.documentElement.dataset.text=s.text||"normal"}catch(e){}</script>
 </head>
 <body>
 <div id="app"><p class="boot">Loading your diary…</p></div>

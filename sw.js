@@ -1,8 +1,8 @@
 // Caches the app files so the diary opens offline. Bump VERSION whenever files change.
-const VERSION = 'hd-v2';
+const VERSION = 'hd-v3';
 const FILES = [
   './', 'index.html', 'manifest.webmanifest', 'css/app.css',
-  'js/app.js', 'js/time.js', 'js/hydration.js', 'js/events.js', 'js/store-idb.js',
+  'js/app.js', 'js/time.js', 'js/hydration.js', 'js/events.js', 'js/settings.js', 'js/store-idb.js',
   'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png',
 ];
 self.addEventListener('install', (e) => {

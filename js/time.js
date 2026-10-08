@@ -23,7 +23,10 @@ export function formatLongDate(ms) {
     .format(new Date(ms));
 }
 
-export function formatTime(ms) {
+export function formatTime(ms, clock = '12') {
+  if (clock === '24') {
+    return new Intl.DateTimeFormat('en-AU', { timeZone: TZ, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(new Date(ms));
+  }
   return new Intl.DateTimeFormat('en-AU', { timeZone: TZ, hour: 'numeric', minute: '2-digit', hour12: true })
     .format(new Date(ms)).replace(/\s?([AP]M)/i, (_, m) => ' ' + m.toLowerCase());
 }
