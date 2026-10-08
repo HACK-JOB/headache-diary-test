@@ -1,10 +1,12 @@
+import { STYLES } from './type-art.js';
+
 // Personal preferences (not health settings). Pure logic, stored in localStorage by app.js.
 export const THEMES = { paper: 'Warm paper', bright: 'Bright', dark: 'Calm dark' };
 const LIGHT = ['paper', 'bright'];
 
 export const DEFAULTS = Object.freeze({
   theme: 'paper', lightTheme: 'paper', followSystem: false,
-  text: 'normal', clock: '12', savedCue: true,
+  text: 'normal', clock: '12', savedCue: true, artStyle: 'line',
 });
 
 export function normalise(raw) {
@@ -16,6 +18,7 @@ export function normalise(raw) {
     followSystem: r.followSystem === true,
     text: pick(r.text, ['normal', 'large', 'largest'], DEFAULTS.text),
     clock: pick(r.clock, ['12', '24'], DEFAULTS.clock),
+    artStyle: pick(r.artStyle, Object.keys(STYLES), DEFAULTS.artStyle),
     savedCue: typeof r.savedCue === 'boolean' ? r.savedCue : DEFAULTS.savedCue,
   };
 }

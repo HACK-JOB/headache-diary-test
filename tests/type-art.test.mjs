@@ -36,8 +36,8 @@ test('unknown type gives nothing rather than crashing', () => {
 
 import { STYLES } from '../js/type-art.js';
 
-test('three styles exist and each works for every type with theme colours only', () => {
-  assert.deepEqual(Object.keys(STYLES), ['line', 'solid', 'soft']);
+test('six styles exist and each works for every type with theme colours only', () => {
+  assert.deepEqual(Object.keys(STYLES), ['line', 'solid', 'soft', 'frontOutline', 'frontFlat', 'frontHeat']);
   for (const st of Object.keys(STYLES)) for (const k of ART_KEYS) {
     const svg = typeArtMarkup(k, st);
     assert.ok(svg.includes(`art-${st}`), `${st}/${k}`);
@@ -50,7 +50,7 @@ test('an unknown style falls back to the line style', () => {
   assert.ok(typeArtMarkup('cluster', 'bogus').includes('art-line'));
 });
 
-test('the pain placements are identical in every style', () => {
+test('the pain placements are identical across the three side-view styles', () => {
   const pain = (svg) => svg.match(/<g class="pain"[^>]*>([\s\S]*?)<\/g>/)[1];
   for (const k of ART_KEYS) {
     assert.equal(pain(typeArtMarkup(k, 'solid')), pain(typeArtMarkup(k, 'line')));
@@ -65,4 +65,47 @@ test('every style rule is scoped to its own svg so styles cannot leak between pi
     assert.ok(rules.length >= 5, st);
     for (const r of rules) assert.ok(r.startsWith(`.art-${st} `), `${st}: unscoped rule: ${r}`);
   }
+});
+
+
+const FRONT = ['frontOutline', 'frontFlat', 'frontHeat'];
+const FRONT_KEYS = ['cluster', 'sinus', 'tension', 'oneSided'];
+const painOf = (svg) => svg.match(/<g class="pain"[^>]*>([\s\S]*?)<\/g>/)[1];
+
+test('front styles show cluster, sinus, tension and one sided from the front (two eyes)', () => {
+  for (const st of FRONT) for (const k of FRONT_KEYS) {
+    const svg = typeArtMarkup(k, st);
+    assert.equal((svg.match(/class="eye"/g) || []).length, 2, `${st}/${k}`);
+    assert.ok(svg.includes('class="mouth"'), `${st}/${k}`);
+  }
+});
+
+test('TMJ and neck stay in profile in every style, identical to the side-view drawing', () => {
+  for (const st of FRONT) for (const k of ['tmj', 'neck']) {
+    const svg = typeArtMarkup(k, st);
+    assert.equal((svg.match(/class="eye"/g) || []).length, 1, `${st}/${k} should be profile`);
+    assert.equal(painOf(svg), painOf(typeArtMarkup(k, 'line')), `${st}/${k}`);
+  }
+});
+
+test('front pain placements are the same across the three front styles', () => {
+  for (const k of FRONT_KEYS) {
+    assert.equal(painOf(typeArtMarkup(k, 'frontFlat')), painOf(typeArtMarkup(k, 'frontOutline')));
+    assert.equal(painOf(typeArtMarkup(k, 'frontHeat')), painOf(typeArtMarkup(k, 'frontOutline')));
+  }
+});
+
+test('within every style each type marks pain somewhere different', () => {
+  for (const st of Object.keys(STYLES)) {
+    const all = ART_KEYS.map((k) => painOf(typeArtMarkup(k, st)));
+    assert.equal(new Set(all).size, ART_KEYS.length, st);
+  }
+});
+
+test('front cluster marks one eye only, and one sided covers one half of the face', () => {
+  const cluster = painOf(typeArtMarkup('cluster', 'frontOutline'));
+  assert.ok(cluster.includes('cx="84"'));
+  assert.ok(!cluster.includes('cx="146"'));
+  const half = painOf(typeArtMarkup('oneSided', 'frontOutline'));
+  assert.ok(half.includes('Z')); // a closed half-face shape
 });

@@ -204,3 +204,11 @@ input[type="time"].text { width: auto; min-width: 9rem; }
 .form-actions { position: sticky; bottom: 0; display: flex; gap: 0.7rem; padding: 0.8rem 0; background: var(--bg); }
 .big-error { text-align: center; padding: 0.6rem; }
 .custom .text { flex: 1; min-width: 8rem; width: auto; }
+
+.art-picks { display: grid; grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); gap: 0.6rem; }
+.art-pick { border: 3px solid var(--line); border-radius: 0.9rem; padding: 0.5rem; background: var(--art-bg); color: var(--ink); font: inherit; font-weight: 700; cursor: pointer; text-align: center; }
+.art-pick[aria-pressed="true"] { border-color: var(--teal); box-shadow: 0 0 0 3px var(--teal); }
+.art-pick[aria-pressed="true"] .art-name::before { content: "\2713  "; }
+.art-mini { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px; }
+.art-mini svg { width: 100%; height: auto; }
+.art-name { display: block; margin-top: 0.3rem; font-size: 0.9rem; }

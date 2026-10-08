@@ -2,20 +2,13 @@
 // Receives the shared helpers from app.js so there is one place that owns state and rendering.
 import { TYPES, SEVERITY, WEATHER, SYMPTOMS, validateStart, validateUpdate, describeChanges, activeEpisode } from './episodes.js';
 import { recentItems, suggest, canonical } from './memory.js';
-import { typeArtMarkup } from './type-art.js';
+import { artElement } from './type-art.js';
 import { msFromClock, clockValue, dayKey } from './time.js';
 
 const newEpisodeId = () => globalThis.crypto?.randomUUID?.() ?? `ep-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
 export function createHeadacheUI(ctx) {
   const { h, state, log, reload, render, toast, time, icon, fmt } = ctx;
-
-  // Artwork is our own fixed markup (never user input), parsed once as SVG.
-  function artNode(key) {
-    const m = typeArtMarkup(key);
-    if (!m) return null;
-    return new DOMParser().parseFromString(m, 'image/svg+xml').documentElement;
-  }
 
   const FIELD_LABEL = { severity: 'How bad is it? (1 to 5)', weather: 'Weather', headacheType: 'What does it feel like?', notes: 'Please describe it' };
 
@@ -140,7 +133,7 @@ export function createHeadacheUI(ctx) {
       wasTag('headacheType', (t) => TYPES[t]?.name ?? t),
       h('div', { class: 'types', role: 'radiogroup', 'aria-labelledby': 'l-headacheType' },
         ...Object.entries(TYPES).map(([k, t]) => h('button', { class: 'type', role: 'radio', 'aria-checked': String(d.headacheType === k), onclick: () => choose('headacheType', k) },
-          artNode(k) ?? h('span', { class: 'type-other', 'aria-hidden': 'true' }, '?'),
+          artElement(k, state.settings.artStyle) ?? h('span', { class: 'type-other', 'aria-hidden': 'true' }, '?'),
           h('span', { class: 'type-name' }, t.name), h('span', { class: 'type-hint' }, t.hint))))));
   }
 

@@ -4,6 +4,7 @@ import { createEventLog } from './events.js';
 import { createIdbStore } from './store-idb.js';
 import { THEMES, normalise, activeTheme, toggleDark } from './settings.js';
 import { createHeadacheUI } from './headache-ui.js';
+import { STYLES, artElement, ART_KEYS } from './type-art.js';
 
 const app = document.getElementById('app');
 const state = { events: [], key: dayKey(Date.now()), recent: [], selected: 600, unit: 'ml', toast: '', view: 'main', draft: null, optTab: 'prefs', settings: null };
@@ -166,6 +167,11 @@ function renderOptions() {
           h('div', { class: 'swatches' }, ...Object.entries(THEMES).map(([k, name]) =>
             h('button', { class: 'swatch', 'data-t': k, 'aria-pressed': String(st.theme === k), onclick: () => saveSettings({ theme: k, ...(k !== 'dark' ? { lightTheme: k } : {}) }) },
               h('i', {}), name)))),
+        h('div', { class: 'setting' }, h('h3', {}, 'Head pictures'),
+          h('div', { class: 'art-picks' }, ...Object.entries(STYLES).map(([k, name]) =>
+            h('button', { class: 'art-pick', 'aria-pressed': String(st.artStyle === k), onclick: () => saveSettings({ artStyle: k }) },
+              h('span', { class: 'art-mini' }, ...['cluster', 'sinus', 'oneSided', 'tmj'].map((t) => artElement(t, k))), h('span', { class: 'art-name' }, name)))),
+          h('p', { class: 'hint' }, 'Only the look changes. The same six types are always there.')),
         h('div', { class: 'setting' }, h('h3', {}, 'Text size'), seg('Text size', 'text', [['normal', 'Normal'], ['large', 'Large'], ['largest', 'Largest']])),
         h('div', { class: 'setting' }, h('h3', {}, 'Clock'), seg('Clock', 'clock', [['12', '12 hour'], ['24', '24 hour']])),
         h('div', { class: 'setting' },
