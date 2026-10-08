@@ -489,3 +489,8 @@ body.scan-open { overflow: hidden; }
 .pn-card ul { margin: 0.3rem 0 0.6rem; padding-left: 1.2rem; }
 .pn-card li { margin: 0.25rem 0; }
 .pn-rel ul { margin: 0.3rem 0 0.6rem; padding-left: 1.2rem; }
+.privacy { border: 2px solid var(--teal); background: var(--teal-soft); color: var(--ink); border-radius: var(--radius); padding: 0.7rem 0.9rem; margin: 0.4rem 0 0.8rem; }
+.tn-how { margin: 0.4rem 0 0.9rem; padding-left: 1.3rem; }
+.tn-how li { margin: 0.4rem 0; }
+.scan-note { white-space: pre-line; }
+.scan-note { font-weight: 600; }

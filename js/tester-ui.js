@@ -80,7 +80,13 @@ export function createTesterUI(ctx) {
 
       h('div', { class: 'setting' },
         h('h3', {}, 'Send the notes'),
-        h('p', { class: 'hint' }, 'This sends the checklist and the comments only. No diary entries are included.'),
+        h('p', { class: 'privacy', id: 'tn-privacy' }, h('strong', {}, 'Everything here stays on this tablet. '),
+          'The ticks and comments are stored only on this tablet. Nobody else can see them, and nothing is sent anywhere unless Share or Save as file is used below. Nobody has access to them any other way.'),
+        h('p', { class: 'hint' }, 'Only the checklist and the comments are sent. No diary entries are included.'),
+        h('ol', { class: 'tn-how', id: 'tn-how' },
+          h('li', {}, h('strong', {}, 'Share: '), 'opens the tablet\'s share list. Pick Messages, Email or another app, choose who to send it to, and send. The notes go in as plain text.'),
+          h('li', {}, h('strong', {}, 'Save as file: '), 'saves a text file called tester-notes to the Downloads folder. Open the Files or Downloads app, then attach that file to a message or email.'),
+          h('li', {}, 'Either way, nothing is sent until a person picks where it goes. Sending again later includes any newer comments.')),
         h('div', { class: 'two' },
           h('button', { class: 'btn primary', id: 'tn-share', onclick: share }, 'Share'),
           h('button', { class: 'btn', id: 'tn-file', onclick: file }, 'Save as file'))));

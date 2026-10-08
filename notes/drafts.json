@@ -1,6 +1,10 @@
 [
   {
     "screen": "main",
+    "text": "New: this What's new card. It appears only on screens that changed. Got it hides it, and Tester notes keeps a Past updates list."
+  },
+  {
+    "screen": "main",
     "text": "Text sizes are now Biggest, Medium and Small."
   },
   {
@@ -17,7 +21,11 @@
   },
   {
     "screen": "intake",
-    "text": "Scan a barcode fills in the food name and nutrition from the pack. Only the number is looked up."
+    "text": "Scan a barcode fills in the name and nutrition from the pack. It also reads the printed number to check the two match, where it can."
+  },
+  {
+    "screen": "intake",
+    "text": "If only the barcode or only the number can be read, a note asks for a check that the product matches the pack."
   },
   {
     "screen": "admin",
@@ -33,10 +41,6 @@
   },
   {
     "screen": "tester",
-    "text": "Tester notes has a checklist with barcode items, a comment box, and Share or Save as file."
-  },
-  {
-    "screen": "main",
-    "text": "New: this What's new card. It appears only on screens that changed. Got it hides it, and Tester notes keeps a Past updates list."
+    "text": "Tester notes has a checklist, a comment box, and steps for Share and Save as file. All notes stay on the tablet."
   }
 ]
