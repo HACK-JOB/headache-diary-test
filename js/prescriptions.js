@@ -50,11 +50,13 @@ export function validateRx(f) {
     if (!days.length) errors.push('days');
   }
   const raw = Array.isArray(f?.slots) ? f.slots : [];
-  let slots = raw.map((s) => ({ start: hhmm(s?.start), end: hhmm(s?.end), at: hhmm(s?.at) }));
-  let slotOk = slots.length >= 1 && slots.length <= MAX_SLOTS && slots.every((s) => s.start && s.end && s.at && mins(s.start) < mins(s.end) && mins(s.at) >= mins(s.start) && mins(s.at) <= mins(s.end));
+  let slots = raw.map((s) => (s?.mode === 'exact' ? { mode: 'exact', at: hhmm(s.at) } : s?.mode === 'range' ? { mode: 'range', start: hhmm(s.start), end: hhmm(s.end) } : { mode: null }));
+  const lo = (s) => mins(s.mode === 'exact' ? s.at : s.start);
+  const hi = (s) => mins(s.mode === 'exact' ? s.at : s.end);
+  let slotOk = slots.length >= 1 && slots.length <= MAX_SLOTS && slots.every((s) => (s.mode === 'exact' ? !!s.at : s.mode === 'range' && s.start && s.end && mins(s.start) < mins(s.end)));
   if (slotOk) {
-    slots = slots.sort((a, b) => mins(a.at) - mins(b.at));
-    for (let i = 1; i < slots.length; i++) if (mins(slots[i].start) <= mins(slots[i - 1].end)) slotOk = false;
+    slots = slots.sort((a, b) => lo(a) - lo(b));
+    for (let i = 1; i < slots.length; i++) if (lo(slots[i]) <= hi(slots[i - 1])) slotOk = false;
   }
   if (!slotOk) errors.push('slots');
   return { errors, value: { name, dose, food, days, slots: slotOk ? slots : [], instructions, nag } };
@@ -67,7 +69,7 @@ export function prescriptions(events) {
   for (const e of live(events, 'clinical')) {
     if (e.kind !== 'rx') continue;
     if (!firstMs.has(e.rxId)) firstMs.set(e.rxId, e.ms);
-    map.set(e.rxId, { rxId: e.rxId, status: e.status ?? 'active', name: e.name, dose: e.dose, food: e.food ?? '', days: e.days, slots: e.slots ?? [],
+    map.set(e.rxId, { rxId: e.rxId, status: e.status ?? 'active', name: e.name, dose: e.dose, food: e.food ?? '', days: e.days, slots: (e.slots ?? []).map((s) => (s.mode ? s : { mode: 'range', start: s.start, end: s.end })),
       instructions: e.instructions ?? '', nag: e.nag ?? '', by: e.by, ms: e.ms, startedMs: firstMs.get(e.rxId) });
   }
   return [...map.values()];
@@ -92,7 +94,15 @@ export function dosesFor(events, key, now) {
     if (p.days !== 'daily' && !p.days.includes(wd)) continue;
     if (key < dayKey(p.startedMs)) continue;
     p.slots.forEach((s, i) => {
-      const startMs = msAt(key, s.start); const endMs = msAt(key, s.end);
+      const exact = s.mode === 'exact';
+      const startMs = msAt(key, exact ? s.at : s.start);
+      let endMs;
+      if (exact) {
+        // an exact time stays open for an hour, but never runs into the next time, and never past 11:59 pm
+        const nxt = p.slots[i + 1];
+        const nextStart = nxt ? msAt(key, nxt.mode === 'exact' ? nxt.at : nxt.start) - 60000 : Infinity;
+        endMs = Math.min(startMs + 3600000, nextStart, msAt(key, '23:59'));
+      } else endMs = msAt(key, s.end);
       const a = ans.get(`${p.rxId}#${i}`);
       let state;
       if (a) state = a.action === 'skipped' ? 'skipped' : (a.ms > endMs + 59999 ? 'late' : 'taken');
@@ -100,7 +110,7 @@ export function dosesFor(events, key, now) {
       else if (now <= endMs + 59999) state = 'due';
       else state = 'overdue';
       out.push({ rxId: p.rxId, slot: i, name: p.name, dose: p.dose, food: p.food, instructions: p.instructions, nag: p.nag, by: p.by,
-        start: s.start, end: s.end, at: s.at, startMs, endMs, atMs: msAt(key, s.at), state, answeredMs: a ? a.ms : null, forDay: key });
+        mode: s.mode, start: s.start ?? null, end: s.end ?? null, at: s.at ?? null, startMs, endMs, atMs: startMs, state, answeredMs: a ? a.ms : null, forDay: key });
     });
   }
   return out.sort((x, y) => x.atMs - y.atMs || x.name.localeCompare(y.name));
@@ -115,13 +125,19 @@ export function effectiveNag(rx, her) {
 const daysText = (days) => (days === 'daily' ? 'Every day' : days.map((d) => WEEKDAYS[d]).join(', '));
 export function describeRx(rx, clock = '12') {
   const t = (v) => { const [h, m] = v.split(':').map(Number); return formatTime(Date.UTC(2026, 0, 1, h - 10, m), clock); };
-  return `${daysText(rx.days)} · ${rx.slots.map((s) => t(s.at)).join(', ')}`;
+  return `${daysText(rx.days)} · ${rx.slots.map((s) => slotText(s, clock)).join(', ')}`;
+}
+
+/** A time exactly as the doctor gave it: "8:00 am" for an exact time, "7:00 am to 9:00 am" for a range. */
+export function slotText(s, clock = '12') {
+  const t = (v) => { const [h, m] = v.split(':').map(Number); return formatTime(Date.UTC(2026, 0, 1, h - 10, m), clock); };
+  return s.mode === 'exact' ? t(s.at) : `${t(s.start)} to ${t(s.end)}`;
 }
 
 const nagText = (n) => (n ? NAGS[n].label : "user's own setting");
 const fields = [
   ['dose', 'dose', (r) => r.dose], ['food', 'food instruction', (r) => FOOD.find((f) => f.key === r.food)?.label ?? ''],
-  ['days', 'days', (r) => daysText(r.days)], ['slots', 'times', (r) => r.slots.map((s) => `${s.start}-${s.end} (${s.at})`).join(', ')],
+  ['days', 'days', (r) => daysText(r.days)], ['slots', 'times', (r) => r.slots.map((s) => (s.mode === 'exact' ? s.at : `${s.start}-${s.end}`)).join(', ')],
   ['instructions', 'instructions', (r) => (r.instructions ? 'written' : 'none')], ['nag', 'reminder level', (r) => nagText(r.nag)],
 ];
 export function rxChanges(a, b) {

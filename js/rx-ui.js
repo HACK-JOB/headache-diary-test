@@ -10,11 +10,12 @@ const MESSAGES = {
   dose: 'Please type the dose, for example 500 mg.',
   food: 'Please choose one of the food options.',
   days: 'Please choose at least one day.',
-  slots: 'Check the times: each one needs a window that opens before it closes, an exact time inside that window, and windows must not overlap.',
+  slots: 'Check the times: a range must end after it starts, and no time may overlap another.',
   instructions: `Instructions can be up to ${RX_INSTR_MAX} letters.`,
   nag: 'Please choose one of the reminder levels.',
 };
-const blank = () => ({ rxId: null, name: '', dose: '', food: '', days: 'daily', slots: [{ start: '07:00', end: '09:00', at: '08:00' }], instructions: '', nag: '', errors: [] });
+const blank = () => ({ rxId: null, name: '', dose: '', food: '', days: 'daily', slots: [{ mode: 'exact', at: '08:00' }], instructions: '', nag: '', errors: [] });
+const plus2 = (v) => { const [h, m] = v.split(':').map(Number); const t = Math.min(h * 60 + m + 120, 23 * 60 + 59); return `${String(Math.floor(t / 60)).padStart(2, '0')}:${String(t % 60).padStart(2, '0')}`; };
 const newId = () => 'rx' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 
 /* ---------------- her card on the main page ---------------- */
@@ -46,7 +47,7 @@ export function rxMainCard(ctx) {
       h('ul', { class: 'rx-list' }, ...list.map((d) => h('li', { class: 'rx-row', 'data-state': d.state, 'data-rx': d.rxId, 'data-slot': String(d.slot) },
         h('div', { class: 'rx-main' },
           h('p', { class: 'rx-name' }, h('strong', {}, d.name), ` · ${d.dose}`),
-          h('p', { class: 'meta num' }, `${time(d.startMs)} to ${time(d.endMs)}`, d.food ? ` · ${FOOD.find((f) => f.key === d.food).label}` : ''),
+          h('p', { class: 'meta num' }, d.mode === 'exact' ? `At ${time(d.startMs)}` : `${time(d.startMs)} to ${time(d.endMs)}`, d.food ? ` · ${FOOD.find((f) => f.key === d.food).label}` : ''),
           d.instructions ? h('p', { class: 'relief-text' }, d.instructions) : null,
           d.instructions ? h('p', { class: 'meta' }, `Written by ${nameOf(d.by)}`) : null,
           h('p', {}, pill(d), d.answeredMs ? h('span', { class: 'meta num' }, ` at ${time(d.answeredMs)}`) : null)),
@@ -116,14 +117,18 @@ export function createRxDoctor(ctx, getHelpers) {
         x.days === 'daily' ? null : h('div', { class: 'seg wrap', role: 'group', 'aria-label': 'Choose days' },
           ...ORDER.map((d) => h('button', { class: 'chip', 'data-day': String(d), 'aria-pressed': String(x.days.includes(d)), onclick: () => toggleDay(d) }, WEEKDAYS[d])))),
       h('fieldset', { class: 'rx-slots' }, h('legend', {}, 'Times'),
-        h('p', { class: 'hint' }, 'Each time has a window (when the dose may be taken) and an exact time inside it.'),
+        h('p', { class: 'hint' }, 'For each time, choose an exact time or a range. The diary shows it exactly as chosen here.'),
         ...x.slots.map((s, i) => h('div', { class: 'rx-slot', 'data-slot': String(i) },
-          h('div', {}, h('span', { class: 'small-label' }, 'Window opens'), clockPicker(h, { id: `rx-s${i}-start`, value: s.start, clock, onChange: (v) => { s.start = v; } })),
-          h('div', {}, h('span', { class: 'small-label' }, 'Exact time'), clockPicker(h, { id: `rx-s${i}-at`, value: s.at, clock, onChange: (v) => { s.at = v; } })),
-          h('div', {}, h('span', { class: 'small-label' }, 'Window closes'), clockPicker(h, { id: `rx-s${i}-end`, value: s.end, clock, onChange: (v) => { s.end = v; } })),
+          h('div', { class: 'seg', role: 'radiogroup', 'aria-label': `Time ${i + 1} type` },
+            h('button', { class: 'chip', role: 'radio', 'data-mode': 'exact', 'aria-checked': String(s.mode === 'exact'), onclick: () => { sync(); s.mode = 'exact'; s.at = s.at || s.start || '08:00'; render(); } }, s.mode === 'exact' ? '✓ Exact time' : 'Exact time'),
+            h('button', { class: 'chip', role: 'radio', 'data-mode': 'range', 'aria-checked': String(s.mode === 'range'), onclick: () => { sync(); s.mode = 'range'; s.start = s.start || s.at || '07:00'; s.end = s.end || plus2(s.start); render(); } }, s.mode === 'range' ? '✓ Range' : 'Range')),
+          s.mode === 'exact'
+            ? h('div', {}, h('span', { class: 'small-label' }, 'Time'), clockPicker(h, { id: `rx-s${i}-at`, value: s.at, clock, onChange: (v) => { s.at = v; } }))
+            : [h('div', {}, h('span', { class: 'small-label' }, 'From'), clockPicker(h, { id: `rx-s${i}-start`, value: s.start, clock, onChange: (v) => { s.start = v; } })),
+              h('div', {}, h('span', { class: 'small-label' }, 'To'), clockPicker(h, { id: `rx-s${i}-end`, value: s.end, clock, onChange: (v) => { s.end = v; } }))],
           x.slots.length > 1 ? h('button', { class: 'btn quiet small', 'aria-label': `Remove time ${i + 1}`, onclick: () => { sync(); x.slots.splice(i, 1); render(); } }, 'Remove') : null)),
         err('slots'),
-        x.slots.length < MAX_SLOTS ? h('button', { class: 'btn quiet', id: 'rx-add-slot', onclick: () => { sync(); x.slots.push({ start: '12:00', end: '14:00', at: '13:00' }); render(); } }, 'Add a time') : null),
+        x.slots.length < MAX_SLOTS ? h('button', { class: 'btn quiet', id: 'rx-add-slot', onclick: () => { sync(); x.slots.push({ mode: 'exact', at: '12:00' }); render(); } }, 'Add a time') : null),
       h('div', { class: 'num-field' }, h('label', { for: 'rx-instr' }, 'Instructions'),
         h('textarea', { id: 'rx-instr', class: 'text note-box', rows: '3', maxlength: String(RX_INSTR_MAX + 50), placeholder: 'e.g. the wording to show with this medicine' }, x.instructions)),
       h('div', { class: 'num-field' }, h('label', { for: 'rx-nag' }, 'Reminder level for this medicine'),
