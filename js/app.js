@@ -4,6 +4,7 @@ import { createEventLog } from './events.js';
 import { createIdbStore } from './store-idb.js';
 import { THEMES, normalise, activeTheme, toggleDark } from './settings.js';
 import { createHeadacheUI } from './headache-ui.js';
+import { createDayUI } from './day-ui.js';
 import { STYLES, artElement, ART_KEYS } from './type-art.js';
 
 const app = document.getElementById('app');
@@ -11,6 +12,7 @@ const state = { events: [], key: dayKey(Date.now()), recent: [], selected: 600, 
 const darkQuery = window.matchMedia('(prefers-color-scheme: dark)');
 let log;
 let hui;
+let dui;
 
 /* ---------- small helpers ---------- */
 function h(tag, attrs = {}, ...kids) {
@@ -145,6 +147,12 @@ function renderHeadache() {
   if (keep && document.getElementById(keep)) document.getElementById(keep).focus({ preventScroll: true });
 }
 
+function renderActivity() {
+  const keep = document.activeElement?.id;
+  app.replaceChildren(dui.renderForm());
+  if (keep && document.getElementById(keep)) document.getElementById(keep).focus({ preventScroll: true });
+}
+
 /* ---------- options screen ---------- */
 function renderOptions() {
   const st = state.settings;
@@ -196,6 +204,7 @@ function adminPanel() {
 function render() {
   if (state.view === 'options') { renderOptions(); return; }
   if (state.view === 'headache') { renderHeadache(); return; }
+  if (state.view === 'activity') { renderActivity(); return; }
   const entries = todaysWater();
   const total = entries.reduce((s, e) => s + e.ml, 0);
   const shown = activeTheme(state.settings, darkQuery.matches);
@@ -217,7 +226,9 @@ function render() {
         }, icon(shown === 'dark' ? 'moon' : 'sun')),
         h('button', { class: 'icon-btn', id: 'cog', 'aria-label': 'Options', onclick: () => { state.view = 'options'; render(); window.scrollTo(0, 0); } }, icon('cog')))),
     h('main', {},
+      dui.mainCard(),
       hui.mainCard(),
+      dui.todayList(),
       h('section', { class: 'panel', 'aria-labelledby': 'water-h' },
         h('h2', { id: 'water-h' }, 'Water today'),
         h('div', { class: 'total', 'aria-live': 'polite' },
@@ -268,6 +279,7 @@ async function start() {
   try {
     log = createEventLog(await createIdbStore());
     hui = createHeadacheUI({ h, state, log, reload, render, toast, time, icon, fmt });
+    dui = createDayUI({ h, state, log, reload, render, toast, time, icon, fmt });
     await reload();
   } catch (err) {
     app.replaceChildren(h('p', { class: 'boot' }, 'Sorry, the diary could not open its storage on this device. ' + err.message));
