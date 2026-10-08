@@ -5,7 +5,7 @@ import { createIdbStore } from './store-idb.js';
 import { THEMES, normalise, activeTheme, toggleDark } from './settings.js';
 
 const app = document.getElementById('app');
-const state = { events: [], key: dayKey(Date.now()), recent: [], selected: 600, unit: 'ml', toast: '', view: 'main', settings: null };
+const state = { events: [], key: dayKey(Date.now()), recent: [], selected: 600, unit: 'ml', toast: '', view: 'main', optTab: 'prefs', settings: null };
 const darkQuery = window.matchMedia('(prefers-color-scheme: dark)');
 let log;
 
@@ -125,6 +125,7 @@ const ICONS = {
   moon: '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>',
   cog: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
   back: '<path d="M15 18l-6-6 6-6"/>',
+  lock: '<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
 };
 function icon(name) {
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
@@ -146,7 +147,12 @@ function renderOptions() {
         h('button', { class: 'icon-btn', id: 'back', 'aria-label': 'Back to diary', onclick: () => { state.view = 'main'; render(); } }, icon('back')),
         h('h2', {}, 'Options'))),
     h('main', {},
-      h('section', { class: 'panel' },
+      h('div', { class: 'tabs', role: 'tablist', 'aria-label': 'Options sections' },
+        ...[['prefs', 'My preferences'], ['admin', 'Admin']].map(([k, t]) =>
+          h('button', { class: 'tab', role: 'tab', id: 'tab-' + k, 'aria-selected': String(state.optTab === k), 'aria-controls': 'tabpanel',
+            onclick: () => { state.optTab = k; render(); document.getElementById('tab-' + k)?.focus(); },
+            onkeydown: (ev) => { if (ev.key === 'ArrowRight' || ev.key === 'ArrowLeft') { state.optTab = k === 'prefs' ? 'admin' : 'prefs'; render(); document.getElementById('tab-' + state.optTab)?.focus(); } } }, t))),
+      state.optTab === 'admin' ? adminPanel() : h('section', { class: 'panel', id: 'tabpanel', role: 'tabpanel', 'aria-labelledby': 'tab-prefs' },
         h('div', { class: 'setting' }, h('h3', {}, 'Colour theme'),
           h('div', { class: 'swatches' }, ...Object.entries(THEMES).map(([k, name]) =>
             h('button', { class: 'swatch', 'data-t': k, 'aria-pressed': String(st.theme === k), onclick: () => saveSettings({ theme: k, ...(k !== 'dark' ? { lightTheme: k } : {}) }) },
@@ -158,9 +164,17 @@ function renderOptions() {
           h('p', { class: 'hint' }, 'Off by default. The moon button on the main page always works.')),
         h('div', { class: 'setting' },
           h('label', { class: 'check' }, h('input', { type: 'checkbox', checked: st.savedCue, onchange: (ev) => saveSettings({ savedCue: ev.target.checked }) }), 'Show "Saved" message'))),
-      h('p', { class: 'meta' }, 'These are only your own preferences. Health settings are kept separate.')));
+      state.optTab === 'prefs' ? h('p', { class: 'meta' }, 'These are only your own preferences. Health settings are kept separate.') : null));
   app.replaceChildren(view);
-  document.getElementById('back')?.focus();
+  if (!document.activeElement || document.activeElement === document.body) document.getElementById('back')?.focus();
+}
+
+/* Admin tools are for family only and need an admin PIN (built with the Doctors tab). */
+function adminPanel() {
+  return h('section', { class: 'panel', id: 'tabpanel', role: 'tabpanel', 'aria-labelledby': 'tab-admin' },
+    h('div', { class: 'lock' }, icon('lock'),
+      h('div', {}, h('h3', {}, 'Family admin'), h('p', { class: 'hint' }, 'This area is locked. It will ask for the family admin PIN.'))),
+    h('p', { class: 'meta' }, 'Not available yet.'));
 }
 
 /* ---------- view ---------- */

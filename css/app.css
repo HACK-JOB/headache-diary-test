@@ -146,3 +146,10 @@ dialog .row { display: flex; gap: 0.6rem; justify-content: flex-end; margin-top:
 .swatch[data-t="dark"] i { background: linear-gradient(90deg,#17232b 60%,#8fd6c9 60%); }
 .page-head { display: flex; align-items: center; gap: 1rem; margin-bottom: 0.8rem; }
 .page-head h2 { margin: 0; text-transform: none; font-size: 1.3rem; color: var(--ink); letter-spacing: 0; font-family: var(--head-font); }
+
+.tabs { display: flex; gap: 0.4rem; border-bottom: 2px solid var(--line); }
+.tab { min-height: 3.2rem; padding: 0 1.2rem; border: 2px solid transparent; border-bottom: none; border-radius: 0.8rem 0.8rem 0 0; background: transparent; color: var(--muted); font: inherit; font-weight: 700; cursor: pointer; margin-bottom: -2px; }
+.tab[aria-selected="true"] { background: var(--card); color: var(--ink); border-color: var(--line); border-bottom: 2px solid var(--card); }
+.lock { display: flex; gap: 0.9rem; align-items: center; }
+.lock svg { width: 2.2rem; height: 2.2rem; stroke: var(--muted); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+.lock h3 { margin: 0; }
