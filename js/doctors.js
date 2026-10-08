@@ -11,6 +11,7 @@ import { byTime } from './events.js';
 import { dayIntake } from './intake.js';
 import { TYPES } from './episodes.js';
 import { dayWaterTotal } from './hydration.js';
+import { rxChanges } from './prescriptions.js';
 
 export const DEFAULT_MARGIN = 20;
 export const MAX_MARGIN = 50;
@@ -145,6 +146,7 @@ export function changeLog(events) {
   const out = [];
   const lastTarget = {};
   const lastText = {};
+  const lastRx = {};
   const push = (e, what, from, to) => out.push({ ms: e.ms, by: e.by, byName: nameOf(events, e.by), what, from, to });
   const all = events.filter((e) => (e.type === 'doctor' || e.type === 'clinical') && !e.deleted).sort(byTime);
   for (const e of all) {
@@ -169,6 +171,14 @@ export function changeLog(events) {
       lastText.fasting = e.on ? 'on' : 'off';
     } else if (e.kind === 'note') {
       push(e, 'Added a clinical note', '', '');
+    } else if (e.kind === 'rx') {
+      const prev = lastRx[e.rxId];
+      if (!prev) push(e, `Added prescription ${String(e.name).trim()} (${String(e.dose).trim()})`, '', '');
+      else {
+        if (prev.status !== (e.status ?? 'active')) push(e, `${e.name}: status`, prev.status, e.status ?? 'active');
+        for (const c of rxChanges(prev, e)) push(e, `${e.name}: ${c.what}`, c.from, c.to);
+      }
+      lastRx[e.rxId] = { ...e, status: e.status ?? 'active' };
     }
   }
   return out.reverse();
