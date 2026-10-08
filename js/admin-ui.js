@@ -103,7 +103,7 @@ export function createAdminUI(ctx) {
         h('button', { class: 'btn quiet', id: 'pin-setup', onclick: () => { st.mode = 'setup'; st.error = ''; st.info = ''; render(); } }, 'Set up an Admin PIN'));
     }
     return h('div', { class: 'setting' }, h('h3', {}, 'Admin PIN'),
-      h('p', { class: 'hint' }, 'A PIN is set. Admin locks itself after 5 minutes, and whenever you leave Options.'),
+      h('p', { class: 'hint' }, 'A PIN is set. Admin locks itself after 5 minutes, and whenever Options is closed.'),
       buttons(
         h('button', { class: 'btn quiet', id: 'pin-change', onclick: () => { st.mode = 'change'; st.error = ''; st.info = ''; render(); } }, 'Change PIN'),
         h('button', { class: 'btn quiet', id: 'pin-off', onclick: () => { st.mode = 'off'; st.error = ''; st.info = ''; render(); } }, 'Turn PIN off')),

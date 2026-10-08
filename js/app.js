@@ -204,7 +204,7 @@ function renderOptions() {
           h('p', { class: 'hint' }, 'Off by default. The moon button on the main page always works.')),
         h('div', { class: 'setting' },
           h('label', { class: 'check' }, h('input', { type: 'checkbox', checked: st.savedCue, onchange: (ev) => saveSettings({ savedCue: ev.target.checked }) }), 'Show "Saved" message'))),
-      state.optTab === 'prefs' ? h('p', { class: 'meta' }, 'These are only your own preferences. Health settings are kept separate.') : null));
+      state.optTab === 'prefs' ? h('p', { class: 'meta' }, 'These are only display preferences. Health settings are kept separate.') : null));
   app.replaceChildren(view);
   if (!document.activeElement || document.activeElement === document.body) document.getElementById('back')?.focus();
 }

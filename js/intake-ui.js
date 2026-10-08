@@ -113,10 +113,10 @@ export function createIntakeUI(ctx) {
           nutrients.length ? h('section', { class: 'panel field meal-nutrition' + (bad('numbers') ? ' has-error' : ''), id: 'f-nutrition' },
             h('h2', {}, 'Nutrition', h('span', { class: 'opt' }, ' Optional')),
             bad('numbers') ? h('p', { class: 'error', role: 'alert' }, d.numberError) : null,
-            h('p', { class: 'small-label' }, 'The numbers you are typing are:'),
+            h('p', { class: 'small-label' }, 'The numbers typed are:'),
             seg('Numbers are', 'basis', [['serving', 'Per serving'], ['total', 'For everything I had']]),
             h('div', { class: 'num-grid' }, ...nutrients.map((n) => num(n.key, `${n.label} (${n.unit})`))),
-            h('p', { class: 'hint' }, 'Leave blank if you do not know. Saved with this food for next time.')) : null),
+            h('p', { class: 'hint' }, 'Leave blank if not known. Saved with this food for next time.')) : null),
         d.errors.length ? h('p', { class: 'error big-error', role: 'alert' }, 'A few things still need an answer. They are marked above.') : null,
         h('div', { class: 'form-actions' },
           h('button', { class: 'btn quiet', onclick: () => { state.view = 'main'; render(); } }, 'Cancel'),
@@ -159,7 +159,7 @@ export function createIntakeUI(ctx) {
     const changes = visibilityLog(state.events).slice(0, 5);
     const flip = async (key, shown) => { await log.add(visibilityEvent(key, shown)); await reload(); render(); };
     return h('div', { class: 'setting' },
-      h('h3', {}, 'What shows on her screens'),
+      h('h3', {}, 'What shows on the diary screens'),
       h('p', { class: 'hint' }, 'Hidden items are still saved, and doctors always see everything. Anything switched off disappears from the food form and the totals.'),
       h('div', { class: 'switch-list' }, ...NUTRIENTS.map((n) =>
         h('label', { class: 'check' }, h('input', { type: 'checkbox', checked: vis[n.key], 'aria-label': `Show ${n.label}`, onchange: (ev) => flip(n.key, ev.target.checked) }), `${n.label} (${n.unit})`))),

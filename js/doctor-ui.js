@@ -86,7 +86,7 @@ export function createDoctorUI(ctx) {
     if (!validPinFormat(a)) return fail('Please use 4 to 6 digits, numbers only.');
     if (a !== b) return fail('The two PINs are different. Please type them again.');
     await log.add({ type: 'doctor', kind: 'pin', doctorId: d.id, pin: await makeRecord(a), by: d.id });
-    await reload(); st.mode = 'view'; st.error = ''; st.info = 'Your PIN was changed.'; render();
+    await reload(); st.mode = 'view'; st.error = ''; st.info = 'The PIN was changed.'; render();
   }
 
   async function adminReset(id) {
@@ -122,7 +122,7 @@ export function createDoctorUI(ctx) {
   function loginView() {
     const ds = list().filter((d) => d.pin);
     return panel(
-      h('div', { class: 'lock' }, icon('lock'), h('div', {}, h('h3', {}, 'Doctors'), h('p', { class: 'hint' }, 'For her doctor or dietitian. Choose your name and type your PIN.'))),
+      h('div', { class: 'lock' }, icon('lock'), h('div', {}, h('h3', {}, 'Doctors'), h('p', { class: 'hint' }, 'For doctor or dietitian. Choose a name and type the PIN.'))),
       err(),
       h('div', { class: 'num-field' }, h('label', { for: 'd-pick' }, 'Name'),
         h('select', { id: 'd-pick', class: 'text', onchange: (ev) => { st.pick = ev.target.value; } },
@@ -205,7 +205,7 @@ export function createDoctorUI(ctx) {
 
   async function saveRelief(key, name) {
     const { errors, text } = validateRelief(val('rl-' + key));
-    if (errors.length) return complain(`${name}: please keep it under ${RELIEF_MAX} letters so it fits on her screen.`);
+    if (errors.length) return complain(`${name}: please keep it under ${RELIEF_MAX} letters so it fits on screen.`);
     const cur = reliefFor(state.events, key)?.text ?? '';
     if (cur === text) return say(`${name}: no change to save.`);
     await log.add({ type: 'clinical', kind: 'relief', headacheType: key, text, by: actor() });
@@ -243,24 +243,24 @@ export function createDoctorUI(ctx) {
       st.cmsg ? h('p', { class: 'meta', role: 'status', id: 'c-status' }, st.cmsg) : null,
       st.cerr ? h('p', { class: 'error', role: 'alert' }, st.cerr) : null,
       h('details', { class: 'setting fold', id: 'relief', ...foldAttrs('relief') }, h('summary', {}, 'Common remedies for each headache type'),
-        h('p', { class: 'hint' }, 'Written by a doctor, in the doctor\'s own words. It appears on her screen while that type of headache is active, with your name. If nothing is written, nothing is shown. The app never adds advice of its own.'),
+        h('p', { class: 'hint' }, 'Written by a doctor, in the doctor\'s own words. It appears on screen while that type of headache is active, with the doctor\'s name. If nothing is written, nothing is shown. The app never adds advice of its own.'),
         h('ul', { class: 'relief-list' }, ...reliefTypes().map(({ key, name }) => {
           const r = reliefFor(state.events, key);
           return h('li', { class: 'relief-row', 'data-type': key },
             h('span', { class: 'who' }, name, r ? h('span', { class: 'hint' }, ` written by ${r.byName}`) : null),
-            area('rl-' + key, `Text for ${name}`, r?.text ?? '', 'e.g. what you would like her to see for this type', { maxlength: String(RELIEF_MAX + 50) }),
+            area('rl-' + key, `Text for ${name}`, r?.text ?? '', 'e.g. the text to show for this type', { maxlength: String(RELIEF_MAX + 50) }),
             h('button', { class: 'btn quiet', 'data-save-relief': key, onclick: () => saveRelief(key, name) }, 'Save'));
         }))),
       h('details', { class: 'setting fold', id: 'glucose-set', ...foldAttrs('glucose-set') }, h('summary', {}, 'Blood glucose settings'),
-        h('p', { class: 'hint' }, 'Used when glucose readings are added. The wording below is shown exactly as you write it, only when a reading is below your number.'),
+        h('p', { class: 'hint' }, 'Used when glucose readings are added. The wording below is shown exactly as written, only when a reading is below the number set here.'),
         h('div', { class: 'num-field' }, h('label', { for: 'ug-threshold' }, 'Show the message when a reading is below (mmol/L)'),
           h('input', { id: 'ug-threshold', type: 'text', inputmode: 'decimal', class: 'text', placeholder: 'e.g. 4', value: u?.threshold ?? '' })),
-        area('ug-text', 'Your wording for her', u?.text ?? '', 'e.g. the instruction you want her to see', { maxlength: String(URGENT_MAX + 50) }),
+        area('ug-text', 'Wording to show', u?.text ?? '', 'e.g. the instruction to show', { maxlength: String(URGENT_MAX + 50) }),
         h('button', { class: 'btn quiet', id: 'ug-save', onclick: saveUrgent }, 'Save urgent message'),
         h('label', { class: 'check', style: 'margin-top:0.9rem' }, h('input', { type: 'checkbox', id: 'fasting-on', checked: fasting(state.events), onchange: (ev) => flipFasting(ev.target.checked) }), 'Ask whether a reading was fasting, before a meal or after a meal'),
         h('p', { class: 'hint' }, 'Off by default. No fasting instructions are given by the app.')),
       h('details', { class: 'setting fold', id: 'notes', ...foldAttrs('notes') }, h('summary', {}, 'Clinical notes'),
-        h('p', { class: 'hint' }, 'For doctors. She does not see these. Notes cannot be edited after they are added.'),
+        h('p', { class: 'hint' }, 'For doctors. These are not shown on the diary screens. Notes cannot be edited after they are added.'),
         area('note-text', 'New note', '', 'e.g. what you want the next doctor to know'),
         h('button', { class: 'btn quiet', id: 'note-add', onclick: addNote }, 'Add note'),
         ns.length ? h('ul', { class: 'change-list' }, ...ns.map((n) => h('li', {}, h('span', {}, n.text), h('span', { class: 'meta' }, ` ${n.byName === 'Open access (no PIN set)' ? n.byName : n.byName}, ${formatLongDate(n.ms)} ${time(n.ms)}`)))) : h('p', { class: 'hint' }, 'No notes yet.')),
@@ -294,7 +294,7 @@ export function createDoctorUI(ctx) {
     if (!unlocked()) return loginView();
     const d = me();
     return panel(
-      h('div', { class: 'lock' }, icon('lock'), h('div', {}, h('h3', {}, `${d.name} (${d.role})`), h('p', { class: 'hint' }, 'Unlocked. It locks again in 5 minutes, or when you leave Options.'))),
+      h('div', { class: 'lock' }, icon('lock'), h('div', {}, h('h3', {}, `${d.name} (${d.role})`), h('p', { class: 'hint' }, 'Unlocked. It locks again in 5 minutes, or when Options is closed.'))),
       st.info ? h('p', { class: 'meta', role: 'status' }, st.info) : null,
       h('div', { class: 'two' },
         h('button', { class: 'btn quiet', id: 'd-mine', onclick: () => { st.mode = 'mine'; st.error = ''; st.info = ''; render(); } }, 'Change my PIN'),
@@ -314,7 +314,7 @@ export function createDoctorUI(ctx) {
   function adminAccounts() {
     const ds = list();
     return h('div', { class: 'setting', id: 'admin-accounts' }, h('h3', {}, 'Doctor accounts'),
-      h('p', { class: 'hint' }, 'You can add or remove a doctor and reset a PIN here. You cannot see anything clinical.'),
+      h('p', { class: 'hint' }, 'Doctors can be added or removed and PINs reset here. Nothing clinical is shown in this section.'),
       st.info ? h('p', { class: 'meta', role: 'status' }, st.info) : null,
       st.mode === 'add' && !unlocked() ? addForm('admin', 'Add a doctor') : null,
       ds.length ? h('ul', { class: 'account-list' }, ...ds.map((d) => h('li', {},

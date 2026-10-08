@@ -129,7 +129,7 @@ export function createHeadacheUI(ctx) {
       h('label', { class: 'small-label', for: 'weather-other' }, 'Something else?'),
       h('input', { id: 'weather-other', type: 'text', class: 'text', placeholder: 'e.g. humid and still', value: custom,
         oninput: (ev) => { d.weather = ev.target.value; d.errors = d.errors.filter((e) => e !== 'weather'); } }),
-      h('p', { class: 'hint' }, 'Later this will fill in by itself. You can always change it.')));
+      h('p', { class: 'hint' }, 'Later this will fill in by itself. It can always be changed.')));
   }
 
   function typeField() {
@@ -167,7 +167,7 @@ export function createHeadacheUI(ctx) {
   function commonChips() {
     const d = state.draft;
     const common = commonItems(state.events, 'phrases');
-    if (!common.length) return h('p', { class: 'hint' }, 'What you type here is remembered, and your five most used appear as buttons.');
+    if (!common.length) return h('p', { class: 'hint' }, 'What is typed here is remembered, and the five most used appear as buttons.');
     return h('div', { class: 'seg wrap', role: 'group', 'aria-label': 'Most used notes' },
       ...common.map((c) => h('button', { 'aria-pressed': String(hasPhrase(d.notes, c)),
         onclick: () => { d.notes = hasPhrase(d.notes, c) ? removePhrase(d.notes, c) : addPhrase(d.notes, c); clearNoteError(); render(); } }, c)));
@@ -257,9 +257,9 @@ export function createHeadacheUI(ctx) {
     const r = reliefFor(state.events, type);
     if (!r) return null;
     return h('div', { class: 'relief-box', role: 'note' },
-      h('h3', {}, 'From your doctor'),
+      h('h3', {}, 'From doctor'),
       h('p', { class: 'relief-text' }, r.text),
-      h('p', { class: 'meta' }, r.by === 'open' ? 'Written by her doctor' : `Written by ${r.byName}`));
+      h('p', { class: 'meta' }, r.by === 'open' ? 'Written by doctor' : `Written by ${r.byName}`));
   }
 
   function mainCard() {

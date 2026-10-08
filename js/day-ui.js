@@ -118,26 +118,26 @@ export function createDayUI(ctx) {
     const open = openActivity(state.events);
     if (phase === 'asleep') {
       return h('section', { class: 'panel', 'aria-labelledby': 'day-h' },
-        h('h2', { id: 'day-h' }, 'Your day'),
+        h('h2', { id: 'day-h' }, 'Day'),
         h('button', { class: 'btn primary', id: 'wake', onclick: wakeUp }, 'WOKE UP'));
     }
     if (phase === 'awake') {
       return h('section', { class: 'panel', 'aria-labelledby': 'day-h' },
-        h('h2', { id: 'day-h' }, 'Your day'),
+        h('h2', { id: 'day-h' }, 'Day'),
         h('button', { class: 'btn primary', id: 'activity-start', onclick: openActivityForm }, 'START ACTIVITY'));
     }
     const mins = Math.round((Date.now() - open.ms) / 60000);
     return h('section', { class: 'panel', 'aria-labelledby': 'day-h' },
-      h('h2', { id: 'day-h' }, 'Your day'),
+      h('h2', { id: 'day-h' }, 'Day'),
       h('p', { class: 'active-line strong' }, open.activity),
       h('p', { class: 'active-line' }, `${open.location} · ${open.position}`),
       h('p', { class: 'meta' }, `Since ${time(open.ms)} · ${minsText(mins)}`),
       state.confirmEnd
         ? h('div', { class: 'confirm', role: 'alert' },
-            h('p', { class: 'active-line strong' }, 'End your day now?'),
+            h('p', { class: 'active-line strong' }, 'End the day now?'),
             h('div', { class: 'two' },
               h('button', { class: 'btn quiet', id: 'end-no', onclick: () => { state.confirmEnd = false; render(); } }, 'Not yet'),
-              h('button', { class: 'btn primary', id: 'end-yes', onclick: endDay }, 'Yes, end my day')))
+              h('button', { class: 'btn primary', id: 'end-yes', onclick: endDay }, 'Yes, end the day')))
         : h('div', { class: 'two' },
             h('button', { class: 'btn primary', id: 'activity-change', onclick: openActivityForm }, 'CHANGE ACTIVITY'),
             h('button', { class: 'btn quiet', id: 'end-day', onclick: () => { state.confirmEnd = true; render(); } }, 'END THE DAY')));
