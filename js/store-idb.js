@@ -30,6 +30,8 @@ export async function createIdbStore() {
     getEvent: (id) => wrap(tx('events').get(id)),
     allEvents: () => wrap(tx('events').getAll()),
     addHistory: (h) => wrap(tx('history', 'readwrite').add(h)),
+    clearAll: () => Promise.all([wrap(tx('events', 'readwrite').clear()), wrap(tx('history', 'readwrite').clear())]).then(() => undefined),
+    allHistory: () => wrap(tx('history').getAll()),
     historyFor: (id) => wrap(tx('history').index('eventId').getAll(id)),
   };
 }

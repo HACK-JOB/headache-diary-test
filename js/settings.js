@@ -1,13 +1,19 @@
 import { STYLES } from './type-art.js';
 
 // Personal preferences (not health settings). Pure logic, stored in localStorage by app.js.
+/** Text sizes. Biggest is the old Normal (20px); the old Large and Largest were too big and are gone. */
+export const TEXT_SIZES = [
+  { key: 'big', label: 'Biggest', px: 20 },
+  { key: 'medium', label: 'Medium', px: 17 },
+  { key: 'small', label: 'Small', px: 14 },
+];
 export const THEMES = { paper: 'Warm paper', bright: 'Bright', dark: 'Calm dark' };
 import { validTimes } from './nudges.js';
 const LIGHT = ['paper', 'bright'];
 
 export const DEFAULTS = Object.freeze({
   theme: 'paper', lightTheme: 'paper', followSystem: false,
-  text: 'normal', clock: '12', savedCue: true, artStyle: 'frontOutline', nag: 'normal', chime: true,
+  text: 'big', clock: '12', savedCue: true, artStyle: 'frontOutline', nag: 'normal', chime: true,
   wakeOn: false, wakeAt: '09:00', glucoseOn: false, glucoseTimes: ['07:30'], sitOn: false, sitMins: 60,
 });
 
@@ -18,7 +24,7 @@ export function normalise(raw) {
     theme: pick(r.theme, Object.keys(THEMES), DEFAULTS.theme),
     lightTheme: pick(r.lightTheme, LIGHT, DEFAULTS.lightTheme),
     followSystem: r.followSystem === true,
-    text: pick(r.text, ['normal', 'large', 'largest'], DEFAULTS.text),
+    text: pick(r.text, TEXT_SIZES.map((t) => t.key), DEFAULTS.text),
     clock: pick(r.clock, ['12', '24'], DEFAULTS.clock),
     artStyle: pick(r.artStyle, Object.keys(STYLES), DEFAULTS.artStyle),
     savedCue: typeof r.savedCue === 'boolean' ? r.savedCue : DEFAULTS.savedCue,

@@ -45,6 +45,9 @@ export function createEventLog(store) {
       await store.putEvent(after);
       await store.addHistory({ eventId: id, action: 'delete', before, after, reason: String(reason).trim(), at });
     },
+    /** Master reset: remove every entry and every history record. */
+    async clearAll() { await store.clearAll(); },
+    async allHistory() { return store.allHistory(); },
     async history(id) {
       return store.historyFor(id);
     },

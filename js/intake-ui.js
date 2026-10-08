@@ -1,6 +1,6 @@
 // Meals and drinks screens: tiles on the main page, the entry form, today's intake list, and the Admin show/hide switches.
 import { dayStatuses } from './doctors.js';
-import { MEAL_TYPES, NUTRIENTS, perServing, validateIntake, myFoods, commonFoods, suggestFoods, dayIntake, visibility, visibleNutrients, visibilityEvent, visibilityLog } from './intake.js';
+import { MEAL_TYPES, NUTRIENTS, perServing, validateIntake, myFoods, commonFoods, topFoods, suggestFoods, dayIntake, visibility, visibleNutrients, visibilityEvent, visibilityLog } from './intake.js';
 import { canonical } from './memory.js';
 import { parseVolume } from './hydration.js';
 import { clockPicker } from './clock-ui.js';
@@ -127,8 +127,14 @@ export function createIntakeUI(ctx) {
 
   /* ---------- main page ---------- */
   function mainCard() {
+    const quick = topFoods(state.events);
     return h('section', { class: 'panel', 'aria-labelledby': 'meal-h' },
       h('h2', { id: 'meal-h' }, 'Food and drink'),
+      quick.length ? h('div', { class: 'quick-foods' },
+        h('p', { class: 'small-label' }, 'Most used'),
+        h('div', { class: 'seg wrap', role: 'group', 'aria-label': 'Most used foods and drinks' },
+          ...quick.map((f) => h('button', { class: 'chip', 'data-quick': f.name, onclick: () => { openForm(f.mealType); useFood(myFoods(state.events).find((x) => x.name === f.name)); } }, f.name)))) : null,
+      h('p', { class: 'small-label' }, 'Or choose a meal'),
       h('div', { class: 'tiles' }, ...MEAL_TYPES.map((t) => h('button', { class: 'tile', id: 'tile-' + t.replace(/\s+/g, '-').toLowerCase(), onclick: () => openForm(t) }, t))));
   }
 

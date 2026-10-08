@@ -1,8 +1,10 @@
 // The Admin tab. Open until a PIN has been set up here; after that it is locked behind the PIN.
 // The PIN is a convenience lock for the family (see pin.js). There is no "forgot PIN" in v1.
+import { RESET_WORD, confirmsReset, diaryKeys, backupFile, backupName } from './reset.js';
 import { validPinFormat, makeRecord, checkPin, afterFail, afterSuccess, lockedFor, unlockUntil, isUnlocked } from './pin.js';
 
 const KEY = 'hd.adminPin';
+const RESET_TEXT = { mode: 'closed', typed: '', error: '' };
 const TRIES = 'hd.adminTries';
 const read = (k) => { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } };
 
@@ -15,7 +17,7 @@ export function createAdminUI(ctx) {
   const hasPin = () => !!record();
   const unlocked = () => !hasPin() || isUnlocked(state.adminUntil, Date.now());
 
-  function lock() { state.adminUntil = 0; st.mode = 'view'; st.error = ''; st.info = ''; clearTimeout(timer); }
+  function lock() { RESET_TEXT.mode = 'closed'; RESET_TEXT.typed = ''; RESET_TEXT.error = ''; state.adminUntil = 0; st.mode = 'view'; st.error = ''; st.info = ''; clearTimeout(timer); }
   function unlock() {
     state.adminUntil = unlockUntil(Date.now());
     clearTimeout(timer);
@@ -68,6 +70,45 @@ export function createAdminUI(ctx) {
     render();
   }
 
+  /* ---------- master reset ---------- */
+  async function saveBackup() {
+    const file = backupFile({ events: await log.all(), history: await log.allHistory() },
+      Object.fromEntries(diaryKeys(Object.keys(localStorage)).map((k) => [k, localStorage.getItem(k)])));
+    const url = URL.createObjectURL(new Blob([JSON.stringify(file)], { type: 'application/json' }));
+    const a = h('a', { href: url, download: backupName() });
+    document.body.append(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+    RESET_TEXT.error = ''; st.info = 'Backup saved to the Downloads folder.'; render();
+  }
+  async function doReset() {
+    if (!confirmsReset(RESET_TEXT.typed)) { RESET_TEXT.error = `Type ${RESET_WORD} in capital letters to reset.`; render(); return; }
+    await log.clearAll();
+    for (const k of diaryKeys(Object.keys(localStorage))) localStorage.removeItem(k);
+    try { for (const c of await caches.keys()) await caches.delete(c); } catch { /* no cache to clear */ }
+    location.reload();
+  }
+  function resetSection() {
+    if (RESET_TEXT.mode === 'closed') {
+      return h('div', { class: 'setting danger', id: 'reset-zone' }, h('h3', {}, 'Master reset'),
+        h('p', { class: 'hint' }, 'Wipes everything on this tablet and starts fresh.'),
+        h('button', { class: 'btn', id: 'reset-open', onclick: () => { RESET_TEXT.mode = 'open'; RESET_TEXT.typed = ''; RESET_TEXT.error = ''; render(); } }, 'Reset everything…'));
+    }
+    const ok = confirmsReset(RESET_TEXT.typed);
+    return h('div', { class: 'setting danger', id: 'reset-zone', role: 'group', 'aria-labelledby': 'reset-h' }, h('h3', { id: 'reset-h' }, '⚠ Master reset: this cannot be undone'),
+      h('p', {}, 'This permanently deletes from this tablet:'),
+      h('ul', { class: 'reset-list' },
+        ...['every diary entry (water, meals, headaches, activities, weight, glucose, medicine answers)', 'all doctor accounts, targets, prescriptions and notes', 'the Admin and Doctor PINs', 'remembered foods and notes', 'all settings'].map((t) => h('li', {}, t))),
+      h('p', { class: 'hint' }, 'A backup file keeps the diary entries and their history. It does not keep PINs. It cannot be loaded back in yet.'),
+      h('button', { class: 'btn', id: 'reset-backup', onclick: saveBackup }, 'Save a backup file first'),
+      h('div', { class: 'num-field' }, h('label', { for: 'reset-type' }, `To continue, type ${RESET_WORD}`),
+        h('input', { id: 'reset-type', class: 'text', type: 'text', autocomplete: 'off', autocapitalize: 'characters', spellcheck: 'false', value: RESET_TEXT.typed,
+          oninput: (ev) => { RESET_TEXT.typed = ev.target.value; const b = document.getElementById('reset-go'); if (b) { const yes = confirmsReset(RESET_TEXT.typed); b.disabled = !yes; b.setAttribute('aria-disabled', String(!yes)); } } })),
+      RESET_TEXT.error ? h('p', { class: 'error', role: 'alert' }, RESET_TEXT.error) : null,
+      h('div', { class: 'two' },
+        h('button', { class: 'btn quiet', id: 'reset-cancel', onclick: () => { RESET_TEXT.mode = 'closed'; RESET_TEXT.typed = ''; RESET_TEXT.error = ''; render(); } }, 'Cancel'),
+        h('button', { class: 'btn danger', id: 'reset-go', disabled: !ok, 'aria-disabled': String(!ok), onclick: doReset }, 'Delete everything')));
+  }
+
   const err = () => st.error ? h('p', { class: 'error', role: 'alert' }, st.error) : null;
   const wrap = (...kids) => h('section', { class: 'panel', id: 'tabpanel', role: 'tabpanel', 'aria-labelledby': 'tab-admin' }, ...kids);
   const buttons = (...b) => h('div', { class: 'two' }, ...b);
@@ -117,7 +158,8 @@ export function createAdminUI(ctx) {
         h('p', { class: 'hint' }, hasPin() ? 'Unlocked. It locks again in 5 minutes.' : 'Open for now. Set a PIN below to lock it.'))),
       st.info ? h('p', { class: 'meta', role: 'status' }, st.info) : null,
       pinSection(),
-      extra);
+      extra,
+      resetSection());
   }
 
   return { panel, leave, lock, hasPin };

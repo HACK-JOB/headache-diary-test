@@ -2,7 +2,7 @@ import { dayKey, msUntilNextMidnight, formatLongDate, formatTime } from './time.
 import { parseVolume, recentSizes, addSizeToRecent } from './hydration.js';
 import { createEventLog } from './events.js';
 import { createIdbStore } from './store-idb.js';
-import { THEMES, normalise, activeTheme, toggleDark } from './settings.js';
+import { THEMES, TEXT_SIZES, normalise, activeTheme, toggleDark } from './settings.js';
 import { createHeadacheUI } from './headache-ui.js';
 import { createDayUI } from './day-ui.js';
 import { createIntakeUI } from './intake-ui.js';
@@ -207,7 +207,7 @@ function renderOptions() {
             h('button', { class: 'art-pick', 'aria-pressed': String(st.artStyle === k), onclick: () => saveSettings({ artStyle: k }) },
               h('span', { class: 'art-mini' }, ...['cluster', 'sinus', 'oneSided', 'tmj'].map((t) => artElement(t, k))), h('span', { class: 'art-name' }, name)))),
           h('p', { class: 'hint' }, 'Only the look changes. The same six types are always there.')),
-        h('div', { class: 'setting' }, h('h3', {}, 'Text size'), seg('Text size', 'text', [['normal', 'Normal'], ['large', 'Large'], ['largest', 'Largest']])),
+        h('div', { class: 'setting' }, h('h3', {}, 'Text size'), seg('Text size', 'text', [...TEXT_SIZES].reverse().map((t) => [t.key, t.label]))),
         h('div', { class: 'setting' }, h('h3', {}, 'Clock'), seg('Clock', 'clock', [['12', '12 hour'], ['24', '24 hour']])),
         h('div', { class: 'setting' },
           h('label', { class: 'check' }, h('input', { type: 'checkbox', checked: st.followSystem, onchange: (ev) => saveSettings({ followSystem: ev.target.checked }) }), 'Switch to dark when the tablet does'),
@@ -265,29 +265,8 @@ function render() {
 
   const sizeLabel = (ml) => (ml >= 1000 && ml % 100 === 0 ? `${ml / 1000} L` : `${ml} ml`);
 
-  const view = h('div', {},
-    h('header', { class: 'topbar' },
-      h('div', { class: 'brand' },
-        h('img', { src: 'icons/icon.svg', alt: '' }),
-        h('div', {}, h('h1', {}, 'Headache Diary'), h('p', { class: 'date' }, formatLongDate(Date.now())))),
-      h('div', { class: 'tools' },
-        h('button', {
-          class: 'icon-btn toggle', id: 'dark-toggle', 'aria-pressed': String(shown === 'dark'),
-          'aria-label': shown === 'dark' ? 'Dark mode is on. Tap to turn off' : 'Dark mode is off. Tap to turn on',
-          onclick: () => saveSettings(toggleDark(state.settings, darkQuery.matches)),
-        }, icon(shown === 'dark' ? 'moon' : 'sun')),
-        helpButton('main'),
-        h('button', { class: 'icon-btn', id: 'cog', 'aria-label': 'Options', onclick: () => { state.view = 'options'; render(); window.scrollTo(0, 0); } }, icon('cog')))),
-    h('main', {},
-      dui.mainCard(),
-      mui.weightCard(),
-      rxCard(),
-      hui.mainCard(),
-      dui.todayList(),
-      iui.mainCard(),
-      iui.todayList(),
-      mui.glucoseCard(),
-      h('section', { class: 'panel', 'aria-labelledby': 'water-h' },
+  const waterPanel =
+    h('section', { class: 'panel', 'aria-labelledby': 'water-h' },
         h('h2', { id: 'water-h' }, 'Water today'),
         h('div', { class: 'total', 'aria-live': 'polite' },
           h('span', { class: 'big num' }, fmt(total)),
@@ -312,7 +291,28 @@ function render() {
         entries.length
           ? h('button', { class: 'btn quiet small undo', id: 'undo', onclick: () => removeEntry(entries[0]) },
               `Undo last refill (${fmt(entries[0].ml)} ml at ${time(entries[0].ms)})`)
-          : null)),
+          : null);
+
+  const view = h('div', {},
+    h('header', { class: 'topbar' },
+      h('div', { class: 'brand' },
+        h('img', { src: 'icons/icon.svg', alt: '' }),
+        h('div', {}, h('h1', {}, 'Headache Diary'), h('p', { class: 'date' }, formatLongDate(Date.now())))),
+      h('div', { class: 'tools' },
+        h('button', {
+          class: 'icon-btn toggle', id: 'dark-toggle', 'aria-pressed': String(shown === 'dark'),
+          'aria-label': shown === 'dark' ? 'Dark mode is on. Tap to turn off' : 'Dark mode is off. Tap to turn on',
+          onclick: () => saveSettings(toggleDark(state.settings, darkQuery.matches)),
+        }, icon(shown === 'dark' ? 'moon' : 'sun')),
+        helpButton('main'),
+        h('button', { class: 'icon-btn', id: 'cog', 'aria-label': 'Options', onclick: () => { state.view = 'options'; render(); window.scrollTo(0, 0); } }, icon('cog')))),
+    h('main', { class: 'home' },
+      h('div', { class: 'home-row' }, waterPanel, h('div', { class: 'home-col' }, dui.mainCard(), mui.weightCard(), dui.todayList())),
+      rxCard(),
+      hui.mainCard(),
+      iui.mainCard(),
+      iui.todayList(),
+      mui.glucoseCard()),
     state.toast ? h('div', { class: 'toast', role: 'status' }, state.toast) : null);
 
   app.replaceChildren(view);

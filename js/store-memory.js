@@ -7,6 +7,8 @@ export function createMemoryStore() {
     async getEvent(id) { const e = events.get(id); return e ? structuredClone(e) : undefined; },
     async allEvents() { return [...events.values()].map((e) => structuredClone(e)); },
     async addHistory(h) { history.push(structuredClone(h)); },
+    async clearAll() { events.clear(); history.length = 0; },
+    async allHistory() { return history.map((h) => structuredClone(h)); },
     async historyFor(id) { return history.filter((h) => h.eventId === id).map((h) => structuredClone(h)); },
   };
 }

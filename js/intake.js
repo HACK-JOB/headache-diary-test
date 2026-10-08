@@ -68,6 +68,12 @@ export function commonFoods(events, mealType) {
     .sort((a, b) => b.count - a.count || b.last - a.last).slice(0, 5).map((f) => f.name);
 }
 
+/** Her five most-used foods overall (any tile), each with the tile she usually has it on. Nothing is preset. */
+export function topFoods(events, n = 5) {
+  return myFoods(events).sort((a, b) => b.count - a.count || b.last - a.last).slice(0, n)
+    .map((f) => ({ name: f.name, mealType: f.mealType, count: f.count }));
+}
+
 /** Past foods that contain the typed text. This tile's foods come first, then the rest. */
 export function suggestFoods(events, mealType, text) {
   const q = canonical(text).toLowerCase();

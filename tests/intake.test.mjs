@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { MEAL_TYPES, NUTRIENTS, perServing, validateIntake, myFoods, commonFoods, suggestFoods, dayIntake, visibility, visibleNutrients, visibilityLog, visibilityEvent } from '../js/intake.js';
+import { MEAL_TYPES, NUTRIENTS, perServing, validateIntake, myFoods, commonFoods, topFoods, suggestFoods, dayIntake, visibility, visibleNutrients, visibilityLog, visibilityEvent } from '../js/intake.js';
 
 const bne = (y, mo, d, h = 0, mi = 0) => Date.UTC(y, mo - 1, d, h - 10, mi);
 let n = 0;
@@ -109,4 +109,19 @@ test('visibilityEvent refuses an unknown item', () => {
 test('visibilityLog lists changes newest first', () => {
   const evs = [{ ...visibilityEvent('iron', false), ms: 1, seq: 1, id: 'a' }, { ...visibilityEvent('iron', true), ms: 2, seq: 2, id: 'b' }];
   assert.deepEqual(visibilityLog(evs).map((x) => [x.item, x.shown]), [['iron', true], ['iron', false]]);
+});
+
+test('topFoods: the 5 most used foods across every tile, each with its usual tile; nothing is preset', () => {
+  const t = bne(2026, 10, 8, 8);
+  const evs = [
+    eat(t, 'Toast', 'Breakfast'), eat(t + 1, 'Toast', 'Breakfast'), eat(t + 2, 'Toast', 'Breakfast'),
+    eat(t + 3, 'Soup', 'Lunch'), eat(t + 4, 'Soup', 'Lunch'),
+    eat(t + 5, 'Eggs', 'Breakfast'), eat(t + 6, 'Rice', 'Dinner'), eat(t + 7, 'Fish', 'Dinner'), eat(t + 8, 'Apple', 'Snack'),
+  ];
+  const top = topFoods(evs);
+  assert.equal(top.length, 5);
+  assert.deepEqual(top.slice(0, 2).map((f) => [f.name, f.mealType]), [['Toast', 'Breakfast'], ['Soup', 'Lunch']]);
+  assert.deepEqual(topFoods(evs, 2).map((f) => f.name), ['Toast', 'Soup']);
+  assert.deepEqual(topFoods([]), []);
+  assert.deepEqual(topFoods([eat(t, 'Toast', 'Breakfast', { deleted: true })]), []);
 });

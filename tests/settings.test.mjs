@@ -1,10 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { DEFAULTS, normalise, activeTheme, toggleDark } from '../js/settings.js';
+import { DEFAULTS, normalise, activeTheme, toggleDark, TEXT_SIZES } from '../js/settings.js';
 
-test('defaults are warm paper, normal text, 12 hour clock, saved cue on', () => {
+test('defaults are warm paper, biggest text, 12 hour clock, saved cue on', () => {
   assert.equal(DEFAULTS.theme, 'paper');
-  assert.equal(DEFAULTS.text, 'normal');
+  assert.equal(DEFAULTS.text, 'big');
   assert.equal(DEFAULTS.clock, '12');
   assert.equal(DEFAULTS.savedCue, true);
   assert.equal(DEFAULTS.followSystem, false);
@@ -50,4 +50,15 @@ test('head picture style defaults to the front outline and survives normalise', 
   assert.equal(normalise({ artStyle: 'frontHeat' }).artStyle, 'frontHeat');
   assert.equal(normalise({ artStyle: 'neon' }).artStyle, 'frontOutline');
   assert.equal(normalise(null).artStyle, 'frontOutline');
+});
+
+test('text sizes: Biggest (the old Normal), Medium and Small; old saved sizes map to Biggest', () => {
+  assert.deepEqual(TEXT_SIZES.map((t) => t.key), ['big', 'medium', 'small']);
+  assert.deepEqual(TEXT_SIZES.map((t) => t.label), ['Biggest', 'Medium', 'Small']);
+  assert.equal(normalise({ text: 'medium' }).text, 'medium');
+  assert.equal(normalise({ text: 'small' }).text, 'small');
+  for (const old of ['normal', 'large', 'largest']) assert.equal(normalise({ text: old }).text, 'big', old);
+  assert.equal(normalise({ text: 'huge' }).text, 'big');
+  assert.ok(TEXT_SIZES[0].px > TEXT_SIZES[1].px && TEXT_SIZES[1].px > TEXT_SIZES[2].px);
+  assert.equal(TEXT_SIZES[0].px, 20);          // the old Normal size is now the biggest
 });
