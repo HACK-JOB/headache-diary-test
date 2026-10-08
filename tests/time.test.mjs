@@ -38,3 +38,26 @@ test('formatTime can show 24 hour time', () => {
   assert.equal(formatTime(brisbane(2026, 10, 8, 14, 5), '24'), '14:05');
   assert.equal(formatTime(brisbane(2026, 10, 8, 0, 7), '24'), '00:07');
 });
+
+import { msFromClock, clockValue } from '../js/time.js';
+
+test('msFromClock turns a typed HH:MM into Brisbane time on that day', () => {
+  assert.equal(msFromClock('2026-10-08', '09:30'), brisbane(2026, 10, 8, 9, 30));
+  assert.equal(msFromClock('2026-10-08', '00:00'), brisbane(2026, 10, 8, 0, 0));
+});
+
+test('msFromClock rejects rubbish', () => {
+  assert.equal(msFromClock('2026-10-08', ''), null);
+  assert.equal(msFromClock('2026-10-08', '25:00'), null);
+  assert.equal(msFromClock('2026-10-08', 'ab:cd'), null);
+});
+
+test('a time later than now is taken as yesterday (she forgot to log earlier)', () => {
+  const now = brisbane(2026, 10, 8, 9, 0);
+  assert.equal(msFromClock('2026-10-08', '23:30', now), brisbane(2026, 10, 7, 23, 30));
+  assert.equal(msFromClock('2026-10-08', '08:15', now), brisbane(2026, 10, 8, 8, 15));
+});
+
+test('clockValue gives the HH:MM for a time input', () => {
+  assert.equal(clockValue(brisbane(2026, 10, 8, 7, 5)), '07:05');
+});

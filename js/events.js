@@ -9,15 +9,21 @@ function needReason(reason) {
   if (!reason || !String(reason).trim()) throw new Error('A reason is required');
 }
 
+// Strictly increasing counter so two entries made in the same minute keep their order.
+let lastSeq = 0;
+const nextSeq = () => { lastSeq = Math.max(lastSeq + 1, Date.now() * 1000); return lastSeq; };
+
+export const byTime = (a, b) => a.ms - b.ms || (a.seq ?? 0) - (b.seq ?? 0);
+
 export function createEventLog(store) {
   return {
     async add(fields, ms = Date.now()) {
-      const e = { id: newId(), ms, createdAt: ms, ...fields };
+      const e = { id: newId(), ms, createdAt: Date.now(), seq: nextSeq(), ...fields };
       await store.putEvent(e);
       return e;
     },
     async all() {
-      return (await store.allEvents()).sort((a, b) => a.ms - b.ms);
+      return (await store.allEvents()).sort(byTime);
     },
     async byDay(key) {
       return (await this.all()).filter((e) => !e.deleted && dayKey(e.ms) === key);

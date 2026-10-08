@@ -61,3 +61,12 @@ test('byDay returns only that day, excluding deleted entries', async () => {
   await log.remove(gone.id, 'oops', brisbane(8, 11));
   assert.deepEqual((await log.byDay('2026-10-08')).map((e) => e.ml), [1]);
 });
+
+test('events with the same time come back in the order they were added', async () => {
+  const log = mk();
+  const a = await log.add({ type: 'x', n: 1 }, 5000);
+  const b = await log.add({ type: 'x', n: 2 }, 5000);
+  const c = await log.add({ type: 'x', n: 3 }, 5000);
+  assert.deepEqual((await log.all()).map((e) => e.n), [1, 2, 3]);
+  assert.ok(a.seq < b.seq && b.seq < c.seq);
+});

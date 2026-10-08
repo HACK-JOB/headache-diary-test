@@ -30,3 +30,22 @@ export function formatTime(ms, clock = '12') {
   return new Intl.DateTimeFormat('en-AU', { timeZone: TZ, hour: 'numeric', minute: '2-digit', hour12: true })
     .format(new Date(ms)).replace(/\s?([AP]M)/i, (_, m) => ' ' + m.toLowerCase());
 }
+
+/** "HH:MM" typed on a given Brisbane day -> ms. A time later than `now` means she is logging it after midnight, so yesterday. */
+export function msFromClock(key, hhmm, now = Date.now()) {
+  const m = /^(\d{1,2}):(\d{2})$/.exec(String(hhmm).trim());
+  if (!m) return null;
+  const h = Number(m[1]);
+  const mi = Number(m[2]);
+  if (h > 23 || mi > 59) return null;
+  const [y, mo, d] = key.split('-').map(Number);
+  let ms = Date.UTC(y, mo - 1, d, h - 10, mi);
+  if (ms > now + 60000) ms -= DAY_MS;
+  return ms;
+}
+
+/** ms -> "HH:MM" for <input type=time>. */
+export function clockValue(ms) {
+  const d = new Date(ms + OFFSET_MS);
+  return `${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`;
+}
