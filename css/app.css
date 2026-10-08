@@ -181,7 +181,7 @@ main.form { max-width: 46rem; padding-bottom: 6rem; }
   .form-grid { grid-template-columns: 1.25fr 1fr; align-items: start; }
   .types { grid-template-columns: repeat(3, 1fr); }
   .type .head-art { max-height: 7rem; }
-  .sev-btn { min-height: 3.2rem; grid-template-columns: 2.2rem 7rem 1fr; }
+  .top-row { grid-template-columns: minmax(13rem, 17rem) 1fr; align-items: stretch; }
 }
 .field.has-error { border: 3px solid var(--red); }
 .opt { font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--muted); }
@@ -193,10 +193,13 @@ input[type="time"].text { width: auto; min-width: 9rem; }
 .seg.wrap { flex-wrap: wrap; }
 .seg button[role="radio"][aria-checked="true"], .seg button[aria-pressed="true"] { background: var(--teal); border-color: var(--teal); color: var(--on-teal); }
 
-.sev { display: grid; gap: 0.5rem; }
-.sev-btn { display: grid; grid-template-columns: 2.6rem 8rem 1fr; align-items: center; gap: 0.6rem; min-height: 3.6rem; padding: 0.4rem 0.8rem; border: 2px solid var(--line); border-radius: 0.8rem; background: var(--field); color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
+.sev { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.5rem; }
+.sev-desc { margin-top: 0.6rem; color: var(--muted); min-height: 1.4em; }
+.top-row { display: grid; gap: var(--gap); }
+.time-panel .custom { margin-bottom: 0; }
+.sev-btn { display: grid; justify-items: center; align-content: center; gap: 0.1rem; min-height: 4.4rem; padding: 0.3rem 0.2rem; border: 2px solid var(--line); border-radius: 0.8rem; background: var(--field); color: var(--ink); font: inherit; text-align: center; cursor: pointer; }
 .sev-btn[aria-checked="true"] { background: var(--teal); border-color: var(--teal); color: var(--on-teal); }
-.sev-n { font-size: 1.5rem; font-weight: 700; } .sev-name { font-weight: 700; } .sev-hint { font-size: 0.85rem; opacity: 0.85; }
+.sev-n { font-size: 1.6rem; font-weight: 700; } .sev-name { font-weight: 700; font-size: 0.8rem; }
 
 .types { display: grid; grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr)); gap: 0.7rem; }
 .type { display: flex; flex-direction: column; align-items: center; gap: 0.3rem; padding: 0.6rem; border: 3px solid var(--line); border-radius: 0.9rem; background: var(--art-bg); color: var(--ink); font: inherit; cursor: pointer; text-align: center; }

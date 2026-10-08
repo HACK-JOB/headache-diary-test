@@ -107,11 +107,13 @@ export function createHeadacheUI(ctx) {
 
   function severityField() {
     const d = state.draft;
+    const chosen = d.severity ? SEVERITY[d.severity - 1] : null;
     return field('severity', h('div', {},
       wasTag('severity', (n) => `${n} · ${SEVERITY[n - 1].name}`),
       h('div', { class: 'sev', role: 'radiogroup', 'aria-labelledby': 'l-severity' },
         ...SEVERITY.map((s) => h('button', { class: 'sev-btn', role: 'radio', 'aria-checked': String(d.severity === s.n), onclick: () => choose('severity', s.n) },
-          h('span', { class: 'sev-n num' }, s.n), h('span', { class: 'sev-name' }, s.name), h('span', { class: 'sev-hint' }, s.hint))))));
+          h('span', { class: 'sev-n num' }, s.n), h('span', { class: 'sev-name' }, s.name)))),
+      h('p', { class: 'sev-desc', 'aria-live': 'polite' }, chosen ? chosen.hint : 'Tap a number. 1 is mild, 5 is the worst.')));
   }
 
   function weatherField() {
@@ -197,15 +199,17 @@ export function createHeadacheUI(ctx) {
           h('h2', {}, isStart ? 'Headache started' : 'Change status of headache'))),
       h('main', { class: 'form' },
         isStart ? null : h('p', { class: 'meta' }, 'Only change what is different. Leave the rest.'),
-        h('section', { class: 'panel field' },
-          h('h2', {}, isStart ? 'When did it start?' : 'What time is it now?'),
-          h('div', { class: 'custom' },
-            h('input', { id: 'clock', type: 'time', class: 'text', value: d.clock, 'aria-label': 'Time', onchange: (ev) => { d.clock = ev.target.value; } }),
-            h('button', { class: 'btn quiet', type: 'button', onclick: () => { d.clock = clockValue(Date.now()); render(); } }, 'Now')),
-          h('p', { class: 'hint' }, 'Already set to now. Change it only if it started earlier.')),
+        h('div', { class: 'top-row' },
+          h('section', { class: 'panel field time-panel' },
+            h('h2', {}, isStart ? 'When did it start?' : 'What time is it now?'),
+            h('div', { class: 'custom' },
+              h('input', { id: 'clock', type: 'time', class: 'text', value: d.clock, 'aria-label': 'Time', onchange: (ev) => { d.clock = ev.target.value; } }),
+              h('button', { class: 'btn quiet', type: 'button', onclick: () => { d.clock = clockValue(Date.now()); render(); } }, 'Now')),
+            h('p', { class: 'hint' }, 'Set to now. Change it only if it started earlier.')),
+          severityField()),
         h('div', { class: 'form-grid' },
-          h('div', { class: 'form-col' }, typeField(), severityField()),
-          h('div', { class: 'form-col' }, weatherField(), symptomField(), notesField(),
+          h('div', { class: 'form-col' }, typeField(), symptomField()),
+          h('div', { class: 'form-col' }, weatherField(), notesField(),
             memoryField('meds', 'Medicine taken', 'Type a medicine name'),
             memoryField('relief', 'Other things that helped', 'e.g. ice pack, rest, water'))),
         d.errors.length ? h('p', { class: 'error big-error', role: 'alert' }, 'A few things still need an answer. They are marked above.') : null,
