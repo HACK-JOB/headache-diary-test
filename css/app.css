@@ -409,7 +409,9 @@ body { padding-top: var(--rb-h, 0px); }
 .home-row { display: grid; gap: var(--gap); }
 @media (min-width: 700px) {
   main.home { max-width: 60rem; }
-  .home-row { grid-template-columns: 1fr 1fr; align-items: start; }
+  .home-row { grid-template-columns: 1fr 1fr; align-items: stretch; }
+  .home-row > .panel { margin: 0; display: flex; flex-direction: column; }
+  .home-row > .panel #refill { margin-top: auto; }
 }
 .quick-foods { margin: 0 0 0.8rem; }
 .quick-foods .seg { flex-wrap: wrap; }
