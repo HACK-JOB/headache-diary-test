@@ -54,8 +54,9 @@ export const FORM_STEPS = {
   ],
   'options-track': [
     { sel: ['#back'], text: 'Goes back to the diary.' },
-    { sel: ['.trk-row'], text: 'Each log can be tracked or not. Turning one off hides it and stops its reminders. Nothing already recorded is deleted.' },
-    { sel: ['.warn-line', '#trk-user'], text: 'If Admin or a doctor has locked a log, it cannot be changed here and the message says who locked it.' },
+    { sel: ['.tabs'], text: 'Options sections. Tracking chooses which logs are used.' },
+    { sel: ['.trk-row'], text: 'Each log can be tracked or not. Off hides it and stops its reminders.' },
+    { sel: ['.warn-line', '#trk-user'], text: 'A log locked by Admin or a doctor cannot be changed here. The message says who.' },
   ],
   'options-admin': [
     { sel: ['#back'], text: 'Goes back to the diary.' },
