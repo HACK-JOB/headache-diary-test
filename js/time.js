@@ -49,3 +49,21 @@ export function clockValue(ms) {
   const d = new Date(ms + OFFSET_MS);
   return `${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`;
 }
+
+/** "HH:MM" -> the parts shown in a 12- or 24-hour picker. Returns null if it is not a time. */
+export function splitClock(hhmm, clock = '12') {
+  const m = /^(\d{2}):(\d{2})$/.exec(String(hhmm ?? ''));
+  if (!m) return null;
+  const h24 = Number(m[1]);
+  const min = Number(m[2]);
+  if (h24 > 23 || min > 59) return null;
+  if (clock === '24') return { h: h24, m: min, ap: null };
+  return { h: h24 % 12 === 0 ? 12 : h24 % 12, m: min, ap: h24 < 12 ? 'am' : 'pm' };
+}
+
+/** The reverse: picker parts -> "HH:MM". Gives '' while any part is missing. */
+export function joinClock({ h, m, ap }, clock = '12') {
+  if (h == null || m == null || (clock !== '24' && !ap)) return '';
+  const h24 = clock === '24' ? h : (h % 12) + (ap === 'pm' ? 12 : 0);
+  return `${pad(h24)}:${pad(m)}`;
+}

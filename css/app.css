@@ -181,7 +181,7 @@ main.form { max-width: 46rem; padding-bottom: 6rem; }
   .form-grid { grid-template-columns: 1.25fr 1fr; align-items: start; }
   .types { grid-template-columns: repeat(3, 1fr); }
   .type .head-art { max-height: 7rem; }
-  .top-row { grid-template-columns: minmax(13rem, 17rem) 1fr; align-items: stretch; }
+  .top-row { grid-template-columns: minmax(18.5rem, 21rem) 1fr; align-items: stretch; }
 }
 .field.has-error { border: 3px solid var(--red); }
 .opt { font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--muted); }
@@ -282,3 +282,37 @@ input[type="time"].text { width: auto; min-width: 9rem; }
 #f-name .hint { margin-bottom: 0.6rem; }
 #f-name .seg { margin-bottom: 0.6rem; }
 .servings-panel .small-label { display: none; }
+
+/* Clock picker, PIN */
+.clock-picker { display: flex; align-items: center; gap: 0.35rem; }
+.clock-sel { min-height: 3.4rem; padding: 0 0.5rem; font-size: 1.15rem; font-weight: 700; flex: 0 0 auto; min-width: 4.2rem; }
+.clock-colon { font-size: 1.4rem; font-weight: 700; }
+.pin-input { letter-spacing: 0.4em; font-size: 1.4rem; max-width: 12rem; text-align: center; }
+
+.clock-picker { flex-wrap: nowrap; max-width: 100%; }
+.clock-sel { min-width: 0; width: 4.6rem; padding: 0 0.3rem; }
+.time-panel .custom { gap: 0.5rem; }
+.time-panel .custom .btn { min-height: 3.4rem; }
+#tabpanel .pin-input, .setting .pin-input { margin-bottom: 0.9rem; }
+#tabpanel > .num-field { margin-bottom: 0.2rem; }
+#pin-go { margin: 0.4rem 0 0.8rem; }
+
+.clock-picker select.clock-sel { width: 4.8rem; min-width: 0; flex: 0 0 4.8rem; padding: 0 0.3rem; }
+.top-row { }
+@media (min-width: 900px) and (orientation: landscape) {
+  .top-row { grid-template-columns: minmax(15rem, 17.5rem) 1fr; }
+}
+
+.clock-picker select.clock-sel { width: 4.3rem; flex: 0 0 4.3rem; }
+@media (min-width: 900px) and (orientation: landscape) {
+  .top-row { grid-template-columns: minmax(18rem, 19.5rem) 1fr; }
+}
+
+@media (min-width: 900px) and (orientation: landscape) {
+  .meal-pair { grid-template-columns: minmax(18rem, 19.5rem) minmax(0, 1fr); }
+  .meal-grid { grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); }
+}
+
+/* Nutrition: three across when there is room, two when text is very large or the screen is short */
+:root[data-text="largest"] .num-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.num-field input { min-width: 0; width: 100%; }

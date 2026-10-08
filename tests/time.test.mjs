@@ -61,3 +61,32 @@ test('a time later than now is taken as yesterday (she forgot to log earlier)', 
 test('clockValue gives the HH:MM for a time input', () => {
   assert.equal(clockValue(brisbane(2026, 10, 8, 7, 5)), '07:05');
 });
+
+import { splitClock, joinClock } from '../js/time.js';
+
+test('splitClock: 24-hour shows the hour as it is', () => {
+  assert.deepEqual(splitClock('15:05', '24'), { h: 15, m: 5, ap: null });
+  assert.deepEqual(splitClock('00:30', '24'), { h: 0, m: 30, ap: null });
+});
+
+test('splitClock: 12-hour maps midnight to 12 am and noon to 12 pm', () => {
+  assert.deepEqual(splitClock('00:30', '12'), { h: 12, m: 30, ap: 'am' });
+  assert.deepEqual(splitClock('12:00', '12'), { h: 12, m: 0, ap: 'pm' });
+  assert.deepEqual(splitClock('15:05', '12'), { h: 3, m: 5, ap: 'pm' });
+  assert.deepEqual(splitClock('09:45', '12'), { h: 9, m: 45, ap: 'am' });
+});
+
+test('joinClock is the exact reverse for every minute of the day, in both clocks', () => {
+  for (const clock of ['12', '24']) {
+    for (let t = 0; t < 1440; t += 1) {
+      const hhmm = `${String(Math.floor(t / 60)).padStart(2, '0')}:${String(t % 60).padStart(2, '0')}`;
+      assert.equal(joinClock(splitClock(hhmm, clock), clock), hhmm);
+    }
+  }
+});
+
+test('joinClock copes with an empty or odd value by giving back nothing', () => {
+  assert.equal(joinClock({ h: null, m: 5, ap: 'am' }, '12'), '');
+  assert.equal(splitClock('', '24'), null);
+  assert.equal(splitClock('nonsense', '12'), null);
+});

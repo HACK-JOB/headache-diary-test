@@ -6,6 +6,7 @@ import { THEMES, normalise, activeTheme, toggleDark } from './settings.js';
 import { createHeadacheUI } from './headache-ui.js';
 import { createDayUI } from './day-ui.js';
 import { createIntakeUI } from './intake-ui.js';
+import { createAdminUI } from './admin-ui.js';
 import { STYLES, artElement, ART_KEYS } from './type-art.js';
 
 const app = document.getElementById('app');
@@ -15,6 +16,7 @@ let log;
 let hui;
 let dui;
 let iui;
+let aui;
 
 /* ---------- small helpers ---------- */
 function h(tag, attrs = {}, ...kids) {
@@ -170,13 +172,13 @@ function renderOptions() {
   const view = h('div', {},
     h('header', { class: 'topbar' },
       h('div', { class: 'page-head' },
-        h('button', { class: 'icon-btn', id: 'back', 'aria-label': 'Back to diary', onclick: () => { state.view = 'main'; render(); } }, icon('back')),
+        h('button', { class: 'icon-btn', id: 'back', 'aria-label': 'Back to diary', onclick: () => { aui.leave(); state.view = 'main'; render(); } }, icon('back')),
         h('h2', {}, 'Options'))),
     h('main', {},
       h('div', { class: 'tabs', role: 'tablist', 'aria-label': 'Options sections' },
         ...[['prefs', 'My preferences'], ['admin', 'Admin']].map(([k, t]) =>
           h('button', { class: 'tab', role: 'tab', id: 'tab-' + k, 'aria-selected': String(state.optTab === k), 'aria-controls': 'tabpanel',
-            onclick: () => { state.optTab = k; render(); document.getElementById('tab-' + k)?.focus(); },
+            onclick: () => { if (k !== 'admin') aui.leave(); state.optTab = k; render(); document.getElementById('tab-' + k)?.focus(); },
             onkeydown: (ev) => { if (ev.key === 'ArrowRight' || ev.key === 'ArrowLeft') { state.optTab = k === 'prefs' ? 'admin' : 'prefs'; render(); document.getElementById('tab-' + state.optTab)?.focus(); } } }, t))),
       state.optTab === 'admin' ? adminPanel() : h('section', { class: 'panel', id: 'tabpanel', role: 'tabpanel', 'aria-labelledby': 'tab-prefs' },
         h('div', { class: 'setting' }, h('h3', {}, 'Colour theme'),
@@ -200,13 +202,8 @@ function renderOptions() {
   if (!document.activeElement || document.activeElement === document.body) document.getElementById('back')?.focus();
 }
 
-/* Admin tools are for family only. For now there is no PIN so it can be tested; the lock comes with the Doctors tab. */
-function adminPanel() {
-  return h('section', { class: 'panel', id: 'tabpanel', role: 'tabpanel', 'aria-labelledby': 'tab-admin' },
-    h('div', { class: 'lock' }, icon('lock'),
-      h('div', {}, h('h3', {}, 'Family admin'), h('p', { class: 'hint' }, 'Open for testing. It will ask for a family PIN once the Doctors tab is built.'))),
-    iui.adminSwitches());
-}
+/* Admin: locked behind a PIN once the family has set one up inside Admin itself. */
+function adminPanel() { return aui.panel(state.adminUntil || !aui.hasPin() ? iui.adminSwitches() : null); }
 
 /* ---------- view ---------- */
 function render() {
@@ -291,6 +288,7 @@ async function start() {
     log = createEventLog(await createIdbStore());
     hui = createHeadacheUI({ h, state, log, reload, render, toast, time, icon, fmt });
     dui = createDayUI({ h, state, log, reload, render, toast, time, icon, fmt });
+    aui = createAdminUI({ h, state, log, reload, render, toast, time, icon });
     iui = createIntakeUI({ h, state, log, reload, render, toast, time, icon, fmt, ask });
     await reload();
   } catch (err) {

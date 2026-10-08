@@ -2,6 +2,7 @@
 // the activity form, and today's list of activities. Shares helpers with the rest of the app via ctx.
 import { dayPhase, openActivity, buildDay, validateActivity, pickList, pastValues } from './day.js';
 import { canonical } from './memory.js';
+import { clockPicker } from './clock-ui.js';
 import { msFromClock, clockValue, dayKey } from './time.js';
 
 const LABEL = { activity: 'What are you doing?', location: 'Where are you?', position: 'Are you laying, sitting or standing?' };
@@ -98,7 +99,7 @@ export function createDayUI(ctx) {
             h('h2', {}, 'What time?'),
             clockBad ? h('p', { class: 'error', role: 'alert' }, `That is before your last entry (${time(prev.ms)}).`) : null,
             h('div', { class: 'custom' },
-              h('input', { id: 'clock', type: 'time', class: 'text', value: d.clock, 'aria-label': 'Time', onchange: (ev) => { d.clock = ev.target.value; d.errors = d.errors.filter((e) => e !== 'clock'); } }),
+              clockPicker(h, { id: 'clock', value: d.clock, clock: state.settings.clock, onChange: (v) => { d.clock = v; d.errors = d.errors.filter((e) => e !== 'clock'); } }),
               h('button', { class: 'btn quiet', type: 'button', onclick: () => { d.clock = clockValue(Date.now()); d.errors = d.errors.filter((e) => e !== 'clock'); render(); } }, 'Now')),
             h('p', { class: 'hint' }, 'Set to now. Change it only if it started earlier.')),
           choice('positions', 'position')),

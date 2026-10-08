@@ -3,6 +3,7 @@
 import { TYPES, SEVERITY, WEATHER, validateStart, validateUpdate, describeChanges, activeEpisode } from './episodes.js';
 import { recentItems, commonItems, suggest, canonical, addPhrase, removePhrase, hasPhrase } from './memory.js';
 import { artElement } from './type-art.js';
+import { clockPicker } from './clock-ui.js';
 import { msFromClock, clockValue, dayKey } from './time.js';
 
 const newEpisodeId = () => globalThis.crypto?.randomUUID?.() ?? `ep-${Date.now()}-${Math.random().toString(16).slice(2)}`;
@@ -233,7 +234,7 @@ export function createHeadacheUI(ctx) {
           h('section', { class: 'panel field time-panel' },
             h('h2', {}, isStart ? 'When did it start?' : 'What time is it now?'),
             h('div', { class: 'custom' },
-              h('input', { id: 'clock', type: 'time', class: 'text', value: d.clock, 'aria-label': 'Time', onchange: (ev) => { d.clock = ev.target.value; } }),
+              clockPicker(h, { id: 'clock', value: d.clock, clock: state.settings.clock, onChange: (v) => { d.clock = v; } }),
               h('button', { class: 'btn quiet', type: 'button', onclick: () => { d.clock = clockValue(Date.now()); render(); } }, 'Now')),
             h('p', { class: 'hint' }, 'Set to now. Change it only if it started earlier.')),
           severityField()),

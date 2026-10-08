@@ -2,6 +2,7 @@
 import { MEAL_TYPES, NUTRIENTS, perServing, validateIntake, myFoods, commonFoods, suggestFoods, dayIntake, visibility, visibleNutrients, visibilityEvent, visibilityLog } from './intake.js';
 import { canonical } from './memory.js';
 import { parseVolume } from './hydration.js';
+import { clockPicker } from './clock-ui.js';
 import { msFromClock, clockValue, dayKey } from './time.js';
 
 export function createIntakeUI(ctx) {
@@ -96,7 +97,7 @@ export function createIntakeUI(ctx) {
               h('section', { class: 'panel field time-panel' },
                 h('h2', {}, 'What time?'),
                 h('div', { class: 'custom' },
-                  h('input', { id: 'clock', type: 'time', class: 'text', value: d.clock, 'aria-label': 'Time', onchange: (ev) => { d.clock = ev.target.value; } }),
+                  clockPicker(h, { id: 'clock', value: d.clock, clock: state.settings.clock, onChange: (v) => { d.clock = v; } }),
                   h('button', { class: 'btn quiet', type: 'button', onclick: () => { d.clock = clockValue(Date.now()); render(); } }, 'Now'))),
               h('section', { class: 'panel field servings-panel' + (bad('amount') || bad('servings') ? ' has-error' : ''), id: 'f-amount' },
                 h('h2', {}, drink ? 'How much?' : 'How many servings?'),
