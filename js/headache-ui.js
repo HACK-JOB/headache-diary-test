@@ -8,6 +8,7 @@ import { msFromClock, clockValue, dayKey } from './time.js';
 
 const newEpisodeId = () => globalThis.crypto?.randomUUID?.() ?? `ep-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
+import { reliefFor } from './doctors.js';
 export function createHeadacheUI(ctx) {
   const { h, state, log, reload, render, toast, time, icon, fmt } = ctx;
 
@@ -251,6 +252,16 @@ export function createHeadacheUI(ctx) {
   }
 
   /* ---------- main-page cards ---------- */
+  /* Doctor-written text for this type of headache, with the doctor's name. Nothing written = nothing shown. */
+  function reliefBox(type) {
+    const r = reliefFor(state.events, type);
+    if (!r) return null;
+    return h('div', { class: 'relief-box', role: 'note' },
+      h('h3', {}, 'From your doctor'),
+      h('p', { class: 'relief-text' }, r.text),
+      h('p', { class: 'meta' }, r.by === 'open' ? 'Written by her doctor' : `Written by ${r.byName}`));
+  }
+
   function mainCard() {
     const ep = activeEpisode(state.events);
     if (!ep) {
@@ -266,6 +277,7 @@ export function createHeadacheUI(ctx) {
       h('p', { class: 'active-line' }, `Since ${time(ep.startMs)} · ${dur}`),
       h('p', { class: 'active-line strong' }, `${ep.current.severity} of 5 · ${sev.name} · ${TYPES[ep.current.headacheType]?.name ?? ''}`),
       h('p', { class: 'meta' }, ep.changeCount ? `${ep.changeCount} update${ep.changeCount === 1 ? '' : 's'} so far` : 'No updates yet'),
+      reliefBox(ep.current.headacheType),
       h('div', { class: 'two' },
         h('button', { class: 'btn update', id: 'headache-update', onclick: openUpdate }, 'CHANGE STATUS'),
         h('button', { class: 'btn resolve', id: 'headache-resolve', onclick: resolve }, 'RESOLVE')));

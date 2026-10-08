@@ -1,7 +1,8 @@
 // The Doctors tab (accounts + change log) and the family-admin tools for managing doctor accounts.
 // PINs are convenience locks (see pin.js). The family admin manages accounts but sees no clinical data.
 import { validPinFormat, makeRecord, checkPin, afterFail, afterSuccess, lockedFor, unlockUntil, isUnlocked } from './pin.js';
-import { doctors, validateDoctor, changeLog, needsLogin, targets, validateTarget, TARGET_KEYS, DEFAULT_MARGIN, MAX_MARGIN } from './doctors.js';
+import { doctors, validateDoctor, changeLog, needsLogin, targets, validateTarget, TARGET_KEYS, DEFAULT_MARGIN, MAX_MARGIN,
+  reliefTypes, reliefFor, validateRelief, RELIEF_MAX, urgentGlucose, validateUrgent, URGENT_MAX, fasting, notes } from './doctors.js';
 import { formatLongDate } from './time.js';
 
 const TRIES = 'hd.doctorTries';
@@ -9,7 +10,7 @@ const readTries = () => { try { return JSON.parse(localStorage.getItem(TRIES)) ?
 
 export function createDoctorUI(ctx) {
   const { h, state, log, reload, render, icon, ask, time } = ctx;
-  const st = { tmsg: '', terr: '', tbad: {}, mode: 'view', error: '', info: '', pick: '', resetId: '', setId: '' };   // view | add | mine
+  const st = { openFold: {}, cmsg: '', cerr: '', tmsg: '', terr: '', tbad: {}, mode: 'view', error: '', info: '', pick: '', resetId: '', setId: '' };   // view | add | mine
   let timer;
 
   const list = () => doctors(state.events);
@@ -151,6 +152,9 @@ export function createDoctorUI(ctx) {
   }
 
 
+  /* Sections fold away so the tab is not one very long page; the open/closed choice survives re-rendering. */
+  const foldAttrs = (id) => ({ open: !!st.openFold[id], ontoggle: (ev) => { st.openFold[id] = ev.target.open; } });
+
   /* ----- targets (5b) ----- */
   async function saveTarget(key) {
     const g = (p) => document.getElementById(`t-${key}-${p}`)?.value ?? '';
@@ -176,7 +180,7 @@ export function createDoctorUI(ctx) {
 
   function targetsSection() {
     const tg = targets(state.events);
-    return h('div', { class: 'setting', id: 'targets' }, h('h3', {}, 'Daily targets'),
+    return h('details', { class: 'setting fold', id: 'targets', ...foldAttrs('targets') }, h('summary', {}, 'Daily targets'),
       h('p', { class: 'hint' }, 'Only what a doctor sets here is used. Leave both boxes empty for no target. A total turns orange when it is within the margin of a limit, and red when it is past it. Each status also shows a word and a sign.'),
       st.tmsg ? h('p', { class: 'meta', role: 'status' }, st.tmsg) : null,
       st.terr ? h('p', { class: 'error', role: 'alert' }, st.terr) : null,
@@ -192,6 +196,75 @@ export function createDoctorUI(ctx) {
             field('margin', 'Warn within %', dr ? dr.margin : (t?.margin ?? DEFAULT_MARGIN), '20'),
             h('button', { class: 'btn quiet', 'data-save-target': key, onclick: () => saveTarget(key) }, 'Save')));
       })));
+  }
+
+  /* ----- doctor-written content (5c) ----- */
+  const say = (m) => { st.cmsg = m; st.cerr = ''; render(); };
+  const complain = (m) => { st.cerr = m; st.cmsg = ''; render(); };
+  const byLabel = (by) => (by === 'open' ? 'open access' : doctors(state.events).find((d) => d.id === by)?.name ?? 'a doctor');
+
+  async function saveRelief(key, name) {
+    const { errors, text } = validateRelief(val('rl-' + key));
+    if (errors.length) return complain(`${name}: please keep it under ${RELIEF_MAX} letters so it fits on her screen.`);
+    const cur = reliefFor(state.events, key)?.text ?? '';
+    if (cur === text) return say(`${name}: no change to save.`);
+    await log.add({ type: 'clinical', kind: 'relief', headacheType: key, text, by: actor() });
+    await reload(); say(text ? `${name}: relief text saved.` : `${name}: relief text cleared.`);
+  }
+
+  async function saveUrgent() {
+    const { errors, value } = validateUrgent({ threshold: val('ug-threshold'), text: val('ug-text') });
+    if (errors.includes('threshold')) return complain('Urgent message: please type the glucose number it applies below, for example 4.');
+    if (errors.includes('text')) return complain(`Urgent message: please type the wording (up to ${URGENT_MAX} letters).`);
+    const cur = urgentGlucose(state.events);
+    if ((cur?.threshold ?? null) === value.threshold && (cur?.text ?? '') === value.text) return say('Urgent message: no change to save.');
+    await log.add({ type: 'clinical', kind: 'urgent', threshold: value.threshold, text: value.text, by: actor() });
+    await reload(); say(value.threshold == null ? 'Urgent message cleared.' : 'Urgent message saved.');
+  }
+
+  async function flipFasting(on) {
+    await log.add({ type: 'clinical', kind: 'fasting', on, by: actor() });
+    await reload(); say(on ? 'Fasting tags are on.' : 'Fasting tags are off.');
+  }
+
+  async function addNote() {
+    const text = val('note-text').trim();
+    if (!text) return complain('Please type the note first.');
+    await log.add({ type: 'clinical', kind: 'note', text, by: actor() });
+    await reload(); say('Note added.');
+  }
+
+  function clinicalSections() {
+    const u = urgentGlucose(state.events);
+    const ns = notes(state.events);
+    const area = (id, label, value, hint, extra = {}) => h('div', { class: 'num-field' }, h('label', { for: id }, label),
+      h('textarea', { id, class: 'text note-box', rows: '3', placeholder: hint, ...extra }, value));
+    return [
+      st.cmsg ? h('p', { class: 'meta', role: 'status', id: 'c-status' }, st.cmsg) : null,
+      st.cerr ? h('p', { class: 'error', role: 'alert' }, st.cerr) : null,
+      h('details', { class: 'setting fold', id: 'relief', ...foldAttrs('relief') }, h('summary', {}, 'Common remedies for each headache type'),
+        h('p', { class: 'hint' }, 'Written by a doctor, in the doctor\'s own words. It appears on her screen while that type of headache is active, with your name. If nothing is written, nothing is shown. The app never adds advice of its own.'),
+        h('ul', { class: 'relief-list' }, ...reliefTypes().map(({ key, name }) => {
+          const r = reliefFor(state.events, key);
+          return h('li', { class: 'relief-row', 'data-type': key },
+            h('span', { class: 'who' }, name, r ? h('span', { class: 'hint' }, ` written by ${r.byName}`) : null),
+            area('rl-' + key, `Text for ${name}`, r?.text ?? '', 'e.g. what you would like her to see for this type', { maxlength: String(RELIEF_MAX + 50) }),
+            h('button', { class: 'btn quiet', 'data-save-relief': key, onclick: () => saveRelief(key, name) }, 'Save'));
+        }))),
+      h('details', { class: 'setting fold', id: 'glucose-set', ...foldAttrs('glucose-set') }, h('summary', {}, 'Blood glucose settings'),
+        h('p', { class: 'hint' }, 'Used when glucose readings are added. The wording below is shown exactly as you write it, only when a reading is below your number.'),
+        h('div', { class: 'num-field' }, h('label', { for: 'ug-threshold' }, 'Show the message when a reading is below (mmol/L)'),
+          h('input', { id: 'ug-threshold', type: 'text', inputmode: 'decimal', class: 'text', placeholder: 'e.g. 4', value: u?.threshold ?? '' })),
+        area('ug-text', 'Your wording for her', u?.text ?? '', 'e.g. the instruction you want her to see', { maxlength: String(URGENT_MAX + 50) }),
+        h('button', { class: 'btn quiet', id: 'ug-save', onclick: saveUrgent }, 'Save urgent message'),
+        h('label', { class: 'check', style: 'margin-top:0.9rem' }, h('input', { type: 'checkbox', id: 'fasting-on', checked: fasting(state.events), onchange: (ev) => flipFasting(ev.target.checked) }), 'Ask whether a reading was fasting, before a meal or after a meal'),
+        h('p', { class: 'hint' }, 'Off by default. No fasting instructions are given by the app.')),
+      h('details', { class: 'setting fold', id: 'notes', ...foldAttrs('notes') }, h('summary', {}, 'Clinical notes'),
+        h('p', { class: 'hint' }, 'For doctors. She does not see these. Notes cannot be edited after they are added.'),
+        area('note-text', 'New note', '', 'e.g. what you want the next doctor to know'),
+        h('button', { class: 'btn quiet', id: 'note-add', onclick: addNote }, 'Add note'),
+        ns.length ? h('ul', { class: 'change-list' }, ...ns.map((n) => h('li', {}, h('span', {}, n.text), h('span', { class: 'meta' }, ` ${n.byName === 'Open access (no PIN set)' ? n.byName : n.byName}, ${formatLongDate(n.ms)} ${time(n.ms)}`)))) : h('p', { class: 'hint' }, 'No notes yet.')),
+    ];
   }
 
   function openPanel(sections) {
@@ -211,6 +284,7 @@ export function createDoctorUI(ctx) {
       st.mode === 'add' || !ds.length ? addForm('open', ds.length ? 'Add a new doctor' : 'Add the first doctor')
         : h('button', { class: 'btn quiet', id: 'd-add', onclick: () => { st.mode = 'add'; st.error = ''; st.info = ''; render(); } }, 'Add new doctor'),
       targetsSection(),
+      ...clinicalSections(),
       ...sections,
       logView());
   }
@@ -231,6 +305,7 @@ export function createDoctorUI(ctx) {
           h('ul', { class: 'plain-list' }, ...list().map((x) => h('li', {}, `${x.name} (${x.role})${x.pin ? '' : ' - no PIN yet'}`))),
           h('button', { class: 'btn quiet', id: 'd-add', onclick: () => { st.mode = 'add'; st.error = ''; st.info = ''; render(); } }, 'Add new doctor')),
       targetsSection(),
+      ...clinicalSections(),
       ...sections,
       logView());
   }

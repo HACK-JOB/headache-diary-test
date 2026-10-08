@@ -9,6 +9,7 @@
 import { NUTRIENTS } from './intake.js';
 import { byTime } from './events.js';
 import { dayIntake } from './intake.js';
+import { TYPES } from './episodes.js';
 import { dayWaterTotal } from './hydration.js';
 
 export const DEFAULT_MARGIN = 20;
@@ -194,4 +195,36 @@ export function dayStatuses(events, key, opts = {}) {
     out[k] = { ...r, mark: STATUS_MARK[r.status], value, target: tg[k] };
   }
   return out;
+}
+
+export const RELIEF_MAX = 600;
+export const URGENT_MAX = 300;
+
+/** The headache types a doctor can write relief text for, in the app's own order. */
+export const reliefTypes = () => Object.entries(TYPES).map(([key, t]) => ({ key, name: t.name }));
+
+export function validateRelief(text) {
+  const t = String(text ?? '').trim();
+  return { errors: t.length > RELIEF_MAX ? ['text'] : [], text: t };
+}
+
+/** Urgent glucose message: a threshold (mmol/L) and the doctor's own words. Both blank = none. */
+export function validateUrgent(f) {
+  const errors = [];
+  const rawT = String(f?.threshold ?? '').trim().replace(',', '.');
+  const wording = String(f?.text ?? '').trim();
+  let threshold = null;
+  if (rawT !== '') { const v = Number(rawT); if (!Number.isFinite(v) || v <= 0) errors.push('threshold'); else threshold = v; }
+  if (threshold !== null && !wording) errors.push('text');
+  if (threshold === null && wording && !errors.includes('threshold')) errors.push('threshold');
+  if (wording.length > URGENT_MAX) errors.push('text');
+  return { errors, value: { threshold, text: wording } };
+}
+
+/** The doctor's urgent wording if a glucose reading is below their threshold, otherwise null. */
+export function urgentFor(events, reading) {
+  const u = urgentGlucose(events);
+  if (!u || u.threshold == null || !String(u.text ?? '').trim()) return null;
+  if (!(reading < u.threshold)) return null;
+  return { text: String(u.text).trim(), threshold: u.threshold, by: u.by, byName: nameOf(events, u.by) };
 }

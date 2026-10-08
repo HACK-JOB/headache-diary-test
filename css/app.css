@@ -142,7 +142,7 @@ dialog .row { display: flex; gap: 0.6rem; justify-content: flex-end; margin-top:
 .setting h3 { margin: 0 0 0.5rem; font-size: 1rem; }
 .setting p.hint { color: var(--muted); font-size: 0.85rem; margin-top: 0.4rem; }
 .check { display: flex; align-items: center; gap: 0.7rem; min-height: 3rem; cursor: pointer; font-weight: 700; }
-.check input { width: 1.6rem; height: 1.6rem; accent-color: var(--teal); }
+.check input { width: 2.4rem; height: 2.4rem; flex: 0 0 2.4rem; accent-color: var(--teal); }
 .swatches { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.6rem; }
 .swatch {
   border: 3px solid var(--line); border-radius: 0.9rem; padding: 0.6rem; background: var(--card); color: var(--ink);
@@ -341,3 +341,16 @@ input[type="time"].text { width: auto; min-width: 9rem; }
 
 .target-fields .num-field label { font-size: 0.85rem; }
 :root[data-text="large"] .target-fields, :root[data-text="largest"] .target-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+.relief-box { margin: 0.8rem 0; padding: 0.8rem 1rem; border: 2px solid var(--teal); border-radius: var(--radius); background: var(--teal-soft); color: var(--ink); }
+.relief-box h3 { margin: 0 0 0.3rem; font-size: 1rem; }
+.relief-text { margin: 0 0 0.3rem; white-space: pre-wrap; font-size: 1.05rem; }
+.relief-list { list-style: none; margin: 0.6rem 0 0; padding: 0; }
+.relief-row { padding: 0.8rem 0; border-bottom: 1px solid var(--line); display: grid; gap: 0.5rem; }
+.note-box { width: 100%; min-height: 5.5rem; resize: vertical; font: inherit; padding: 0.6rem; }
+
+.fold > summary { cursor: pointer; min-height: 3.2rem; display: flex; align-items: center; font-weight: 700; font-size: 1.1rem; list-style: none; }
+.fold > summary::-webkit-details-marker { display: none; }
+.fold > summary::before { content: '▸'; display: inline-block; width: 1.4rem; }
+.fold[open] > summary::before { content: '▾'; }
+.fold > summary:focus-visible { outline: 3px solid var(--teal); outline-offset: 2px; }

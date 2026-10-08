@@ -195,3 +195,47 @@ test('every status has a word and a mark, so colour is never the only signal', (
   assert.notEqual(STATUS_MARK.in, STATUS_MARK.over);
   assert.notEqual(STATUS_MARK.near, STATUS_MARK.under);
 });
+
+import { reliefTypes, urgentFor, validateUrgent, validateRelief, RELIEF_MAX } from '../js/doctors.js';
+
+test('reliefTypes lists the six headache types plus Other, in the app order', () => {
+  assert.deepEqual(reliefTypes().map((t) => t.key), ['cluster', 'sinus', 'tension', 'tmj', 'oneSided', 'neck', 'other']);
+  assert.ok(reliefTypes().every((t) => t.name));
+});
+
+test('validateRelief: text is trimmed and limited so it fits on her card', () => {
+  assert.deepEqual(validateRelief('  Rest in a dark room  '), { errors: [], text: 'Rest in a dark room' });
+  assert.deepEqual(validateRelief('').text, '');
+  assert.deepEqual(validateRelief('x'.repeat(RELIEF_MAX + 1)).errors, ['text']);
+});
+
+test('validateUrgent: threshold is a number above 0, wording is needed when a threshold is given', () => {
+  assert.deepEqual(validateUrgent({ threshold: '', text: '' }).errors, []);
+  assert.deepEqual(validateUrgent({ threshold: '4', text: 'Follow your plan' }).value, { threshold: 4, text: 'Follow your plan' });
+  assert.deepEqual(validateUrgent({ threshold: '4,5', text: 'x' }).value.threshold, 4.5);
+  assert.deepEqual(validateUrgent({ threshold: 'abc', text: 'x' }).errors, ['threshold']);
+  assert.deepEqual(validateUrgent({ threshold: '0', text: 'x' }).errors, ['threshold']);
+  assert.deepEqual(validateUrgent({ threshold: '4', text: '' }).errors, ['text']);
+  assert.deepEqual(validateUrgent({ threshold: '', text: 'words only' }).errors, ['threshold']);
+});
+
+test('urgentFor: shows the doctor wording only when a reading is below their threshold', () => {
+  const evs = [ev({ type: 'clinical', kind: 'urgent', threshold: 4, text: 'Follow your low-sugar plan', by: 'a' }, 1), add('a', 'Dr Lee', 'GP', 0)];
+  assert.equal(urgentFor(evs, 5), null);
+  assert.equal(urgentFor(evs, 4), null);
+  const u = urgentFor(evs, 3.9);
+  assert.equal(u.text, 'Follow your low-sugar plan');
+  assert.equal(u.byName, 'Dr Lee');
+  assert.equal(urgentFor([], 1), null);
+});
+
+test('the change log records relief text, urgent message and fasting changes, with the notes text never copied in', () => {
+  const evs = [add('a', 'Dr Lee', 'GP', 1),
+    ev({ type: 'clinical', kind: 'relief', headacheType: 'oneSided', text: 'Rest', by: 'a' }, 2),
+    ev({ type: 'clinical', kind: 'fasting', on: true, by: 'a' }, 3),
+    ev({ type: 'clinical', kind: 'urgent', threshold: 4, text: 'Plan', by: 'a' }, 4)];
+  const l = changeLog(evs);
+  assert.match(l.find((x) => /Relief text/.test(x.what)).what, /One sided/i);
+  assert.equal(l.find((x) => /Fasting/.test(x.what)).to, 'on');
+  assert.equal(l.find((x) => /Urgent/.test(x.what)).to, 'below 4');
+});
