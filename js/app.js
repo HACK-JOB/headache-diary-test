@@ -8,6 +8,7 @@ import { createDayUI } from './day-ui.js';
 import { createIntakeUI } from './intake-ui.js';
 import { createAdminUI } from './admin-ui.js';
 import { createDoctorUI } from './doctor-ui.js';
+import { createMeasuresUI } from './measures-ui.js';
 import { dayStatuses } from './doctors.js';
 import { STYLES, artElement, ART_KEYS } from './type-art.js';
 
@@ -21,6 +22,7 @@ let dui;
 let iui;
 let aui;
 let dcui;
+let mui;
 
 /* ---------- small helpers ---------- */
 function h(tag, attrs = {}, ...kids) {
@@ -208,7 +210,7 @@ function renderOptions() {
 }
 
 /* Admin: locked behind a PIN once the family has set one up inside Admin itself. */
-function adminPanel() { return aui.panel(state.adminUntil || !aui.hasPin() ? h('div', {}, iui.adminSwitches(), dcui.adminAccounts()) : null); }
+function adminPanel() { return aui.panel(state.adminUntil || !aui.hasPin() ? h('div', {}, iui.adminSwitches(), mui.adminSwitch(), dcui.adminAccounts()) : null); }
 
 /* Fluid against the doctor's range: water refills plus every drink from the meal log. */
 function waterStatus(total) {
@@ -246,10 +248,12 @@ function render() {
         h('button', { class: 'icon-btn', id: 'cog', 'aria-label': 'Options', onclick: () => { state.view = 'options'; render(); window.scrollTo(0, 0); } }, icon('cog')))),
     h('main', {},
       dui.mainCard(),
+      mui.weightCard(),
       hui.mainCard(),
       dui.todayList(),
       iui.mainCard(),
       iui.todayList(),
+      mui.glucoseCard(),
       h('section', { class: 'panel', 'aria-labelledby': 'water-h' },
         h('h2', { id: 'water-h' }, 'Water today'),
         h('div', { class: 'total', 'aria-live': 'polite' },
@@ -304,6 +308,7 @@ async function start() {
     dui = createDayUI({ h, state, log, reload, render, toast, time, icon, fmt });
     aui = createAdminUI({ h, state, log, reload, render, toast, time, icon });
     dcui = createDoctorUI({ h, state, log, reload, render, toast, time, icon, ask });
+    mui = createMeasuresUI({ h, state, log, reload, render, toast, time, icon, fmt, ask });
     iui = createIntakeUI({ h, state, log, reload, render, toast, time, icon, fmt, ask });
     await reload();
   } catch (err) {

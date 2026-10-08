@@ -118,8 +118,8 @@ test('changeLog: who, what, from and to, newest first, and it never contains a P
   assert.ok(!JSON.stringify(log).includes('"hash"'));
 });
 
-test('there is a target for fluid and for each of the eleven nutrients', () => {
-  assert.deepEqual(TARGET_KEYS.map((k) => k.key), ['fluid', 'calories', 'carbs', 'sugar', 'fibre', 'protein', 'fat', 'satFat', 'transFat', 'sodium', 'iron', 'caffeine']);
+test('there is a target for fluid and for glucose and for each of the eleven nutrients', () => {
+  assert.deepEqual(TARGET_KEYS.map((k) => k.key), ['fluid', 'glucose', 'calories', 'carbs', 'sugar', 'fibre', 'protein', 'fat', 'satFat', 'transFat', 'sodium', 'iron', 'caffeine']);
 });
 
 import { needsLogin } from '../js/doctors.js';

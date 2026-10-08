@@ -14,7 +14,7 @@ import { dayWaterTotal } from './hydration.js';
 
 export const DEFAULT_MARGIN = 20;
 export const MAX_MARGIN = 50;
-export const TARGET_KEYS = [{ key: 'fluid', label: 'Fluid (all drinks)', unit: 'ml' }, ...NUTRIENTS];
+export const TARGET_KEYS = [{ key: 'fluid', label: 'Fluid (all drinks)', unit: 'ml' }, { key: 'glucose', label: 'Blood glucose (each reading)', unit: 'mmol/L' }, ...NUTRIENTS];
 
 const live = (events, type) => events.filter((e) => e.type === type && !e.deleted).sort(byTime);
 const FAMILY = 'Family admin';
