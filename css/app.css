@@ -230,3 +230,13 @@ input[type="time"].text { width: auto; min-width: 9rem; }
 .other-notes.has-error { border: 3px solid var(--red); }
 .other-notes .notes-label { font-weight: 700; }
 .other-notes .text { flex: 1; min-height: 5rem; }
+
+/* Portrait: one column, with weather moved up between 'How bad is it?' and 'What does it feel like?' */
+@media not ((min-width: 900px) and (orientation: landscape)) {
+  .form-grid { display: grid; }
+  .form-col { display: contents; }
+  #f-weather { order: 1; }
+  #f-headacheType { order: 2; }
+  #f-meds { order: 3; }
+  #f-relief { order: 4; }
+}
