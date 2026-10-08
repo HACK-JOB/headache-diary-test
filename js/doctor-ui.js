@@ -1,5 +1,6 @@
 // The Doctors tab (accounts + change log) and the family-admin tools for managing doctor accounts.
 // PINs are convenience locks (see pin.js). The family admin manages accounts but sees no clinical data.
+import { sideTabs } from './sidetabs.js';
 import { validPinFormat, makeRecord, checkPin, afterFail, afterSuccess, lockedFor, unlockUntil, isUnlocked } from './pin.js';
 import { doctors, validateDoctor, changeLog, needsLogin, targets, validateTarget, TARGET_KEYS, DEFAULT_MARGIN, MAX_MARGIN,
   reliefTypes, reliefFor, validateRelief, RELIEF_MAX, urgentGlucose, validateUrgent, URGENT_MAX, fasting, notes } from './doctors.js';
@@ -155,7 +156,7 @@ export function createDoctorUI(ctx) {
 
   /* Sections fold away so the tab is not one very long page; the open/closed choice survives re-rendering. */
   const rxDoc = createRxDoctor(ctx, () => ({ actor, foldAttrs, say, complain }));
-  const foldAttrs = (id) => ({ open: !!st.openFold[id], ontoggle: (ev) => { st.openFold[id] = ev.target.open; } });
+  const foldAttrs = (id) => ({ open: st.openFold[id] !== false, ontoggle: (ev) => { st.openFold[id] = ev.target.open; } });
 
   /* ----- targets (5b) ----- */
   async function saveTarget(key) {
@@ -241,9 +242,10 @@ export function createDoctorUI(ctx) {
     const ns = notes(state.events);
     const area = (id, label, value, hint, extra = {}) => h('div', { class: 'num-field' }, h('label', { for: id }, label),
       h('textarea', { id, class: 'text note-box', rows: '3', placeholder: hint, ...extra }, value));
-    return [
+    const msgs = [
       st.cmsg ? h('p', { class: 'meta', role: 'status', id: 'c-status' }, st.cmsg) : null,
-      st.cerr ? h('p', { class: 'error', role: 'alert' }, st.cerr) : null,
+      st.cerr ? h('p', { class: 'error', role: 'alert' }, st.cerr) : null];
+    const relief = [
       h('details', { class: 'setting fold', id: 'relief', ...foldAttrs('relief') }, h('summary', {}, 'Common remedies for each headache type'),
         h('p', { class: 'hint' }, 'Written by a doctor, in the doctor\'s own words. It appears on screen while that type of headache is active, with the doctor\'s name. If nothing is written, nothing is shown. The app never adds advice of its own.'),
         h('ul', { class: 'relief-list' }, ...reliefTypes().map(({ key, name }) => {
@@ -253,6 +255,8 @@ export function createDoctorUI(ctx) {
             area('rl-' + key, `Text for ${name}`, r?.text ?? '', 'e.g. the text to show for this type', { maxlength: String(RELIEF_MAX + 50) }),
             h('button', { class: 'btn quiet', 'data-save-relief': key, onclick: () => saveRelief(key, name) }, 'Save'));
         }))),
+    ];
+    const glucose = [
       h('details', { class: 'setting fold', id: 'glucose-set', ...foldAttrs('glucose-set') }, h('summary', {}, 'Blood glucose settings'),
         h('p', { class: 'hint' }, 'Used when glucose readings are added. The wording below is shown exactly as written, only when a reading is below the number set here.'),
         h('div', { class: 'num-field' }, h('label', { for: 'ug-threshold' }, 'Show the message when a reading is below (mmol/L)'),
@@ -261,13 +265,33 @@ export function createDoctorUI(ctx) {
         h('button', { class: 'btn quiet', id: 'ug-save', onclick: saveUrgent }, 'Save urgent message'),
         h('label', { class: 'check', style: 'margin-top:0.9rem' }, h('input', { type: 'checkbox', id: 'fasting-on', checked: fasting(state.events), onchange: (ev) => flipFasting(ev.target.checked) }), 'Ask whether a reading was fasting, before a meal or after a meal'),
         h('p', { class: 'hint' }, 'Off by default. No fasting instructions are given by the app.')),
-      rxDoc.section(),
+    ];
+    const rx = [rxDoc.section()];
+    const notesSec = [
       h('details', { class: 'setting fold', id: 'notes', ...foldAttrs('notes') }, h('summary', {}, 'Clinical notes'),
         h('p', { class: 'hint' }, 'For doctors. These are not shown on the diary screens. Notes cannot be edited after they are added.'),
         area('note-text', 'New note', '', 'e.g. what you want the next doctor to know'),
         h('button', { class: 'btn quiet', id: 'note-add', onclick: addNote }, 'Add note'),
         ns.length ? h('ul', { class: 'change-list' }, ...ns.map((n) => h('li', {}, h('span', {}, n.text), h('span', { class: 'meta' }, ` ${n.byName === 'Open access (no PIN set)' ? n.byName : n.byName}, ${formatLongDate(n.ms)} ${time(n.ms)}`)))) : h('p', { class: 'hint' }, 'No notes yet.')),
     ];
+    return { msgs, relief, glucose, rx, notes: notesSec };
+  }
+
+  /** The Doctors tab as side tabs. `people` is the doctors list/add area (differs for open vs signed in). */
+  function groupsView(people, showLog = true) {
+    const c = clinicalSections();
+    state.side ??= {};
+    const groups = [
+      { key: 'people', label: 'Doctors', nodes: [people] },
+      { key: 'targets', label: 'Daily targets', nodes: [targetsSection()] },
+      { key: 'rx', label: 'Medicines', nodes: [...c.rx] },
+      { key: 'relief', label: 'Relief and urgent message', nodes: [...c.msgs, ...c.relief, ...c.glucose] },
+      { key: 'notes', label: 'Clinical notes', nodes: [...c.notes] },
+      { key: 'log', label: 'Change log', nodes: [showLog ? logView() : null] },
+    ];
+    const active = st.mode === 'add' || st.mode === 'mine' || st.setId ? 'people' : state.side.doctors;
+    return sideTabs(h, { id: 'doctors', label: 'Doctors sections', groups, active,
+      onPick: (k, focus) => { state.side.doctors = k; render(); if (focus) document.getElementById('st-doctors-' + k)?.focus(); } });
   }
 
   function openPanel(sections) {
@@ -276,7 +300,7 @@ export function createDoctorUI(ctx) {
       h('div', { class: 'lock' }, icon('unlock'), h('div', {}, h('h3', {}, 'Doctors'),
         h('p', { class: 'hint' }, 'Open for now: nobody has set a PIN yet, so anyone using this tablet can see and change this tab. Set a PIN for a doctor to lock it.'))),
       st.info ? h('p', { class: 'meta', role: 'status' }, st.info) : null,
-      ds.length ? h('div', { class: 'setting' }, h('h3', {}, 'Doctors on this diary'),
+      groupsView(h('div', {}, ds.length ? h('div', { class: 'setting' }, h('h3', {}, 'Doctors on this diary'),
         h('ul', { class: 'account-list' }, ...ds.map((d) => h('li', {},
           h('span', { class: 'who' }, `${d.name} (${d.role})`),
           st.setId === d.id
@@ -285,11 +309,7 @@ export function createDoctorUI(ctx) {
               h('div', { class: 'two' }, h('button', { class: 'btn quiet', onclick: () => { st.setId = ''; st.error = ''; render(); } }, 'Cancel'), h('button', { class: 'btn primary', id: 's-save', onclick: () => setPinFor(d) }, 'Save PIN')))
             : h('button', { class: 'btn quiet', 'data-setpin': d.id, onclick: () => { st.setId = d.id; st.error = ''; st.info = ''; render(); } }, 'Set a PIN'))))) : null,
       st.mode === 'add' || !ds.length ? addForm('open', ds.length ? 'Add a new doctor' : 'Add the first doctor')
-        : h('button', { class: 'btn quiet', id: 'd-add', onclick: () => { st.mode = 'add'; st.error = ''; st.info = ''; render(); } }, 'Add new doctor'),
-      targetsSection(),
-      ...clinicalSections(),
-      ...sections,
-      logView());
+        : h('button', { class: 'btn quiet', id: 'd-add', onclick: () => { st.mode = 'add'; st.error = ''; st.info = ''; render(); } }, 'Add new doctor'))), ...sections);
   }
 
   function doctorsPanel(sections = []) {
@@ -302,15 +322,13 @@ export function createDoctorUI(ctx) {
       h('div', { class: 'two' },
         h('button', { class: 'btn quiet', id: 'd-mine', onclick: () => { st.mode = 'mine'; st.error = ''; st.info = ''; render(); } }, 'Change my PIN'),
         h('button', { class: 'btn quiet', id: 'd-lock', onclick: () => { lock(); render(); } }, 'Lock now')),
-      st.mode === 'mine' ? mineForm() : null,
-      st.mode === 'add' ? addForm(d.id, 'Add a new doctor')
-        : h('div', { class: 'setting' }, h('h3', {}, 'Doctors on this diary'),
-          h('ul', { class: 'plain-list' }, ...list().map((x) => h('li', {}, `${x.name} (${x.role})${x.pin ? '' : ' - no PIN yet'}`))),
-          h('button', { class: 'btn quiet', id: 'd-add', onclick: () => { st.mode = 'add'; st.error = ''; st.info = ''; render(); } }, 'Add new doctor')),
-      targetsSection(),
-      ...clinicalSections(),
-      ...sections,
-      logView());
+      groupsView(h('div', {},
+        st.mode === 'mine' ? mineForm() : null,
+        st.mode === 'add' ? addForm(d.id, 'Add a new doctor')
+          : h('div', { class: 'setting' }, h('h3', {}, 'Doctors on this diary'),
+            h('ul', { class: 'plain-list' }, ...list().map((x) => h('li', {}, `${x.name} (${x.role})${x.pin ? '' : ' - no PIN yet'}`))),
+            h('button', { class: 'btn quiet', id: 'd-add', onclick: () => { st.mode = 'add'; st.error = ''; st.info = ''; render(); } }, 'Add new doctor')))),
+      ...sections);
   }
 
   /** Family-admin tools, shown inside the Admin tab: no clinical data here. */

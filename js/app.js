@@ -20,7 +20,7 @@ import { STYLES, artElement, ART_KEYS } from './type-art.js';
 
 const app = document.getElementById('app');
 const TABS = [['prefs', 'My preferences'], ['doctors', 'Doctors'], ['admin', 'Admin'], ['tester', 'Tester notes']];
-const state = { events: [], key: dayKey(Date.now()), recent: [], selected: 600, unit: 'ml', toast: '', view: 'main', draft: null, optTab: 'prefs', settings: null };
+const state = { events: [], key: dayKey(Date.now()), recent: [], selected: 600, unit: 'ml', toast: '', view: 'main', draft: null, optTab: 'prefs', side: {}, settings: null };
 const darkQuery = window.matchMedia('(prefers-color-scheme: dark)');
 let log;
 let hui;
@@ -243,7 +243,7 @@ function renderOptions() {
 }
 
 /* Admin: locked behind a PIN once the family has set one up inside Admin itself. */
-function adminPanel() { return aui.panel(state.adminUntil || !aui.hasPin() ? h('div', {}, iui.adminSwitches(), mui.adminSwitch(), dcui.adminAccounts()) : null); }
+function adminPanel() { return aui.panel(state.adminUntil || !aui.hasPin() ? { screens: h('div', {}, iui.adminSwitches(), mui.adminSwitch()), accounts: dcui.adminAccounts() } : null); }
 
 /* Fluid against the doctor's range: water refills plus every drink from the meal log. */
 function waterStatus(total) {

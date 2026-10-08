@@ -1,5 +1,6 @@
 // The Admin tab. Open until a PIN has been set up here; after that it is locked behind the PIN.
 // The PIN is a convenience lock for the family (see pin.js). There is no "forgot PIN" in v1.
+import { sideTabs } from './sidetabs.js';
 import { RESET_WORD, confirmsReset, diaryKeys, backupFile, backupName } from './reset.js';
 import { validPinFormat, makeRecord, checkPin, afterFail, afterSuccess, lockedFor, unlockUntil, isUnlocked } from './pin.js';
 
@@ -151,15 +152,23 @@ export function createAdminUI(ctx) {
       h('button', { class: 'btn quiet small', id: 'pin-lock', onclick: () => { lock(); render(); } }, 'Lock now'));
   }
 
+  /** extra: { screens, accounts } nodes from the other modules. Four side-tab groups; the PIN form forces the PIN group open. */
   function panel(extra) {
     if (!unlocked()) return lockedView();
+    state.side ??= {};
+    const groups = [
+      { key: 'screens', label: 'Diary screens', nodes: [extra?.screens] },
+      { key: 'accounts', label: 'Doctor accounts', nodes: [extra?.accounts] },
+      { key: 'pin', label: 'Admin PIN', nodes: [pinSection()] },
+      { key: 'reset', label: 'Reset data', nodes: [resetSection()] },
+    ];
+    const active = st.mode !== 'view' ? 'pin' : state.side.admin;
     return wrap(
       h('div', { class: 'lock' }, icon('lock'), h('div', {}, h('h3', {}, 'Family admin'),
-        h('p', { class: 'hint' }, hasPin() ? 'Unlocked. It locks again in 5 minutes.' : 'Open for now. Set a PIN below to lock it.'))),
+        h('p', { class: 'hint' }, hasPin() ? 'Unlocked. It locks again in 5 minutes.' : 'Open for now. Set a PIN in the Admin PIN section to lock it.'))),
       st.info ? h('p', { class: 'meta', role: 'status' }, st.info) : null,
-      pinSection(),
-      extra,
-      resetSection());
+      sideTabs(h, { id: 'admin', label: 'Admin sections', groups, active,
+        onPick: (k, focus) => { state.side.admin = k; render(); if (focus) document.getElementById('st-admin-' + k)?.focus(); } }));
   }
 
   return { panel, leave, lock, hasPin };
