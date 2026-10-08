@@ -14,7 +14,7 @@ export function createIntakeUI(ctx) {
   const unitOf = (k) => NUTRIENTS.find((n) => n.key === k).unit;
 
   function openForm(mealType) {
-    state.draft = { mode: 'intake', mealType, name: '', servings: '1', amount: '', unit: 'ml', basis: 'serving', vals: {}, carried: {}, clock: clockValue(Date.now()), errors: [], barcode: '', scanned: {}, scan: null };
+    state.draft = { mode: 'intake', mealType, name: '', servings: '1', amount: '', unit: 'ml', basis: 'serving', vals: {}, carried: {}, clock: clockValue(Date.now()), errors: [], barcode: '', scanned: {}, scan: null, grams: '' };
     state.view = 'intake';
     render();
     window.scrollTo(0, 0);
@@ -50,7 +50,7 @@ export function createIntakeUI(ctx) {
     const amountMl = isDrink(d.mealType) ? parseVolume(d.amount, d.unit) : undefined;
     const bad = validateIntake({ mealType: d.mealType, name: d.name, servings, amountMl });
     let nutrition = {};
-    try { nutrition = perServing(d.vals, d.basis, servings); } catch (err) { d.numberError = err.message; bad.push('numbers'); }
+    try { nutrition = perServing(d.vals, d.basis, servings, d.grams); } catch (err) { d.numberError = err.message; bad.push('numbers'); }
     if (!bad.includes('numbers')) d.numberError = '';
     if (bad.length) { d.errors = bad; render(); document.getElementById('f-' + ({ numbers: 'nutrition', mealType: 'name' }[bad[0]] ?? bad[0]))?.scrollIntoView({ block: 'center' }); return; }
     const now = Date.now();
@@ -127,7 +127,12 @@ export function createIntakeUI(ctx) {
             h('h2', {}, 'Nutrition', h('span', { class: 'opt' }, ' Optional')),
             bad('numbers') ? h('p', { class: 'error', role: 'alert' }, d.numberError) : null,
             h('p', { class: 'small-label' }, 'The numbers typed are:'),
-            seg('Numbers are', 'basis', [['serving', 'Per serving'], ['total', 'For everything I had']]),
+            seg('Numbers are', 'basis', [['serving', 'Per serving'], ['per100', 'Per 100 g']]),
+            d.basis === 'per100' ? h('div', { class: 'num-field' },
+              h('label', { for: 'in-grams' }, 'Grams in one serving'),
+              h('input', { id: 'in-grams', type: 'text', inputmode: 'decimal', class: 'text', autocomplete: 'off', placeholder: 'e.g. 250', value: d.grams,
+                oninput: (ev) => { d.grams = ev.target.value; d.errors = d.errors.filter((x) => x !== 'numbers'); } }),
+              h('p', { class: 'hint' }, 'Found on the pack, such as "serving size 250 g". The numbers are worked out for one serving.')) : null,
             h('div', { class: 'num-grid' }, ...nutrients.map((n) => num(n.key, `${n.label} (${n.unit})`))),
             h('p', { class: 'hint' }, 'Leave blank if not known. Saved with this food for next time.')) : null),
         d.errors.length ? h('p', { class: 'error big-error', role: 'alert' }, 'A few things still need an answer. They are marked above.') : null,

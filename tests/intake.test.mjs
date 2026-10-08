@@ -11,10 +11,23 @@ test('there are eight meal tiles in the order she asked for, and eleven nutrient
   assert.deepEqual(NUTRIENTS.map((x) => x.key), ['calories', 'carbs', 'sugar', 'fibre', 'protein', 'fat', 'satFat', 'transFat', 'sodium', 'iron', 'caffeine']);
 });
 
-test('perServing: per-serving values pass through, totals are divided by servings, blanks are dropped', () => {
+test('perServing: per-serving values pass through, blanks are dropped', () => {
   assert.deepEqual(perServing({ iron: '2', carbs: '' }, 'serving', 2), { iron: 2 });
-  assert.deepEqual(perServing({ iron: '4', calories: '300' }, 'total', 2), { iron: 2, calories: 150 });
   assert.deepEqual(perServing({ iron: '0' }, 'serving', 1), { iron: 0 });
+});
+
+test('perServing: per 100 g values are scaled by the grams in one serving, not by the number of servings', () => {
+  assert.deepEqual(perServing({ calories: '120', protein: '6.5', iron: '' }, 'per100', 3, '250'), { calories: 300, protein: 16.25 });
+  assert.deepEqual(perServing({ sodium: '400' }, 'per100', 1, '35,5'), { sodium: 142 });
+  assert.deepEqual(perServing({ iron: '0' }, 'per100', 1, '80'), { iron: 0 });
+});
+
+test('perServing: per 100 g needs a sensible serving weight, and says so', () => {
+  assert.throws(() => perServing({ calories: '120' }, 'per100', 1, ''), /grams/i);
+  assert.throws(() => perServing({ calories: '120' }, 'per100', 1, '0'), /grams/i);
+  assert.throws(() => perServing({ calories: '120' }, 'per100', 1, 'abc'), /grams/i);
+  assert.throws(() => perServing({ calories: '120' }, 'per100', 1, '99999'), /grams/i);
+  assert.deepEqual(perServing({}, 'per100', 1, ''), {});        // nothing typed, nothing to scale
 });
 
 test('perServing rejects nonsense with an error list, never a silent guess', () => {

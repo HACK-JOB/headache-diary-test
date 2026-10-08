@@ -24,17 +24,24 @@ export const NUTRIENTS = [
 const KEYS = NUTRIENTS.map((x) => x.key);
 const live = (events, type) => events.filter((e) => e.type === type && !e.deleted).sort(byTime);
 
-/** Entered values -> per-serving numbers. `basis` is 'serving' or 'total'. Blank = not known, dropped. Throws on nonsense. */
-export function perServing(raw, basis, servings) {
+/** Entered values -> per-serving numbers. `basis` is 'serving' or 'per100' (per 100 g, scaled by `grams` in one serving).
+ *  Blank = not known, dropped. Throws on nonsense or on a missing serving weight. */
+export function perServing(raw, basis, servings, grams) {
   const out = {};
   const bad = [];
-  const s = Number(servings) > 0 ? Number(servings) : 1;
+  let scale = 1;
+  const typed = KEYS.some((k) => raw?.[k] !== undefined && raw?.[k] !== null && String(raw[k]).trim() !== '');
+  if (basis === 'per100' && typed) {
+    const g = Number(String(grams ?? '').trim().replace(',', '.'));
+    if (!(g > 0 && g <= 5000)) throw new Error('Enter the grams in one serving (for example 250)');
+    scale = g / 100;
+  }
   for (const k of KEYS) {
     const text = raw?.[k];
     if (text === undefined || text === null || String(text).trim() === '') continue;
     const v = Number(String(text).trim().replace(',', '.'));
     if (!Number.isFinite(v) || v < 0) { bad.push(k); continue; }
-    out[k] = Math.round((basis === 'total' ? v / s : v) * 100) / 100;
+    out[k] = Math.round(v * scale * 100) / 100;
   }
   if (bad.length) throw new Error(`Check these numbers: ${bad.join(', ')}`);
   return out;

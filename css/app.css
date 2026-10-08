@@ -452,3 +452,5 @@ textarea.text { width: 100%; min-height: 6rem; resize: vertical; font: inherit; 
 .scan-video { width: 100%; height: 100%; object-fit: cover; display: block; }
 .scan-aim { position: absolute; left: 12%; right: 12%; top: 30%; bottom: 30%; border: 4px solid #fff; border-radius: 0.6rem; box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.6); }
 body.scan-open { overflow: hidden; }
+.meal-nutrition .seg + .num-field { margin-top: 0.9rem; }
+.meal-nutrition .num-field + .num-grid, .meal-nutrition .num-field + .hint + .num-grid { margin-top: 0.9rem; }
