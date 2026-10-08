@@ -52,6 +52,11 @@ export const FORM_STEPS = {
     { sel: ['.tabs'], text: 'Options sections. Doctors and Admin are for the family and doctors.' },
     { sel: ['#own-reminders'], text: 'Optional reminders for waking up, blood glucose and sitting too long. All start off.' },
   ],
+  'options-track': [
+    { sel: ['#back'], text: 'Goes back to the diary.' },
+    { sel: ['.trk-row'], text: 'Each log can be tracked or not. Turning one off hides it and stops its reminders. Nothing already recorded is deleted.' },
+    { sel: ['.warn-line', '#trk-user'], text: 'If Admin or a doctor has locked a log, it cannot be changed here and the message says who locked it.' },
+  ],
   'options-admin': [
     { sel: ['#back'], text: 'Goes back to the diary.' },
     { sel: ['#weight-switch'], text: 'Shows or hides weight on the diary. Doctors always see it.' },

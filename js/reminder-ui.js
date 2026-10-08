@@ -69,7 +69,10 @@ export function createReminderUI(ctx) {
   function tick() {
     if (!state.events) return;
     const now = Date.now();
-    const list = [...activeReminders(state.events, state.key, now, { herNag: state.settings.nag, dismissed }), ...activeNudges(state.events, state.key, now, state.settings, dismissed)];
+    const tm = ctx.tracked?.() ?? {};
+    const on = (k) => tm[k] !== false;
+    const ns = { ...state.settings, glucoseOn: state.settings.glucoseOn && on('glucose'), wakeOn: state.settings.wakeOn && on('day'), sitOn: state.settings.sitOn && on('day') };
+    const list = [...(on('meds') ? activeReminders(state.events, state.key, now, { herNag: state.settings.nag, dismissed }) : []), ...activeNudges(state.events, state.key, now, ns, dismissed)];
     const sig = list.map((r) => `${r.id}@${r.fireMs}`).join('|') + `|${state.settings.clock}|${state.view}`;
     if (sig === signature) return;
     signature = sig;

@@ -283,6 +283,7 @@ export function createDoctorUI(ctx) {
     state.side ??= {};
     const groups = [
       { key: 'people', label: 'Doctors', nodes: [people] },
+      { key: 'tracking', label: 'Tracking', nodes: [ctx.trackingSection?.()] },
       { key: 'targets', label: 'Daily targets', nodes: [targetsSection()] },
       { key: 'rx', label: 'Medicines', nodes: [...c.rx] },
       { key: 'relief', label: 'Relief and urgent message', nodes: [...c.msgs, ...c.relief, ...c.glucose] },
@@ -351,5 +352,5 @@ export function createDoctorUI(ctx) {
 
   /** For the Admin reset screen: has any doctor got a PIN, and is a doctor signed in right now? */
   const resetInfo = () => ({ pinHolders: list().filter((d) => d.pin).length, doctorSignedIn: !!me() && isUnlocked(state.doctorUntil, Date.now()) });
-  return { panel: doctorsPanel, adminAccounts, leave, lock, resetInfo };
+  return { panel: doctorsPanel, adminAccounts, leave, lock, resetInfo, actorId: actor };
 }

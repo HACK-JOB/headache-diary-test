@@ -8,6 +8,8 @@ import { createDayUI } from './day-ui.js';
 import { createIntakeUI } from './intake-ui.js';
 import { createAdminUI } from './admin-ui.js';
 import { createPatchUI } from './patchnotes-ui.js';
+import { createTrackingUI } from './tracking-ui.js';
+import { trackedMap } from './tracking.js';
 import { createTesterUI } from './tester-ui.js';
 import { createDoctorUI } from './doctor-ui.js';
 import { createMeasuresUI } from './measures-ui.js';
@@ -20,7 +22,7 @@ import { dayStatuses } from './doctors.js';
 import { STYLES, artElement, ART_KEYS } from './type-art.js';
 
 const app = document.getElementById('app');
-const TABS = [['prefs', 'My preferences'], ['doctors', 'Doctors'], ['admin', 'Admin'], ['tester', 'Tester notes']];
+const TABS = [['prefs', 'My preferences'], ['track', 'Tracking'], ['doctors', 'Doctors'], ['admin', 'Admin'], ['tester', 'Tester notes']];
 const state = { events: [], key: dayKey(Date.now()), recent: [], selected: 600, unit: 'ml', toast: '', view: 'main', draft: null, optTab: 'prefs', side: {}, settings: null };
 const darkQuery = window.matchMedia('(prefers-color-scheme: dark)');
 let log;
@@ -29,6 +31,7 @@ let dui;
 let iui;
 let aui;
 let pn;
+let trk;
 let tui;
 let dcui;
 let mui;
@@ -202,7 +205,7 @@ function renderOptions() {
           h('button', { class: 'tab', role: 'tab', id: 'tab-' + k, 'aria-selected': String(state.optTab === k), 'aria-controls': 'tabpanel',
             onclick: () => { if (k !== 'admin') aui.leave(); if (k !== 'doctors') dcui.leave(); state.optTab = k; render(); document.getElementById('tab-' + k)?.focus(); },
             onkeydown: (ev) => { if (ev.key === 'ArrowRight' || ev.key === 'ArrowLeft') { const i = TABS.findIndex(([x]) => x === k); state.optTab = TABS[(i + (ev.key === 'ArrowRight' ? 1 : TABS.length - 1)) % TABS.length][0]; render(); document.getElementById('tab-' + state.optTab)?.focus(); } } }, t))),
-      state.optTab === 'doctors' ? dcui.panel() : state.optTab === 'admin' ? adminPanel() : state.optTab === 'tester' ? tui.panel() : h('section', { class: 'panel', id: 'tabpanel', role: 'tabpanel', 'aria-labelledby': 'tab-prefs' },
+      state.optTab === 'track' ? trackPanel() : state.optTab === 'doctors' ? dcui.panel() : state.optTab === 'admin' ? adminPanel() : state.optTab === 'tester' ? tui.panel() : h('section', { class: 'panel', id: 'tabpanel', role: 'tabpanel', 'aria-labelledby': 'tab-prefs' },
         h('div', { class: 'setting' }, h('h3', {}, 'Colour theme'),
           h('div', { class: 'swatches' }, ...Object.entries(THEMES).map(([k, name]) =>
             h('button', { class: 'swatch', 'data-t': k, 'aria-pressed': String(st.theme === k), onclick: () => saveSettings({ theme: k, ...(k !== 'dark' ? { lightTheme: k } : {}) }) },
@@ -245,7 +248,12 @@ function renderOptions() {
 }
 
 /* Admin: locked behind a PIN once the family has set one up inside Admin itself. */
-function adminPanel() { return aui.panel(state.adminUntil || !aui.hasPin() ? { screens: h('div', {}, iui.adminSwitches(), mui.adminSwitch()), accounts: dcui.adminAccounts() } : null); }
+function trackPanel() {
+  return h('section', { class: 'panel', id: 'tabpanel', role: 'tabpanel', 'aria-labelledby': 'tab-track' }, h('h2', {}, 'Tracking'), trk.section('user'));
+}
+const tracked = () => trackedMap(state.events ?? [], state.settings?.track ?? {});
+
+function adminPanel() { return aui.panel(state.adminUntil || !aui.hasPin() ? { screens: h('div', {}, iui.adminSwitches(), mui.adminSwitch()), accounts: dcui.adminAccounts(), tracking: trk.section('admin') } : null); }
 
 /* Fluid against the doctor's range: water refills plus every drink from the meal log. */
 function waterStatus(total) {
@@ -262,6 +270,7 @@ function render() {
   if (state.view === 'headache') { renderHeadache(); return; }
   if (state.view === 'activity') { renderActivity(); return; }
   if (state.view === 'intake') { renderIntake(); return; }
+  const tm = tracked();
   const entries = todaysWater();
   const total = entries.reduce((s, e) => s + e.ml, 0);
   const shown = activeTheme(state.settings, darkQuery.matches);
@@ -312,12 +321,13 @@ function render() {
         helpButton('main'),
         h('button', { class: 'icon-btn', id: 'cog', 'aria-label': 'Options', onclick: () => { state.view = 'options'; render(); window.scrollTo(0, 0); } }, icon('cog')))),
     h('main', { class: 'home' },
-      h('div', { class: 'home-row' }, waterPanel, h('div', { class: 'home-col' }, hui.mainCard(), dui.mainCard(), mui.glucoseCard())),
-      mui.weightCard(),
-      rxCard(),
-      dui.todayList(),
-      iui.mainCard(),
-      iui.todayList()),
+      h('div', { class: 'home-row' + (tm.water ? '' : ' solo') }, tm.water ? waterPanel : null, h('div', { class: 'home-col' }, tm.headache ? hui.mainCard() : null, tm.day ? dui.mainCard() : null, tm.glucose ? mui.glucoseCard() : null)),
+      tm.weight ? mui.weightCard() : null,
+      tm.meds ? rxCard() : null,
+      tm.day ? dui.todayList() : null,
+      tm.intake ? iui.mainCard() : null,
+      tm.intake ? iui.todayList() : null,
+      Object.values(tm).some(Boolean) ? null : h('section', { class: 'panel', id: 'all-off' }, h('h2', {}, 'Nothing is being tracked'), h('p', {}, 'Every log is switched off. Logs can be turned back on in Options, under Tracking.'))),
     state.toast ? h('div', { class: 'toast', role: 'status' }, state.toast) : null);
 
   app.replaceChildren(view);
@@ -346,9 +356,10 @@ async function start() {
     dui = createDayUI({ h, state, log, reload, render, toast, time, icon, fmt, helpButton });
     tui = createTesterUI({ h, render, toast, time, pastUpdates: () => pn.pastList() });
     pn = createPatchUI({ h, state, render });
+    trk = createTrackingUI({ h, state, log, reload, render, saveSettings, actor: () => dcui.actorId() });
     aui = createAdminUI({ h, state, log, reload, render, toast, time, icon, doctorInfo: () => dcui.resetInfo() });
-    dcui = createDoctorUI({ h, state, log, reload, render, toast, time, icon, ask });
-    rem = createReminderUI({ h, state, log, reload, render, time });
+    dcui = createDoctorUI({ h, state, log, reload, render, toast, time, icon, ask, trackingSection: () => trk.section('doctor') });
+    rem = createReminderUI({ h, state, log, reload, render, time, tracked });
     rxCard = rxMainCard({ h, state, log, reload, render, toast, time, icon, fmt, ask });
     mui = createMeasuresUI({ h, state, log, reload, render, toast, time, icon, fmt, ask });
     iui = createIntakeUI({ h, state, log, reload, render, toast, time, icon, fmt, ask, helpButton });

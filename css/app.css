@@ -494,3 +494,16 @@ body.scan-open { overflow: hidden; }
 .tn-how li { margin: 0.4rem 0; }
 .scan-note { white-space: pre-line; }
 .scan-note { font-weight: 600; }
+
+/* Tracking */
+.trk-list { display: grid; gap: 0.7rem; margin-top: 0.6rem; }
+.trk-row { display: grid; gap: 0.5rem; border: 2px solid var(--line); border-radius: var(--radius); padding: 0.7rem 0.9rem; }
+.trk-info p { margin: 0.2rem 0 0; }
+.trk-row .seg { flex-wrap: wrap; }
+.trk-row .seg button.is-locked { opacity: 0.55; }
+.warn-line { margin: 0; padding: 0.5rem 0.7rem; border: 2px solid var(--orange, #a85a00); border-radius: var(--radius); font-weight: 600; }
+.home-row.solo { grid-template-columns: 1fr; }
+/* Five Options tabs: tighter padding so they fit a tablet without a scrollbar; the row still scrolls on a narrow screen */
+.tab { padding: 0 0.8rem; }
+.tabs { gap: 0.2rem; }
+@media (max-width: 899px) { .tab { padding: 0 0.6rem; } }

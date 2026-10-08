@@ -6,6 +6,7 @@ export const SCREENS = [
   { key: 'activity', label: 'Activity' },
   { key: 'intake', label: 'Food and drink' },
   { key: 'prefs', label: 'My preferences' },
+  { key: 'track', label: 'Tracking' },
   { key: 'doctors', label: 'Doctors' },
   { key: 'admin', label: 'Admin' },
   { key: 'admin-reset', label: 'Admin: Reset data' },

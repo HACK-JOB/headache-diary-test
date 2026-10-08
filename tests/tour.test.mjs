@@ -55,7 +55,7 @@ test('every main-page step has a selector list, a short plain sentence and no pe
 });
 
 test('there is a tour for the main page and each form, all short, plain and impersonal', () => {
-  assert.deepEqual(Object.keys(TOURS).sort(), ['activity', 'headache', 'intake', 'main', 'options-admin', 'options-doctors', 'options-prefs', 'options-tester']);
+  assert.deepEqual(Object.keys(TOURS).sort(), ['activity', 'headache', 'intake', 'main', 'options-admin', 'options-doctors', 'options-prefs', 'options-tester', 'options-track']);
   assert.equal(TOURS.main, MAIN_STEPS);
   for (const [name, steps] of Object.entries(TOURS)) {
     assert.ok(steps.length >= 4, name);

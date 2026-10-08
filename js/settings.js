@@ -10,10 +10,12 @@ export const TEXT_SIZES = [
 export const THEMES = { paper: 'Warm paper', bright: 'Bright', dark: 'Calm dark' };
 import { validTimes } from './nudges.js';
 const LIGHT = ['paper', 'bright'];
+const TRACK_KEYS = ['water', 'headache', 'day', 'intake', 'weight', 'glucose', 'meds'];
 
 export const DEFAULTS = Object.freeze({
   theme: 'paper', lightTheme: 'paper', followSystem: false,
   text: 'big', clock: '12', savedCue: true, artStyle: 'frontOutline', nag: 'normal', chime: true,
+  track: {},
   wakeOn: false, wakeAt: '09:00', glucoseOn: false, glucoseTimes: ['07:30'], sitOn: false, sitMins: 60,
 });
 
@@ -30,6 +32,7 @@ export function normalise(raw) {
     savedCue: typeof r.savedCue === 'boolean' ? r.savedCue : DEFAULTS.savedCue,
     nag: pick(r.nag, ['gentle', 'normal', 'persistent'], DEFAULTS.nag),
     chime: typeof r.chime === 'boolean' ? r.chime : DEFAULTS.chime,
+    track: Object.fromEntries(Object.entries(r.track && typeof r.track === 'object' ? r.track : {}).filter(([k, v]) => TRACK_KEYS.includes(k) && (v === 'on' || v === 'off'))),
     wakeOn: r.wakeOn === true,
     wakeAt: typeof r.wakeAt === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(r.wakeAt) ? r.wakeAt : DEFAULTS.wakeAt,
     glucoseOn: r.glucoseOn === true,

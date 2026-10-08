@@ -205,12 +205,13 @@ export function createAdminUI(ctx) {
       h('button', { class: 'btn quiet small', id: 'pin-lock', onclick: () => { lock(); render(); } }, 'Lock now'));
   }
 
-  /** extra: { screens, accounts } nodes from the other modules. Four side-tab groups; the PIN form forces the PIN group open. */
+  /** extra: { screens, accounts } nodes from the other modules. Five side-tab groups; the PIN form forces the PIN group open. */
   function panel(extra) {
     if (!unlocked()) return lockedView();
     state.side ??= {};
     const groups = [
       { key: 'screens', label: 'Diary screens', nodes: [extra?.screens] },
+      { key: 'tracking', label: 'Tracking', nodes: [extra?.tracking] },
       { key: 'accounts', label: 'Doctor accounts', nodes: [extra?.accounts] },
       { key: 'pin', label: 'Admin PIN', nodes: [pinSection()] },
       { key: 'reset', label: 'Reset data', nodes: [oneSection(), resetSection()] },
