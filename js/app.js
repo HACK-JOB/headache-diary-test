@@ -7,6 +7,7 @@ import { createHeadacheUI } from './headache-ui.js';
 import { createDayUI } from './day-ui.js';
 import { createIntakeUI } from './intake-ui.js';
 import { createAdminUI } from './admin-ui.js';
+import { createTesterUI } from './tester-ui.js';
 import { createDoctorUI } from './doctor-ui.js';
 import { createMeasuresUI } from './measures-ui.js';
 import { createTour } from './tour-ui.js';
@@ -18,7 +19,7 @@ import { dayStatuses } from './doctors.js';
 import { STYLES, artElement, ART_KEYS } from './type-art.js';
 
 const app = document.getElementById('app');
-const TABS = [['prefs', 'My preferences'], ['doctors', 'Doctors'], ['admin', 'Admin']];
+const TABS = [['prefs', 'My preferences'], ['doctors', 'Doctors'], ['admin', 'Admin'], ['tester', 'Tester notes']];
 const state = { events: [], key: dayKey(Date.now()), recent: [], selected: 600, unit: 'ml', toast: '', view: 'main', draft: null, optTab: 'prefs', settings: null };
 const darkQuery = window.matchMedia('(prefers-color-scheme: dark)');
 let log;
@@ -26,6 +27,7 @@ let hui;
 let dui;
 let iui;
 let aui;
+let tui;
 let dcui;
 let mui;
 let rxCard;
@@ -197,7 +199,7 @@ function renderOptions() {
           h('button', { class: 'tab', role: 'tab', id: 'tab-' + k, 'aria-selected': String(state.optTab === k), 'aria-controls': 'tabpanel',
             onclick: () => { if (k !== 'admin') aui.leave(); if (k !== 'doctors') dcui.leave(); state.optTab = k; render(); document.getElementById('tab-' + k)?.focus(); },
             onkeydown: (ev) => { if (ev.key === 'ArrowRight' || ev.key === 'ArrowLeft') { const i = TABS.findIndex(([x]) => x === k); state.optTab = TABS[(i + (ev.key === 'ArrowRight' ? 1 : TABS.length - 1)) % TABS.length][0]; render(); document.getElementById('tab-' + state.optTab)?.focus(); } } }, t))),
-      state.optTab === 'doctors' ? dcui.panel() : state.optTab === 'admin' ? adminPanel() : h('section', { class: 'panel', id: 'tabpanel', role: 'tabpanel', 'aria-labelledby': 'tab-prefs' },
+      state.optTab === 'doctors' ? dcui.panel() : state.optTab === 'admin' ? adminPanel() : state.optTab === 'tester' ? tui.panel() : h('section', { class: 'panel', id: 'tabpanel', role: 'tabpanel', 'aria-labelledby': 'tab-prefs' },
         h('div', { class: 'setting' }, h('h3', {}, 'Colour theme'),
           h('div', { class: 'swatches' }, ...Object.entries(THEMES).map(([k, name]) =>
             h('button', { class: 'swatch', 'data-t': k, 'aria-pressed': String(st.theme === k), onclick: () => saveSettings({ theme: k, ...(k !== 'dark' ? { lightTheme: k } : {}) }) },
@@ -339,6 +341,7 @@ async function start() {
     log = createEventLog(await createIdbStore());
     hui = createHeadacheUI({ h, state, log, reload, render, toast, time, icon, fmt, helpButton });
     dui = createDayUI({ h, state, log, reload, render, toast, time, icon, fmt, helpButton });
+    tui = createTesterUI({ h, render, toast, time });
     aui = createAdminUI({ h, state, log, reload, render, toast, time, icon });
     dcui = createDoctorUI({ h, state, log, reload, render, toast, time, icon, ask });
     rem = createReminderUI({ h, state, log, reload, render, time });

@@ -431,3 +431,12 @@ button, .btn, .chip, .size, .tile, .seg button, select, .clock-sel, input[type="
 /* Hard floor for tap targets at every text size */
 button, select, .clock-sel, .help-btn, .icon-btn, .tab, .btn, .chip, .size, .tile, .seg button,
 input[type="text"], input[type="number"], input[type="time"], input[type="password"], input[type="search"] { min-height: 48px !important; }
+
+/* Tester notes tab */
+.tn-group { margin: 0.6rem 0 1rem; }
+.tn-group h4 { margin: 0 0 0.3rem; font-size: 1rem; }
+textarea.text { width: 100%; min-height: 6rem; resize: vertical; font: inherit; }
+.tn-notes { list-style: none; margin: 1rem 0 0; padding: 0; display: grid; gap: 0.7rem; }
+.tn-notes li { border: 2px solid var(--line); border-radius: var(--radius); padding: 0.7rem 0.9rem; }
+.tn-notes li p { margin: 0.2rem 0; }
+#tn-about { width: 100%; min-height: 3rem; padding: 0 0.7rem; font: inherit; color: var(--ink); background: var(--panel, #fff); border: 2px solid var(--line); border-radius: var(--radius); }
