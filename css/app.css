@@ -22,7 +22,7 @@ html[data-theme="dark"] {
   --teal: #8fd6c9; --teal-dark: #a8e3d8; --teal-soft: #2b4a52; --on-teal: #10222b;
   --red: #e0735a; --on-red: #17232b; --field: #17232b;
   --toast-bg: #e8eef0; --toast-ink: #17232b; --update-bg: #4a3f12; --update-ink: #fff3cd;
-  --alert: #e0735a; --on-alert: #17232b; --amber: #e2b04a; --on-amber: #17232b;
+  --alert: #e0735a; --alert-text: #f0a08e; --on-alert: #17232b; --amber: #e2b04a; --on-amber: #17232b;
   --was-bg: #4a3f12; --was-ink: #fff3b8; --changed-bg: #5a2a22; --changed-ink: #ffd6cc;
   --head-font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
@@ -167,7 +167,7 @@ dialog .row { display: flex; gap: 0.6rem; justify-content: flex-end; margin-top:
 .btn.alert-btn { background: var(--alert); color: var(--on-alert); flex: 1; }
 .two { display: grid; grid-template-columns: 1fr 1fr; gap: 0.7rem; margin-top: 0.9rem; }
 .active-card { border: 3px solid var(--alert); }
-.active-card h2 { color: var(--alert); }
+.active-card h2 { color: var(--alert-text, var(--alert)); }
 .active-line { font-size: 1.1rem; } .active-line.strong { font-size: 1.35rem; font-weight: 700; margin: 0.2rem 0; }
 
 main.form { max-width: 46rem; padding-bottom: 6rem; }
