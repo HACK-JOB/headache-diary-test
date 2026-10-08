@@ -1,7 +1,7 @@
 // The Doctors tab (accounts + change log) and the family-admin tools for managing doctor accounts.
 // PINs are convenience locks (see pin.js). The family admin manages accounts but sees no clinical data.
 import { validPinFormat, makeRecord, checkPin, afterFail, afterSuccess, lockedFor, unlockUntil, isUnlocked } from './pin.js';
-import { doctors, validateDoctor, changeLog } from './doctors.js';
+import { doctors, validateDoctor, changeLog, needsLogin } from './doctors.js';
 import { formatLongDate } from './time.js';
 
 const TRIES = 'hd.doctorTries';
@@ -9,12 +9,14 @@ const readTries = () => { try { return JSON.parse(localStorage.getItem(TRIES)) ?
 
 export function createDoctorUI(ctx) {
   const { h, state, log, reload, render, icon, ask, time } = ctx;
-  const st = { mode: 'view', error: '', info: '', pick: '', resetId: '' };   // view | add | mine
+  const st = { mode: 'view', error: '', info: '', pick: '', resetId: '', setId: '' };   // view | add | mine
   let timer;
 
   const list = () => doctors(state.events);
   const me = () => list().find((d) => d.id === state.doctorId) ?? null;
-  const unlocked = () => !!me() && isUnlocked(state.doctorUntil, Date.now());
+  const open = () => !needsLogin(state.events);      // nobody has a PIN yet: the tab is open
+  const unlocked = () => open() || (!!me() && isUnlocked(state.doctorUntil, Date.now()));
+  const actor = () => (open() ? 'open' : me()?.id ?? 'open');
 
   function lock() { state.doctorUntil = 0; state.doctorId = null; st.mode = 'view'; st.error = ''; st.info = ''; clearTimeout(timer); }
   function unlock(id) {
@@ -38,18 +40,29 @@ export function createDoctorUI(ctx) {
   async function addDoctor(by) {
     const name = val('d-name'); const role = val('d-role'); const a = val('d-pin'); const b = val('d-pin2');
     if (validateDoctor({ name, role }).length) return fail('Please type a name and a role, for example "Dr Lee" and "GP".');
-    if (!validPinFormat(a)) return fail('Please use 4 to 6 digits for the PIN, numbers only.');
-    if (a !== b) return fail('The two PINs are different. Please type them again.');
+    const skipPin = open() && a === '' && b === '';       // while the tab is open a PIN can be added later
+    if (!skipPin && !validPinFormat(a)) return fail('Please use 4 to 6 digits for the PIN, numbers only.');
+    if (!skipPin && a !== b) return fail('The two PINs are different. Please type them again.');
     const id = (globalThis.crypto?.randomUUID?.() ?? String(Date.now()));
-    await log.add({ type: 'doctor', kind: 'add', doctorId: id, name: name.trim(), role: role.trim(), pin: await makeRecord(a), by });
+    await log.add({ type: 'doctor', kind: 'add', doctorId: id, name: name.trim(), role: role.trim(), pin: skipPin ? null : await makeRecord(a), by: open() ? 'open' : by });
     await reload();
-    st.mode = 'view'; st.error = ''; st.info = `${name.trim()} was added.`;
-    if (by !== 'admin' && by !== 'setup') { /* an unlocked doctor stays signed in */ } else if (by === 'setup') unlock(id);
+    st.mode = 'view'; st.error = ''; st.info = skipPin ? `${name.trim()} was added. Set a PIN below to lock this tab.` : `${name.trim()} was added.`;
+    if (by === 'setup' && !skipPin) unlock(id);
     render();
   }
 
+  async function setPinFor(d) {
+    const a = val('s-new'); const b = val('s-again');
+    if (!validPinFormat(a)) return fail('Please use 4 to 6 digits, numbers only.');
+    if (a !== b) return fail('The two PINs are different. Please type them again.');
+    await log.add({ type: 'doctor', kind: 'pin', doctorId: d.id, pin: await makeRecord(a), by: 'open' });
+    await reload(); st.setId = ''; st.error = '';
+    st.info = `A PIN was set for ${d.name}. ${needsLogin(state.events) ? 'This tab now asks for a name and PIN.' : ''}`;
+    lock(); render();
+  }
+
   async function signIn() {
-    const id = val('d-pick') || list()[0]?.id; const d = list().find((x) => x.id === id);
+    const id = val('d-pick') || list().find((x) => x.pin)?.id; const d = list().find((x) => x.id === id);
     if (!d) return fail('Please choose a name.');
     const all = readTries(); const tries = all[id] ?? { fails: 0, until: 0 };
     const wait = lockedFor(tries, Date.now());
@@ -99,14 +112,14 @@ export function createDoctorUI(ctx) {
     err(),
     textField('d-name', 'Name', 'e.g. Dr Lee'),
     textField('d-role', 'Role', 'e.g. GP or Dietitian'),
-    pinField('d-pin', 'PIN (4 to 6 numbers)'),
+    pinField('d-pin', open() ? 'PIN (4 to 6 numbers, or leave empty for now)' : 'PIN (4 to 6 numbers)'),
     pinField('d-pin2', 'Type the PIN again', { onkeydown: (ev) => { if (ev.key === 'Enter') { ev.preventDefault(); addDoctor(by); } } }),
     h('div', { class: 'two' },
       list().length ? h('button', { class: 'btn quiet', id: 'd-cancel', onclick: () => { st.mode = 'view'; st.error = ''; render(); } }, 'Cancel') : h('span', {}),
       h('button', { class: 'btn primary', id: 'd-save', onclick: () => addDoctor(by) }, 'Add doctor')));
 
   function loginView() {
-    const ds = list();
+    const ds = list().filter((d) => d.pin);
     return panel(
       h('div', { class: 'lock' }, icon('lock'), h('div', {}, h('h3', {}, 'Doctors'), h('p', { class: 'hint' }, 'For her doctor or dietitian. Choose your name and type your PIN.'))),
       err(),
@@ -137,10 +150,28 @@ export function createDoctorUI(ctx) {
         h('button', { class: 'btn primary', id: 'm-save', onclick: changeMine }, 'Save PIN')));
   }
 
+  function openPanel(sections) {
+    const ds = list();
+    return panel(
+      h('div', { class: 'lock' }, icon('unlock'), h('div', {}, h('h3', {}, 'Doctors'),
+        h('p', { class: 'hint' }, 'Open for now: nobody has set a PIN yet, so anyone using this tablet can see and change this tab. Set a PIN for a doctor to lock it.'))),
+      st.info ? h('p', { class: 'meta', role: 'status' }, st.info) : null,
+      ds.length ? h('div', { class: 'setting' }, h('h3', {}, 'Doctors on this diary'),
+        h('ul', { class: 'account-list' }, ...ds.map((d) => h('li', {},
+          h('span', { class: 'who' }, `${d.name} (${d.role})`),
+          st.setId === d.id
+            ? h('div', { class: 'reset-form' }, err(), pinField('s-new', 'New PIN (4 to 6 numbers)'),
+              pinField('s-again', 'Type it again', { onkeydown: (ev) => { if (ev.key === 'Enter') { ev.preventDefault(); setPinFor(d); } } }),
+              h('div', { class: 'two' }, h('button', { class: 'btn quiet', onclick: () => { st.setId = ''; st.error = ''; render(); } }, 'Cancel'), h('button', { class: 'btn primary', id: 's-save', onclick: () => setPinFor(d) }, 'Save PIN')))
+            : h('button', { class: 'btn quiet', 'data-setpin': d.id, onclick: () => { st.setId = d.id; st.error = ''; st.info = ''; render(); } }, 'Set a PIN'))))) : null,
+      st.mode === 'add' || !ds.length ? addForm('open', ds.length ? 'Add a new doctor' : 'Add the first doctor')
+        : h('button', { class: 'btn quiet', id: 'd-add', onclick: () => { st.mode = 'add'; st.error = ''; st.info = ''; render(); } }, 'Add new doctor'),
+      ...sections,
+      logView());
+  }
+
   function doctorsPanel(sections = []) {
-    if (!list().length) {
-      return panel(h('div', { class: 'lock' }, icon('lock'), h('div', {}, h('h3', {}, 'Doctors'), h('p', { class: 'hint' }, 'No doctor has been added yet. The first person to add one, you or the doctor, sets up the first account.'))), addForm('setup', 'Add the first doctor'));
-    }
+    if (open()) return openPanel(sections);
     if (!unlocked()) return loginView();
     const d = me();
     return panel(
@@ -152,7 +183,7 @@ export function createDoctorUI(ctx) {
       st.mode === 'mine' ? mineForm() : null,
       st.mode === 'add' ? addForm(d.id, 'Add a new doctor')
         : h('div', { class: 'setting' }, h('h3', {}, 'Doctors on this diary'),
-          h('ul', { class: 'plain-list' }, ...list().map((x) => h('li', {}, `${x.name} (${x.role})`))),
+          h('ul', { class: 'plain-list' }, ...list().map((x) => h('li', {}, `${x.name} (${x.role})${x.pin ? '' : ' - no PIN yet'}`))),
           h('button', { class: 'btn quiet', id: 'd-add', onclick: () => { st.mode = 'add'; st.error = ''; st.info = ''; render(); } }, 'Add new doctor')),
       ...sections,
       logView());
@@ -171,7 +202,7 @@ export function createDoctorUI(ctx) {
           ? h('div', { class: 'reset-form' }, err(), pinField('r-new', 'New PIN'), pinField('r-again', 'Type it again', { onkeydown: (ev) => { if (ev.key === 'Enter') { ev.preventDefault(); adminReset(d.id); } } }),
             h('div', { class: 'two' }, h('button', { class: 'btn quiet', onclick: () => { st.resetId = ''; st.error = ''; render(); } }, 'Cancel'), h('button', { class: 'btn primary', id: 'r-save', onclick: () => adminReset(d.id) }, 'Save new PIN')))
           : h('div', { class: 'two' },
-            h('button', { class: 'btn quiet', 'data-reset': d.id, onclick: () => { st.resetId = d.id; st.error = ''; st.info = ''; render(); } }, 'Reset PIN'),
+            h('button', { class: 'btn quiet', 'data-reset': d.id, onclick: () => { st.resetId = d.id; st.error = ''; st.info = ''; render(); } }, d.pin ? 'Reset PIN' : 'Set PIN'),
             h('button', { class: 'btn quiet', 'data-remove': d.id, onclick: () => adminRemove(d) }, 'Remove'))))) : h('p', { class: 'hint' }, 'No doctors yet.'),
       st.mode !== 'add' ? h('button', { class: 'btn quiet', id: 'a-add', onclick: () => { st.mode = 'add'; st.error = ''; st.info = ''; render(); } }, 'Add a doctor') : null);
   }

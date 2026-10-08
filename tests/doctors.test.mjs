@@ -121,3 +121,27 @@ test('changeLog: who, what, from and to, newest first, and it never contains a P
 test('there is a target for fluid and for each of the eleven nutrients', () => {
   assert.deepEqual(TARGET_KEYS.map((k) => k.key), ['fluid', 'calories', 'carbs', 'sugar', 'fibre', 'protein', 'fat', 'satFat', 'transFat', 'sodium', 'iron', 'caffeine']);
 });
+
+import { needsLogin } from '../js/doctors.js';
+
+test('open until a PIN exists: needsLogin is false with no doctors, or only doctors without a PIN', () => {
+  assert.equal(needsLogin([]), false);
+  const noPin = ev({ type: 'doctor', kind: 'add', doctorId: 'x', name: 'Dr Open', role: 'GP', pin: null, by: 'open' }, 1);
+  assert.equal(needsLogin([noPin]), false);
+  assert.equal(doctors([noPin])[0].pin, null);
+  assert.equal(needsLogin([noPin, add('a', 'Dr Lee', 'GP', 2)]), true);
+});
+
+test('setting a PIN later turns login on; removing the only PIN holder turns it off again', () => {
+  const noPin = ev({ type: 'doctor', kind: 'add', doctorId: 'x', name: 'Dr Open', role: 'GP', pin: null, by: 'open' }, 1);
+  const withPin = [noPin, ev({ type: 'doctor', kind: 'pin', doctorId: 'x', pin: { v: 1, iter: 1, salt: 's', hash: 'h' }, by: 'open' }, 2)];
+  assert.equal(needsLogin(withPin), true);
+  assert.equal(needsLogin([...withPin, ev({ type: 'doctor', kind: 'remove', doctorId: 'x', by: 'admin' }, 3)]), false);
+});
+
+test('changes made while open are labelled as open access, and a no-PIN add says so', () => {
+  const evs = [ev({ type: 'doctor', kind: 'add', doctorId: 'x', name: 'Dr Open', role: 'GP', pin: null, by: 'open' }, 1),
+    ev({ type: 'clinical', kind: 'note', text: 'hello', by: 'open' }, 2)];
+  assert.equal(changeLog(evs)[0].byName, 'Open access (no PIN set)');
+  assert.equal(notes(evs)[0].byName, 'Open access (no PIN set)');
+});

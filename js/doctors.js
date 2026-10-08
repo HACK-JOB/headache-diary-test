@@ -15,6 +15,7 @@ export const TARGET_KEYS = [{ key: 'fluid', label: 'Fluid (all drinks)', unit: '
 
 const live = (events, type) => events.filter((e) => e.type === type && !e.deleted).sort(byTime);
 const FAMILY = 'Family admin';
+const OPEN = 'Open access (no PIN set)';
 
 export function validateDoctor(f) {
   const errors = [];
@@ -27,15 +28,19 @@ export function validateDoctor(f) {
 export function doctors(events) {
   const map = new Map();
   for (const e of live(events, 'doctor')) {
-    if (e.kind === 'add') map.set(e.doctorId, { id: e.doctorId, name: String(e.name).trim(), role: String(e.role).trim(), pin: e.pin, addedMs: e.ms });
-    else if (e.kind === 'pin' && map.has(e.doctorId)) map.get(e.doctorId).pin = e.pin;
+    if (e.kind === 'add') map.set(e.doctorId, { id: e.doctorId, name: String(e.name).trim(), role: String(e.role).trim(), pin: e.pin ?? null, addedMs: e.ms });
+    else if (e.kind === 'pin' && map.has(e.doctorId)) map.get(e.doctorId).pin = e.pin ?? null;
     else if (e.kind === 'remove') map.delete(e.doctorId);
   }
   return [...map.values()];
 }
 
+/** The Doctors tab is open to anyone until at least one doctor has a PIN. */
+export const needsLogin = (events) => doctors(events).some((d) => !!d.pin);
+
 const nameOf = (events, id) => {
   if (id === 'setup' || id === 'admin') return FAMILY;
+  if (id === 'open') return OPEN;
   // include removed doctors so old entries keep their author
   let name = null;
   for (const e of live(events, 'doctor')) if (e.kind === 'add' && e.doctorId === id) name = String(e.name).trim();
