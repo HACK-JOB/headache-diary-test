@@ -294,3 +294,22 @@ export function growBlocked(items, id) {
   const mine = lanes.find((l) => l.some((m) => m.id === id));
   return lanes.some((l) => l !== mine && l.every((m) => m.locked) && laneTotal(l) <= laneTotal(mine));
 }
+
+/** Settle the page: plan heights for the blocks from where panels really sit, place the panels with those heights, read where
+ *  they landed, and plan again, until nothing changes. A plan made from the old positions can describe a layout that no longer
+ *  exists once panels have slid about, so one pass is not enough.
+ *  naturalHeights: { id: px }. placeFn(heights) lays the panels out with those heights and returns the items for planHeights.
+ *  Heights only ever grow from their natural height. Returns { heights, rounds, stable }. */
+export function settleLayout(naturalHeights, placeFn, maxRounds = 6) {
+  let heights = { ...naturalHeights };
+  for (let round = 1; round <= maxRounds; round++) {
+    // Plan from natural heights on the positions as placed. Planning from the stretched heights would add to a stretch the last
+    // round already made, so a panel could only ever grow.
+    const planned = planHeights(placeFn(heights).map((i) => ({ ...i, bottom: i.top + (naturalHeights[i.id] ?? i.bottom - i.top) })));
+    const next = Object.fromEntries(Object.entries(naturalHeights).map(([id, nat]) => [id, Math.max(nat, Math.round(planned[id] ?? nat))]));
+    const same = Object.keys(next).every((id) => Math.abs(next[id] - heights[id]) < 1);
+    heights = next;
+    if (same) return { heights, rounds: round, stable: true };
+  }
+  return { heights, rounds: maxRounds, stable: false };
+}

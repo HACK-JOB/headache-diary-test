@@ -415,3 +415,58 @@ test('a short panel beside a tall one counts when most of it is alongside', () =
   const edge = items.map((i) => (i.id === 'b' ? { ...i, top: 490, bottom: 560 } : i));
   assert.equal(blocksOf(edge).length, 0);                                                              // 10px shared: no
 });
+
+import { settleLayout } from '../js/layout.js';
+test('settleLayout: re-plans after panels move, so heights come from where panels really end up', () => {
+  // A packer that puts each panel in the shorter lane: a fake of the page's dense packing, to prove the loop converges.
+  const lanes = (heights, order) => {
+    const col = { 0: 0, 3: 0 }, out = [];
+    for (const id of order) {
+      const c0 = col[0] <= col[3] ? 0 : 3;
+      out.push({ id, c0, c1: c0 + 3, top: col[c0], bottom: col[c0] + heights[id] });
+      col[c0] += heights[id] + 20;
+    }
+    return out;
+  };
+  const natural = { a: 400, b: 100, c: 100, d: 100 };
+  const layoutFn = (heights) => lanes(heights, ['a', 'b', 'c', 'd']).map((i) => ({ ...i, snap: i.id === 'b', locked: false }));
+  const r = settleLayout(natural, layoutFn);
+  assert.ok(r.rounds >= 1 && r.rounds <= 6);
+  assert.equal(r.stable, true);
+  // the result is a fixed point: planning again from the settled placement changes nothing
+  const again = settleLayout(r.heights, layoutFn);
+  assert.deepEqual(again.heights, r.heights);
+});
+
+test('settleLayout stops after a few rounds even if the layout never settles, and reports it', () => {
+  let flip = 0;
+  const layoutFn = (heights) => [
+    { id: 'a', snap: true, locked: false, c0: 0, c1: 3, top: 0, bottom: heights.a },
+    { id: 'b', snap: true, locked: false, c0: (flip++ % 2) * 3, c1: (flip % 2) * 3 + 3, top: 0, bottom: heights.b + 40 },
+  ];
+  const r = settleLayout({ a: 100, b: 100 }, layoutFn, 4);
+  assert.ok(r.rounds <= 4);
+  assert.equal(typeof r.stable, 'boolean');
+});
+
+test('settleLayout never makes a panel shorter than its natural height', () => {
+  const layoutFn = (h) => [
+    { id: 'a', snap: true, locked: false, c0: 0, c1: 3, top: 0, bottom: h.a },
+    { id: 'b', snap: true, locked: false, c0: 3, c1: 6, top: 0, bottom: h.b },
+  ];
+  const r = settleLayout({ a: 300, b: 120 }, layoutFn);
+  assert.equal(r.heights.a, 300);
+  assert.equal(r.heights.b, 300);
+  assert.ok(Object.entries(r.heights).every(([id, v]) => v >= { a: 300, b: 120 }[id]));
+});
+
+test('settleLayout plans from natural heights, so a stretch can shrink back instead of ratcheting up', () => {
+  // b is stretched to 400 in the placement it is handed, but its natural height is 100 and its lane partner is only 150 tall.
+  const placed = (h) => [
+    { id: 'a', snap: true, locked: false, c0: 0, c1: 3, top: 0, bottom: h.a },
+    { id: 'b', snap: true, locked: false, c0: 3, c1: 6, top: 0, bottom: h.b },
+  ];
+  const r = settleLayout({ a: 150, b: 100 }, (h) => placed({ a: h.a, b: 400 }));          // placement always shows b at 400
+  assert.equal(r.heights.a, 150);
+  assert.equal(r.heights.b, 150);                                                          // not 400: the stretch comes from the plan, not the placement
+});

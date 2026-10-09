@@ -2,7 +2,7 @@
 // Unlocked: every panel shows a bar to move it (Earlier / Later buttons, or drag the handle) and its contents are switched off,
 // so nothing can be entered or tapped by mistake. Portrait and landscape keep separate layouts. Saved on this tablet only.
 import { PANELS, COLS, TEXT_PX, PANEL_TEXT, TALL_STEP_REM, GRIPS, normaliseLayout, defaultLayout, orientationOf, orderFor, spanFor, rowsFor, moveStep, moveTo,
-  textFor, setText, zoomFor, minPx, minSpan, panelWidth, setSpan, heightBy, snapSpan, snapTall, isFree, setFree, isLoose, anyLoose, setLoose, isLocked, setLocked, planHeights, growBlocked, blocksOf, masonrySpan } from './layout.js';
+  textFor, setText, zoomFor, minPx, minSpan, panelWidth, setSpan, heightBy, snapSpan, snapTall, isFree, setFree, isLoose, anyLoose, setLoose, isLocked, setLocked, planHeights, growBlocked, blocksOf, settleLayout, masonrySpan } from './layout.js';
 
 const KEY = 'hd.layout';
 
@@ -90,11 +90,16 @@ export function createLayoutUI({ h, state, render, icon }) {
       return Math.max(0, ...[...item.children].filter((c) => !c.classList.contains('pg-grip')).map((c) => c.getBoundingClientRect().bottom - top));
     };
     for (const item of items) { item.dataset.packed = '1'; item.style.gridRow = 'auto'; item.style.alignSelf = 'start'; item.style.minHeight = ''; }
-    // Lay every panel out at its natural height, read where each one landed, then let each block of snapped panels settle.
-    const settle = (heights) => { for (const item of items) { const h = heights[item.dataset.panel]; item.style.minHeight = `${h}px`; item.style.gridRow = `span ${masonrySpan({ heightPx: h, gapPx: m.gap, unitPx: unit })}`; } };
+    // Place the panels, read where they landed, plan the blocks from that, and repeat until nothing changes. One pass is not enough:
+    // a taller panel lets the one below slide into another column, and a plan made from the old positions then no longer fits.
+    const place = (heights) => {
+      for (const item of items) { const h = heights[item.dataset.panel]; item.style.minHeight = `${h}px`; item.style.gridRow = `span ${masonrySpan({ heightPx: h, gapPx: m.gap, unitPx: unit })}`; }
+      return geometry(m, items);
+    };
     const natural = Object.fromEntries(items.map((item) => [item.dataset.panel, measure(item)]));
-    settle(natural);
-    settle(planHeights(geometry(m, items)));
+    const result = settleLayout(natural, place);
+    place(result.heights);
+    m.g.dataset.settled = result.stable ? String(result.rounds) : 'no';
   }
 
   /** Where every panel sits now, in columns and pixels, for the block logic. */
