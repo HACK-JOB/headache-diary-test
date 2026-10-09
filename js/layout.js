@@ -27,7 +27,7 @@ export const MIN_REM = {
   small:  { water: 9, headache: 14.5, day: 10.5, glucose: 11, weight: 11, meds: 20.5, today: 9, intake: 33,   eaten: 9 },
 };
 
-const one = () => ({ order: [...IDS], span: { ...DEFAULT_SPAN }, rows: Object.fromEntries(IDS.map((id) => [id, DEFAULT_ROWS[id] ?? 1])), tall: Object.fromEntries(IDS.map((id) => [id, 0])), free: false });
+const one = () => ({ order: [...IDS], span: { ...DEFAULT_SPAN }, rows: Object.fromEntries(IDS.map((id) => [id, DEFAULT_ROWS[id] ?? 1])), tall: Object.fromEntries(IDS.map((id) => [id, 0])), loose: {} });
 export const defaultLayout = () => ({ portrait: one(), landscape: one(), text: {} });
 
 const int = (v, lo, hi) => (Number.isInteger(v) && v >= lo && v <= hi ? v : null);
@@ -40,7 +40,8 @@ function clean(raw) {
   for (const id of Array.isArray(r.order) ? r.order : []) if (IDS.includes(id) && !seen.has(id)) { seen.add(id); order.push(id); }
   for (const id of IDS) if (!seen.has(id)) order.push(id);
   out.order = order;
-  out.free = r.free === true;
+  // 'free: true' is the earlier single switch: it meant every panel is loose
+  for (const id of IDS) if (r.loose?.[id] === true || r.free === true) out.loose[id] = true;
   for (const id of IDS) {
     out.span[id] = int(r.span?.[id], 1, COLS) ?? DEFAULT_SPAN[id];
     out.rows[id] = int(r.rows?.[id], 1, 6) ?? (DEFAULT_ROWS[id] ?? 1);
@@ -80,7 +81,7 @@ export function moveTo(layout, orient, id, targetId, after) {
 
 /** Rows a panel spans. A panel taller than one row only keeps as many rows as there are panels that can sit beside it. */
 export function rowsFor(layout, orient, id, visible) {
-  if (layout[orient].free) return 1;
+  if (anyLoose(layout, orient)) return 1;
   const want = layout[orient].rows[id] ?? 1;
   if (want <= 1) return 1;
   const vis = orderFor(layout, orient, visible);
@@ -176,7 +177,7 @@ export const GRIPS = [
 /** Net height change in steps. Shorter takes off extra height first, then built-in rows (down to 1); taller puts rows back first, then adds height. */
 export function heightBy(layout, orient, id, steps) {
   if (!IDS.includes(id) || !steps) return layout;
-  const free = layout[orient].free;
+  const free = anyLoose(layout, orient);
   const home = free ? layout[orient].rows[id] : (DEFAULT_ROWS[id] ?? 1);
   let rows = layout[orient].rows[id], tall = layout[orient].tall[id];
   for (let i = 0; i < Math.abs(steps); i++) {
@@ -187,11 +188,37 @@ export function heightBy(layout, orient, id, steps) {
   return put(layout, orient, { rows: { ...layout[orient].rows, [id]: rows }, tall: { ...layout[orient].tall, [id]: tall } });
 }
 
-/** Free flow: every panel has its own height and the one below slides up into any gap. Off means neighbours stay level. */
-export const isFree = (layout, orient) => layout[orient].free === true;
+/** A loose panel keeps its own height and the panel below slides up into any gap. A snapped panel stays level with the snapped panels beside it. */
+export const isLoose = (layout, orient, id) => layout[orient].loose?.[id] === true;
+export const anyLoose = (layout, orient) => IDS.some((id) => isLoose(layout, orient, id));
+export function setLoose(layout, orient, id, on) {
+  if (!IDS.includes(id) || isLoose(layout, orient, id) === !!on) return layout;
+  const loose = { ...layout[orient].loose };
+  if (on) loose[id] = true; else delete loose[id];
+  return put(layout, orient, { loose });
+}
+
+/** The two all-at-once buttons: every panel loose (Free flow) or every panel snapped (Snapped rows). */
+export const isFree = (layout, orient) => IDS.every((id) => isLoose(layout, orient, id));
 export function setFree(layout, orient, on) {
-  if (isFree(layout, orient) === !!on) return layout;
-  return put(layout, orient, { free: !!on });
+  if (isFree(layout, orient) === !!on && (on || !anyLoose(layout, orient))) return layout;
+  return put(layout, orient, { loose: on ? Object.fromEntries(IDS.map((id) => [id, true])) : {} });
+}
+
+/** Heights after levelling. Snapped panels that start on the same line (within tol px) share the tallest one; loose panels keep theirs. */
+export function levelHeights(items, tol) {
+  const out = {};
+  const snapped = items.filter((i) => i.snap).sort((a, b) => a.top - b.top);
+  for (const i of items) if (!i.snap) out[i.id] = i.h;
+  let k = 0;
+  while (k < snapped.length) {
+    let e = k + 1;
+    while (e < snapped.length && snapped[e].top - snapped[k].top <= tol) e += 1;
+    const tallest = Math.max(...snapped.slice(k, e).map((i) => i.h));
+    for (const i of snapped.slice(k, e)) out[i.id] = tallest;
+    k = e;
+  }
+  return out;
 }
 
 /** Free flow packs panels on a fine grid of small rows. This is how many of them a panel of this height needs, gap included. */

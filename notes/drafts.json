@@ -29,6 +29,6 @@
   },
   {
     "screen": "main",
-    "text": "While the layout is unlocked, Free flow lets each panel keep its own height so the panel below slides up into any gap."
+    "text": "Each panel's Size box has Snap to neighbours. Loose panels keep their own height so the panel below slides up."
   }
 ]

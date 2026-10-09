@@ -270,3 +270,46 @@ test('masonrySpan: whole small rows that hold the panel and the gap, at least 1'
   assert.equal(masonrySpan({ heightPx: 0, gapPx: 0, unitPx: 4 }), 1);
   assert.equal(masonrySpan({ heightPx: 50, gapPx: 10, unitPx: 0 }), 1);
 });
+
+import { isLoose, setLoose, anyLoose, levelHeights } from '../js/layout.js';
+test('per-panel snapping: every panel snaps by default, loose is saved per panel and orientation', () => {
+  const d = defaultLayout();
+  assert.equal(isLoose(d, 'portrait', 'water'), false);
+  assert.equal(anyLoose(d, 'portrait'), false);
+  const l = setLoose(d, 'portrait', 'day', true);
+  assert.equal(isLoose(l, 'portrait', 'day'), true);
+  assert.equal(isLoose(l, 'portrait', 'water'), false);
+  assert.equal(isLoose(l, 'landscape', 'day'), false);
+  assert.equal(anyLoose(l, 'portrait'), true);
+  assert.equal(setLoose(d, 'portrait', 'day', false), d);
+  assert.equal(setLoose(d, 'portrait', 'nope', true), d);
+  assert.equal(isLoose(normaliseLayout(JSON.parse(JSON.stringify(l))), 'portrait', 'day'), true);
+  assert.equal(isLoose(normaliseLayout({ portrait: { loose: { day: 'yes', water: true } } }), 'portrait', 'day'), false);
+  assert.equal(isLoose(normaliseLayout({ portrait: { loose: { day: 'yes', water: true } } }), 'portrait', 'water'), true);
+});
+
+test('Free flow / Snapped rows buttons set every panel at once', () => {
+  const f = setFree(defaultLayout(), 'portrait', true);
+  assert.ok(ALL.every((id) => isLoose(f, 'portrait', id)));
+  assert.equal(isFree(f, 'portrait'), true);
+  assert.equal(isFree(setLoose(f, 'portrait', 'day', false), 'portrait'), false);
+  assert.ok(ALL.every((id) => !isLoose(setFree(f, 'portrait', false), 'portrait', id)));
+});
+
+test('once any panel is loose, built-in rows are ignored for every panel', () => {
+  const l = setLoose(defaultLayout(), 'portrait', 'day', true);
+  assert.equal(rowsFor(l, 'portrait', 'water', ALL), 1);
+  assert.equal(rowsFor(defaultLayout(), 'portrait', 'water', ALL), 3);
+  assert.equal(heightBy(l, 'portrait', 'water', -1), l);
+});
+
+test('levelHeights: snapped panels that start on the same line share the tallest height; loose ones keep their own', () => {
+  const items = [
+    { id: 'a', snap: true, top: 0, h: 100 }, { id: 'b', snap: true, top: 1, h: 160 },
+    { id: 'c', snap: false, top: 0, h: 90 },
+    { id: 'd', snap: true, top: 300, h: 80 }, { id: 'e', snap: true, top: 300, h: 70 },
+    { id: 'f', snap: true, top: 500, h: 60 },
+  ];
+  assert.deepEqual(levelHeights(items, 4), { a: 160, b: 160, c: 90, d: 80, e: 80, f: 60 });
+  assert.deepEqual(levelHeights([], 4), {});
+});

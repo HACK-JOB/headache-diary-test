@@ -562,3 +562,7 @@ html.layout-edit .pg-top { margin: 0.8rem 1rem 1rem; }
 .pg-flow .seg { display: flex; flex-wrap: wrap; gap: 0.4rem; }
 .pg-flow .seg .btn { flex: 1 1 8rem; }
 .pg-flow .btn.on { background: var(--card); border-color: var(--teal); }
+.pg-set .setting-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
+.pg-set .setting-row .hint { flex: 1 1 10rem; }
+.pg-set .setting-row .btn.on { background: var(--teal-soft); border-color: var(--teal); }
+.pg-flow .btn.on { background: var(--teal-soft); }
