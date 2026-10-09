@@ -590,3 +590,7 @@ html.sheet-open body { padding-bottom: calc(var(--sheet-h, 0px) + 1rem); }
 .pg-set .btn, .pg-flow .btn, .pg-sheet .btn:not(.primary) { background: var(--card); color: var(--ink); border-color: var(--line); }
 .pg-set .btn.on, .pg-flow .btn.on { background: var(--teal-soft); border-color: var(--teal); color: var(--ink); }
 .pg-set .btn.quiet { background: transparent; }
+/* While a panel is being resized: an outline shows the new size, and nothing on the page moves until release */
+.pg-ghost { position: fixed; z-index: 30; pointer-events: none; border: 4px solid var(--teal); border-radius: var(--radius); background: color-mix(in srgb, var(--teal) 14%, transparent); }
+.pg-ghost-tag { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); max-width: 90%; text-align: center; font-weight: 700; color: var(--ink); background: var(--bg); border: 2px solid var(--teal); border-radius: var(--radius); padding: 0.3rem 0.7rem; }
+.pg-item.is-resizing { outline: 5px solid var(--teal); outline-offset: 3px; }

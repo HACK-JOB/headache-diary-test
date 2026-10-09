@@ -2,7 +2,7 @@
 // Unlocked: every panel shows a bar to move it (Earlier / Later buttons, or drag the handle) and its contents are switched off,
 // so nothing can be entered or tapped by mistake. Portrait and landscape keep separate layouts. Saved on this tablet only.
 import { PANELS, COLS, TEXT_PX, PANEL_TEXT, TALL_STEP_REM, GRIPS, normaliseLayout, defaultLayout, orientationOf, orderFor, spanFor, rowsFor, moveStep, moveTo,
-  textFor, setText, zoomFor, minPx, minSpan, setSpan, heightBy, snapSpan, snapTall, isFree, setFree, isLoose, anyLoose, setLoose, isLocked, setLocked, planHeights, growBlocked, masonrySpan } from './layout.js';
+  textFor, setText, zoomFor, minPx, minSpan, panelWidth, setSpan, heightBy, snapSpan, snapTall, isFree, setFree, isLoose, anyLoose, setLoose, isLocked, setLocked, planHeights, growBlocked, masonrySpan } from './layout.js';
 
 const KEY = 'hd.layout';
 
@@ -155,18 +155,34 @@ export function createLayoutUI({ h, state, render, icon }) {
     const start = { x: ev.clientX, y: ev.clientY, span: Math.max(spanFor(layout, o, id), min), tall: layout[o].tall[id] ?? 0 };
     let now = layout;
     const base = layout;
+    // Nothing on the page moves while dragging: an outline shows the new size and the page updates once, on release.
+    const r0 = item.getBoundingClientRect();
+    const ghost = h('div', { class: 'pg-ghost', 'aria-hidden': 'true' }, h('span', { class: 'pg-ghost-tag' }, ''));
+    document.body.append(ghost);
+    item.classList.add('is-resizing');
+    const showGhost = (next, dsteps) => {
+      const span = Math.max(spanFor(next, o, id), min), cur = Math.max(spanFor(base, o, id), min);
+      const wNew = one ? r0.width : panelWidth(span, m.width, m.gap) - panelWidth(cur, m.width, m.gap) + r0.width;
+      const hNew = Math.max(48, r0.height + dsteps * TALL_STEP_REM * rem);
+      const left = g.x < 0 ? r0.right - wNew : r0.left, top = g.y < 0 ? r0.bottom - hNew : r0.top;
+      Object.assign(ghost.style, { left: `${left}px`, top: `${top}px`, width: `${wNew}px`, height: `${hNew}px` });
+      const bits = [];
+      if (g.x && !one) bits.push(`${span} of ${COLS} wide`);
+      if (g.y) bits.push(dsteps === 0 || isLocked(layout, o, id) ? 'height same' : dsteps > 0 ? `taller by ${dsteps}` : `shorter by ${-dsteps}`);
+      ghost.firstChild.textContent = bits.join(', ');
+    };
     const move = (e) => {
       let next = base;
       if (g.x && !one) next = setSpan(next, o, id, snapSpan({ startSpan: start.span, dxPx: e.clientX - start.x, sign: g.x, colW: m.colW, gap: m.gap, min }), min);
-      const dsteps = Math.round(((e.clientY - start.y) * g.y) / (TALL_STEP_REM * rem));
-      if (g.y && !isLocked(layout, o, id) && !(stopped && dsteps > 0)) next = heightBy(next, o, id, dsteps);
+      let dsteps = Math.round(((e.clientY - start.y) * g.y) / (TALL_STEP_REM * rem));
+      if (isLocked(layout, o, id) || (stopped && dsteps > 0)) dsteps = 0;
+      if (g.y && dsteps) next = heightBy(next, o, id, dsteps);
       now = next;
-      item.style.gridColumn = `span ${Math.max(spanFor(next, o, id), min)}`;
-      const body = item.querySelector('.pg-body'); if (body) body.style.paddingBottom = `${(next[o].tall[id] ?? 0) * TALL_STEP_REM}rem`;
-      const rw = rowsFor(next, o, id, [...document.querySelectorAll('.pg-item')].map((x) => x.dataset.panel)); item.style.gridRow = rw > 1 ? `span ${rw}` : '';
+      showGhost(next, g.y ? dsteps : 0);
     };
     const end = (e, cancel) => {
       window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); window.removeEventListener('pointercancel', cancelUp); window.removeEventListener('keydown', key);
+      ghost.remove(); item.classList.remove('is-resizing');
       if (!cancel && now !== layout) save(now); else render();
     };
     const up = (e) => end(e, false), cancelUp = (e) => end(e, true), key = (e) => { if (e.key === 'Escape') end(e, true); };
