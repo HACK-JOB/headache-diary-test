@@ -567,3 +567,26 @@ html.layout-edit .pg-top { margin: 0.8rem 1rem 1rem; }
 .pg-set .setting-row .btn.on { background: var(--teal-soft); border-color: var(--teal); }
 .pg-flow .btn.on { background: var(--teal-soft); }
 .pg-set .pg-warn { color: var(--ink); background: var(--teal-soft); border: 2px solid var(--teal); border-radius: var(--radius); padding: 0.4rem 0.6rem; }
+/* Size settings dock at the bottom of the screen so opening them never resizes a panel */
+.pg-sheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; max-height: 48vh; overflow-y: auto; background: var(--bg); color: var(--ink); border-top: 3px solid var(--teal); padding: 0.6rem 1rem 0.8rem; box-shadow: 0 -6px 18px rgba(0, 0, 0, 0.35); }
+.pg-sheet-head { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; margin-bottom: 0.5rem; }
+.pg-sheet .pg-set { border: 0; padding: 0; margin: 0; background: transparent; }
+@media (min-width: 700px) { .pg-sheet .pg-set { max-width: 56rem; margin: 0 auto; } .pg-sheet-head { max-width: 56rem; margin-left: auto; margin-right: auto; } }
+html.sheet-open body { padding-bottom: calc(var(--sheet-h, 0px) + 1rem); }
+/* the panel being edited: solid, thicker outline in place of the dashed one */
+.pg-item.is-selected { outline: 5px solid var(--teal); outline-offset: 3px; }
+
+/* Compact dock: settings in a grid so it stays short, and a ticked button always has dark text on its light fill */
+.pg-sheet { max-height: 42vh; padding-top: 0.4rem; }
+.pg-sheet .pg-set { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.4rem 0.8rem; }
+.pg-sheet .pg-set > .hint, .pg-sheet .pg-set > .seg, .pg-sheet .pg-set > .pg-warn { grid-column: 1 / -1; }
+.pg-sheet .pg-set .setting-row { flex-wrap: nowrap; }
+.pg-sheet .pg-set .setting-row .hint { font-size: 0.85rem; }
+.pg-sheet .pg-set .two { display: contents; }
+.pg-sheet .pg-set .seg .btn { flex: 1 1 5rem; }
+@media (max-width: 699px) { .pg-sheet .pg-set { grid-template-columns: 1fr; } .pg-sheet .pg-set .two { display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; } .pg-sheet .pg-set .setting-row { flex-wrap: wrap; } }
+.pg-set .btn.on, .pg-flow .btn.on { color: var(--ink); font-weight: 700; }
+/* Layout buttons set their own colours, so no browser default shows through in any theme */
+.pg-set .btn, .pg-flow .btn, .pg-sheet .btn:not(.primary) { background: var(--card); color: var(--ink); border-color: var(--line); }
+.pg-set .btn.on, .pg-flow .btn.on { background: var(--teal-soft); border-color: var(--teal); color: var(--ink); }
+.pg-set .btn.quiet { background: transparent; }

@@ -12,7 +12,7 @@ export function createLayoutUI({ h, state, render, icon }) {
   let open = null;                       // the panel whose size and text settings are open
   const globalText = () => document.documentElement.dataset.text || 'big';
   const ownText = (id) => { const t = textFor(layout, id); return t === 'same' ? globalText() : t; };
-  const TEXT_NAMES = { same: 'Same as everywhere', big: 'Biggest', medium: 'Medium', small: 'Small' };
+  const TEXT_NAMES = { same: 'Same as all', big: 'Biggest', medium: 'Medium', small: 'Small' };
   const orient = () => orientationOf(window.innerWidth, window.innerHeight);
   const save = (l) => { layout = l; localStorage.setItem(KEY, JSON.stringify(l)); render(); };
   const label = (id) => PANELS.find((p) => p.id === id)?.label ?? id;
@@ -27,7 +27,7 @@ export function createLayoutUI({ h, state, render, icon }) {
     const order = orderFor(layout, o, visible);
     const editing = unlocked();
     const items = order.map((id, i) => {
-      const item = h('div', { class: 'pg-item' + (editing ? ' is-edit' : ''), 'data-panel': id });
+      const item = h('div', { class: 'pg-item' + (editing ? ' is-edit' : '') + (editing && open === id ? ' is-selected' : ''), 'data-panel': id });
       item.style.gridColumn = `span ${spanFor(layout, o, id)}`;
       const rows = rowsFor(layout, o, id, visible);
       if (rows > 1) item.style.gridRow = `span ${rows}`;
@@ -37,7 +37,7 @@ export function createLayoutUI({ h, state, render, icon }) {
       const tall = layout[o].tall[id] ?? 0;
       if (tall) body.style.paddingBottom = `${tall * TALL_STEP_REM}rem`;
       if (editing) body.setAttribute('inert', '');
-      item.append(...(editing ? [bar(id, i, order.length, visible), ...(open === id ? [settings(id)] : []), body, ...GRIPS.map((g) => grip(id, g))] : [body]));
+      item.append(...(editing ? [bar(id, i, order.length, visible), body, ...GRIPS.map((g) => grip(id, g))] : [body]));
       return item;
     });
     return h('div', { class: 'pgrid' + (anyLoose(layout, o) ? ' is-free' : ''), id: 'pgrid', 'data-orient': o }, ...items);
@@ -231,7 +231,25 @@ export function createLayoutUI({ h, state, render, icon }) {
       h('button', { class: 'btn quiet', id: 'layout-reset-all', onclick: () => save(defaultLayout()) }, 'Reset both layouts')));
 
   /** After each render: the reminder bar goes quiet while unlocked, like everything else. */
-  const sync = () => { fit(); document.getElementById('reminder-bar')?.toggleAttribute('inert', unlocked()); document.documentElement.classList.toggle('layout-edit', unlocked()); };
+  /** The Size settings live in a bar docked at the bottom of the screen, so opening them never changes any panel's size. */
+  function sheet() {
+    document.getElementById('pg-sheet')?.remove();
+    const on = unlocked() && open && state.view === 'main' && document.querySelector(`[data-panel="${open}"]`);
+    document.documentElement.style.setProperty('--sheet-h', '0px');
+    document.documentElement.classList.toggle('sheet-open', !!on);
+    if (!on) return;
+    const el = h('section', { id: 'pg-sheet', class: 'pg-sheet', role: 'region', 'aria-label': `Size settings for ${label(open)}` },
+      h('div', { class: 'pg-sheet-head' },
+        h('strong', {}, `${label(open)}: size and text`),
+        h('button', { class: 'btn primary', type: 'button', id: 'pg-sheet-close', onclick: () => { open = null; render(); } }, 'Close')),
+      settings(open));
+    document.body.append(el);
+    document.documentElement.style.setProperty('--sheet-h', `${el.getBoundingClientRect().height}px`);
+    const item = document.querySelector(`[data-panel="${open}"]`), r = item.getBoundingClientRect(), room = window.innerHeight - el.getBoundingClientRect().height;
+    if (r.top < 0 || r.top > room - 80) window.scrollBy({ top: r.top - 90, behavior: 'instant' });
+  }
+
+  const sync = () => { fit(); sheet(); document.getElementById('reminder-bar')?.toggleAttribute('inert', unlocked()); document.documentElement.classList.toggle('layout-edit', unlocked()); };
 
   const reload = () => { layout = (() => { try { return normaliseLayout(JSON.parse(localStorage.getItem(KEY))); } catch { return defaultLayout(); } })(); };
   let last = orient();

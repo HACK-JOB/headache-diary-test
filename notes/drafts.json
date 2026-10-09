@@ -29,6 +29,6 @@
   },
   {
     "screen": "main",
-    "text": "Each panel's Size box has Snap to neighbours and Lock size. Snapped panels resize together with the panels they touch."
+    "text": "A panel's Size button opens settings in a bar at the bottom, so no panel changes size while open. The chosen panel has a thick outline."
   }
 ]
