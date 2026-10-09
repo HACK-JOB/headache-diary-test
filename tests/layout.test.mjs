@@ -392,3 +392,26 @@ test('a second snapped pair on its own line is a separate block', () => {
   const h = planHeights(items);
   assert.deepEqual([h.a, h.b, h.c, h.d], [200, 200, 100, 100]);
 });
+
+test('a sliver of overlap is not touching: the shared side must be a real stretch of both panels', () => {
+  // Left: glucose tall, then today. Right: headache tall, then eaten starting just 20px above today's bottom edge.
+  const items = [
+    { id: 'glucose', snap: true, locked: false, c0: 0, c1: 3, top: 0, bottom: 800 },
+    { id: 'today', snap: true, locked: false, c0: 0, c1: 3, top: 820, bottom: 1000 },
+    { id: 'headache', snap: true, locked: false, c0: 3, c1: 6, top: 0, bottom: 980 },
+    { id: 'eaten', snap: true, locked: false, c0: 3, c1: 6, top: 980 + 0, bottom: 1100 },
+  ];
+  assert.deepEqual(blocksOf(items).map((b) => [...b].sort()), [['glucose', 'headache', 'today']]);       // eaten overlaps today by 20px only: not tied
+  const near = items.map((i) => (i.id === 'eaten' ? { ...i, top: 900 } : i));
+  assert.deepEqual(blocksOf(near).map((b) => [...b].sort()), [['eaten', 'glucose', 'headache', 'today']]);    // 100px of shared side: tied
+});
+
+test('a short panel beside a tall one counts when most of it is alongside', () => {
+  const items = [
+    { id: 'a', snap: true, locked: false, c0: 0, c1: 3, top: 0, bottom: 500 },
+    { id: 'b', snap: false, locked: false, c0: 3, c1: 6, top: 450, bottom: 520 },
+  ];
+  assert.equal(blocksOf(items).length, 1);                                                             // 50px shared, over 24px and over 20% of the shorter one
+  const edge = items.map((i) => (i.id === 'b' ? { ...i, top: 490, bottom: 560 } : i));
+  assert.equal(blocksOf(edge).length, 0);                                                              // 10px shared: no
+});

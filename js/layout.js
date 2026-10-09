@@ -238,9 +238,16 @@ export function setLocked(layout, orient, id, on) {
 }
 
 /* Blocks. items: { id, snap, locked, c0, c1 (columns, c1 exclusive), top, bottom } measured from the page.
-   Two panels touch when one ends in the column where the other starts and they share some height. A snapped panel is tied to
+   Two panels touch when one ends in the column where the other starts and they share a real stretch of height (see MIN_SHARED_PX). A snapped panel is tied to
    every panel it touches, loose or not. A panel that is only below or above another is not touching it. */
-const touches = (a, b) => (a.c1 === b.c0 || b.c1 === a.c0) && Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 1;
+export const MIN_SHARED_PX = 24, MIN_SHARED_FRACTION = 0.2;
+/** Side by side, with a real stretch of shared edge: at least 24 px and a fifth of the shorter panel. A sliver does not count. */
+const touches = (a, b) => {
+  if (!(a.c1 === b.c0 || b.c1 === a.c0)) return false;
+  const shared = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
+  const shorter = Math.min(a.bottom - a.top, b.bottom - b.top);
+  return shared >= MIN_SHARED_PX && shared >= shorter * MIN_SHARED_FRACTION;
+};
 
 export function blocksOf(items) {
   const parent = new Map(items.map((i) => [i.id, i.id]));

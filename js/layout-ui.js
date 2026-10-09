@@ -2,7 +2,7 @@
 // Unlocked: every panel shows a bar to move it (Earlier / Later buttons, or drag the handle) and its contents are switched off,
 // so nothing can be entered or tapped by mistake. Portrait and landscape keep separate layouts. Saved on this tablet only.
 import { PANELS, COLS, TEXT_PX, PANEL_TEXT, TALL_STEP_REM, GRIPS, normaliseLayout, defaultLayout, orientationOf, orderFor, spanFor, rowsFor, moveStep, moveTo,
-  textFor, setText, zoomFor, minPx, minSpan, panelWidth, setSpan, heightBy, snapSpan, snapTall, isFree, setFree, isLoose, anyLoose, setLoose, isLocked, setLocked, planHeights, growBlocked, masonrySpan } from './layout.js';
+  textFor, setText, zoomFor, minPx, minSpan, panelWidth, setSpan, heightBy, snapSpan, snapTall, isFree, setFree, isLoose, anyLoose, setLoose, isLocked, setLocked, planHeights, growBlocked, blocksOf, masonrySpan } from './layout.js';
 
 const KEY = 'hd.layout';
 
@@ -265,7 +265,16 @@ export function createLayoutUI({ h, state, render, icon }) {
     if (r.top < 0 || r.top > room - 80) window.scrollBy({ top: r.top - 90, behavior: 'instant' });
   }
 
-  const sync = () => { fit(); sheet(); document.getElementById('reminder-bar')?.toggleAttribute('inert', unlocked()); document.documentElement.classList.toggle('layout-edit', unlocked()); };
+  /** The panel being edited, and the panels it is tied to, are marked so it is clear what will resize together. */
+  function markTied() {
+    document.querySelectorAll('.is-tied').forEach((x) => x.classList.remove('is-tied'));
+    const m = gridMetrics();
+    if (!unlocked() || !open || !m || m.cols !== COLS) return;
+    const block = blocksOf(geometry(m)).find((ids) => ids.includes(open));
+    for (const id of block ?? []) if (id !== open) document.querySelector(`[data-panel="${id}"]`)?.classList.add('is-tied');
+  }
+
+  const sync = () => { fit(); sheet(); markTied(); document.getElementById('reminder-bar')?.toggleAttribute('inert', unlocked()); document.documentElement.classList.toggle('layout-edit', unlocked()); };
 
   const reload = () => { layout = (() => { try { return normaliseLayout(JSON.parse(localStorage.getItem(KEY))); } catch { return defaultLayout(); } })(); };
   let last = orient();
