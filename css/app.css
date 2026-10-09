@@ -77,6 +77,7 @@ main { max-width: 44rem; }
   font: inherit; font-weight: 700; cursor: pointer;
   transition-property: scale, background-color; transition-duration: 120ms; transition-timing-function: ease-out;
 }
+.btn { background: var(--card); color: var(--ink); border-color: var(--line); }   /* plain buttons: own colours, never the browser's grey */
 .btn:active { scale: 0.96; }
 .btn.primary { background: var(--teal); color: var(--on-teal); width: 100%; font-size: 1.25rem; min-height: 4.4rem; }
 .btn.primary:hover { background: var(--teal-dark); }
@@ -601,3 +602,5 @@ html.sheet-open body { padding-bottom: calc(var(--sheet-h, 0px) + 1rem); }
 #update-now { margin-top: 0.5rem; background: var(--teal); color: var(--on-teal); border-color: var(--teal); }
 #update-check[aria-disabled="true"] { opacity: 0.6; }
 #update-setting .hint { margin-top: 0.4rem; }
+/* Unlock the layout (Options): own colours, so the browser's grey never shows through */
+#layout-open { background: var(--teal); color: var(--on-teal); border-color: var(--teal); }
