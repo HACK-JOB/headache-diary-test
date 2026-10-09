@@ -101,7 +101,8 @@ export function createLayoutUI({ h, state, render, icon }) {
   function startResize(ev, id, g) {
     if (ev.button > 0) return;
     ev.preventDefault();
-    const m = gridMetrics(); if (!m || m.cols !== COLS) return;
+    const m = gridMetrics(); if (!m) return;
+    const one = m.cols !== COLS;                       // phone: a single column, so only height can change
     const o = orient(), item = ev.currentTarget.closest('.pg-item');
     const zoom = parseFloat(item.querySelector('.pg-body')?.style.zoom) || 1, rem = parseFloat(getComputedStyle(document.documentElement).fontSize) * zoom;
     const min = minSpanOf(id, m);
@@ -110,7 +111,7 @@ export function createLayoutUI({ h, state, render, icon }) {
     const base = layout;
     const move = (e) => {
       let next = base;
-      if (g.x) next = setSpan(next, o, id, snapSpan({ startSpan: start.span, dxPx: e.clientX - start.x, sign: g.x, colW: m.colW, gap: m.gap, min }), min);
+      if (g.x && !one) next = setSpan(next, o, id, snapSpan({ startSpan: start.span, dxPx: e.clientX - start.x, sign: g.x, colW: m.colW, gap: m.gap, min }), min);
       if (g.y) next = heightBy(next, o, id, Math.round(((e.clientY - start.y) * g.y) / (TALL_STEP_REM * rem)));
       now = next;
       item.style.gridColumn = `span ${Math.max(spanFor(next, o, id), min)}`;

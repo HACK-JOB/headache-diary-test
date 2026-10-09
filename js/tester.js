@@ -27,6 +27,15 @@ export const CHECKLIST = [
   { id: 'dark', group: 'Screen', text: 'Switch to the dark screen with the moon button and back.' },
   { id: 'offline', group: 'Screen', text: 'Turn on airplane mode, add some water, then turn it off. Is it still there?' },
   { id: 'reload', group: 'Screen', text: 'Close the app fully and open it again. Is everything still there?' },
+  { id: 'trk-off', group: 'Tracking', text: 'In Options, Tracking: switch off a log you do not use, such as Blood glucose. Does its card leave the main page and its reminders stop?' },
+  { id: 'trk-on', group: 'Tracking', text: 'Switch that log back on. Is everything you entered earlier still there?' },
+  { id: 'trk-lock', group: 'Tracking', text: 'In Admin, Tracking: lock a log on or off. Back in Options, Tracking, try to change it. Does the message name who locked it?' },
+  { id: 'trk-doc', group: 'Tracking', text: 'In Doctors, Tracking: set a log, then set the opposite in Admin. Which one wins?' },
+  { id: 'lay-unlock', group: 'Layout', text: 'Tap the padlock at the top of the main page. Can anything be entered while the layout is unlocked?' },
+  { id: 'lay-move', group: 'Layout', text: 'Move a panel with its Earlier and Later buttons, then by dragging its handle. Do both work?' },
+  { id: 'lay-resize', group: 'Layout', text: 'Resize a panel by dragging an edge or corner, and with the Size button. Do the panels below move up?' },
+  { id: 'lay-text', group: 'Layout', text: 'In a panel\'s Size settings, change that panel\'s text size. Do the other panels stay the same?' },
+  { id: 'lay-rotate', group: 'Layout', text: 'Set a layout, then turn the tablet sideways. Is the sideways layout separate? Then tap Reset this layout.' },
 ];
 
 const IDS = new Set(CHECKLIST.map((c) => c.id));
