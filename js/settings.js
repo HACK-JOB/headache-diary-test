@@ -62,8 +62,12 @@ export function toggleDark(s, systemPrefersDark) {
   return { ...s, followSystem: false, theme: s.darkTheme, lightTheme: LIGHT.includes(showing) ? showing : s.lightTheme };
 }
 
-/** Pick a theme from the colour list. It is remembered in its own group (light or dark) for the moon/sun button. */
+/** Pick a theme from the colour list. One light and one dark are kept as the pair the moon/sun button and the device setting swap
+ *  between. The screen changes only when the pick is in the group already showing (or the device decides, which is left alone). */
 export function chooseTheme(s, key) {
   if (!THEMES[key]) return s;
-  return isDark(key) ? { ...s, theme: key, darkTheme: key } : { ...s, theme: key, lightTheme: key };
+  const dark = isDark(key);
+  const next = dark ? { ...s, darkTheme: key } : { ...s, lightTheme: key };
+  if (!s.followSystem && isDark(s.theme) === dark) next.theme = key;
+  return next;
 }

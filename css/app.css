@@ -638,3 +638,4 @@ html.sheet-open body { padding-bottom: calc(var(--sheet-h, 0px) + 1rem); }
 #update-setting .hint { margin-top: 0.4rem; }
 /* Unlock the layout (Options): own colours, so the browser's grey never shows through */
 #layout-open { background: var(--teal); color: var(--on-teal); border-color: var(--teal); }
+.swatch-tick { font-weight: 700; }

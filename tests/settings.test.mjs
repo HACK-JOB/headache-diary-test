@@ -84,12 +84,23 @@ test('toggleDark goes to the remembered dark theme and back to the remembered li
   assert.equal(from.theme, 'bright');
 });
 
-test('choosing a theme is remembered in its own group', () => {
-  const light = chooseTheme({ ...DEFAULTS, theme: 'dark' }, 'mist');
-  assert.equal(light.theme, 'mist'); assert.equal(light.lightTheme, 'mist'); assert.equal(light.darkTheme, 'dark');
-  const dark = chooseTheme({ ...DEFAULTS }, 'ember');
-  assert.equal(dark.theme, 'ember'); assert.equal(dark.darkTheme, 'ember'); assert.equal(dark.lightTheme, 'paper');
+test('choosing a theme sets the pick for its own group; the screen only changes if that group is showing', () => {
+  const inDark = chooseTheme({ ...DEFAULTS, theme: 'dark' }, 'mist');          // showing dark, picks a light one
+  assert.equal(inDark.lightTheme, 'mist'); assert.equal(inDark.theme, 'dark'); assert.equal(inDark.darkTheme, 'dark');
+  const inLight = chooseTheme({ ...DEFAULTS }, 'ember');                        // showing light, picks a dark one
+  assert.equal(inLight.darkTheme, 'ember'); assert.equal(inLight.theme, 'paper'); assert.equal(inLight.lightTheme, 'paper');
+  const same = chooseTheme({ ...DEFAULTS, theme: 'paper' }, 'bright');          // light on screen, picks another light
+  assert.equal(same.theme, 'bright'); assert.equal(same.lightTheme, 'bright');
+  const sameDark = chooseTheme({ ...DEFAULTS, theme: 'dark' }, 'graphite');
+  assert.equal(sameDark.theme, 'graphite'); assert.equal(sameDark.darkTheme, 'graphite');
   assert.equal(chooseTheme(DEFAULTS, 'neon'), DEFAULTS);
+});
+
+test('with "follow the device" on, picking only sets the pair; the device decides which shows', () => {
+  const s = chooseTheme({ ...DEFAULTS, followSystem: true }, 'graphite');
+  assert.equal(s.darkTheme, 'graphite');
+  assert.equal(activeTheme(s, true), 'graphite');
+  assert.equal(activeTheme(s, false), 'paper');
 });
 
 test('following the tablet uses the remembered dark and light themes', () => {

@@ -38,7 +38,7 @@ export const CHECKLIST = [
   { id: 'lay-snap', group: 'Layout', text: 'Leave Snap to neighbours on for one panel and make it taller. Do the panels it touches grow with it? Then tap Lock size on one of them. Does that one stay the same?' },
   { id: 'upd-check', group: 'Screen', text: 'In My preferences, tap Check for update. Does it say the app is up to date, or find a new version and offer a refresh?' },
   { id: 'upd-auto', group: 'Screen', text: 'On the installed app, open My preferences > App updates. Does it say automatic checks are on? The next day, does "Last checked" show a time overnight?' },
-  { id: 'theme-new', group: 'Screen', text: 'In My preferences, try Soft grey, Black and grey and Warm dark. Is all text readable? Does the moon/sun button go to the dark or light theme last used?' },
+  { id: 'theme-new', group: 'Screen', text: 'In My preferences, try Soft grey, Black and grey and Warm dark. Is all text readable? Pick one light and one dark. Does the moon/sun button swap between the two? Does Device dark mode setting do the same with the tablet dark mode?' },
   { id: 'lay-text', group: 'Layout', text: 'In a panel\'s Size settings, change that panel\'s text size. Do the other panels stay the same?' },
   { id: 'lay-rotate', group: 'Layout', text: 'Set a layout, then turn the tablet sideways. Is the sideways layout separate? Then tap Reset this layout.' },
 ];

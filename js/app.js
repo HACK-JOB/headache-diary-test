@@ -211,11 +211,12 @@ function renderOptions() {
             onkeydown: (ev) => { if (ev.key === 'ArrowRight' || ev.key === 'ArrowLeft') { const i = TABS.findIndex(([x]) => x === k); state.optTab = TABS[(i + (ev.key === 'ArrowRight' ? 1 : TABS.length - 1)) % TABS.length][0]; render(); document.getElementById('tab-' + state.optTab)?.focus(); } } }, t))),
       state.optTab === 'track' ? trackPanel() : state.optTab === 'doctors' ? dcui.panel() : state.optTab === 'admin' ? adminPanel() : state.optTab === 'tester' ? tui.panel() : h('section', { class: 'panel', id: 'tabpanel', role: 'tabpanel', 'aria-labelledby': 'tab-prefs' },
         h('div', { class: 'setting' }, h('h3', {}, 'Colour theme'),
-          ...[['Light', LIGHT_THEMES], ['Dark', DARK_THEMES]].flatMap(([title, keys]) => [
-            h('p', { class: 'swatch-group' }, title),
-            h('div', { class: 'swatches', role: 'group', 'aria-label': `${title} themes` }, ...keys.map((k) =>
-              h('button', { class: 'swatch', 'data-t': k, 'aria-pressed': String(st.theme === k), onclick: () => saveSettings(chooseTheme(st, k)) },
-                h('i', {}), THEMES[k])))])),
+          h('p', { class: 'hint' }, 'Pick one light and one dark. The moon and sun button, or the device dark mode setting, switches between the two.'),
+          ...[['Light', LIGHT_THEMES, st.lightTheme], ['Dark', DARK_THEMES, st.darkTheme]].flatMap(([title, keys, pick]) => [
+            h('p', { class: 'swatch-group' }, `${title}: ${THEMES[pick]}`),
+            h('div', { class: 'swatches', role: 'group', 'aria-label': `${title} theme` }, ...keys.map((k) =>
+              h('button', { class: 'swatch', 'data-t': k, 'aria-pressed': String(pick === k), onclick: () => saveSettings(chooseTheme(st, k)) },
+                h('i', {}), THEMES[k], pick === k ? h('span', { class: 'swatch-tick' }, ' (picked)') : null)))])),
         h('div', { class: 'setting' }, h('h3', {}, 'Head pictures'),
           h('div', { class: 'art-picks' }, ...Object.entries(STYLES).map(([k, name]) =>
             h('button', { class: 'art-pick', 'aria-pressed': String(st.artStyle === k), onclick: () => saveSettings({ artStyle: k }) },
@@ -226,8 +227,8 @@ function renderOptions() {
         lay.optionsSection(),
         updateSection(),
         h('div', { class: 'setting' },
-          h('label', { class: 'check' }, h('input', { type: 'checkbox', checked: st.followSystem, onchange: (ev) => saveSettings({ followSystem: ev.target.checked }) }), 'Switch to dark when the tablet does'),
-          h('p', { class: 'hint' }, 'Off by default. The moon button on the main page always works.')),
+          h('label', { class: 'check' }, h('input', { type: 'checkbox', checked: st.followSystem, onchange: (ev) => saveSettings({ followSystem: ev.target.checked }) }), 'Device dark mode setting'),
+          h('p', { class: 'hint' }, 'Off by default. When on, the app shows the picked dark theme while the device is in dark mode, and the picked light theme otherwise.')),
         h('div', { class: 'setting', id: 'reminder-prefs' }, h('h3', {}, 'Reminder level and sound'),
           seg('Reminder level', 'nag', [['gentle', 'Gentle'], ['normal', 'Normal'], ['persistent', 'Persistent']]),
           h('p', { class: 'hint' }, 'Gentle reminds once. Normal reminds 4 times, 10 minutes apart. Persistent reminds every 5 minutes until answered. A doctor can fix the level for a particular medicine.'),
