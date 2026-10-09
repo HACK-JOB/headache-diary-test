@@ -2,7 +2,7 @@
 // Unlocked: every panel shows a bar to move it (Earlier / Later buttons, or drag the handle) and its contents are switched off,
 // so nothing can be entered or tapped by mistake. Portrait and landscape keep separate layouts. Saved on this tablet only.
 import { PANELS, COLS, TEXT_PX, PANEL_TEXT, TALL_STEP_REM, GRIPS, normaliseLayout, defaultLayout, orientationOf, orderFor, spanFor, rowsFor, moveStep, moveTo,
-  textFor, setText, zoomFor, minPx, minSpan, setSpan, setTall, snapSpan, snapTall } from './layout.js';
+  textFor, setText, zoomFor, minPx, minSpan, setSpan, heightBy, snapSpan, snapTall } from './layout.js';
 
 const KEY = 'hd.layout';
 
@@ -80,7 +80,7 @@ export function createLayoutUI({ h, state, render, icon }) {
     const set = (next) => { if (next !== layout) save(next); };
     const step = (lbl, name, disabled, fn) => h('button', { class: 'btn quiet', type: 'button', id: `pg-${name}-${id}`, ...(disabled ? { 'aria-disabled': 'true' } : {}), onclick: () => { if (!disabled) fn(); } }, lbl);
     return h('div', { class: 'pg-set', role: 'group', 'aria-label': `${label(id)} size and text` },
-      h('p', { class: 'hint' }, `Width ${span} of ${COLS} columns (at least ${min} here). Height ${tall ? `+${tall}` : 'as needed'}.`),
+      h('p', { class: 'hint' }, `Width ${span} of ${COLS} columns (at least ${min} here). Height ${layout[o].rows[id]} row${layout[o].rows[id] > 1 ? 's' : ''}${tall ? `, +${tall}` : ''}.`),
       h('div', { class: 'seg', role: 'group', 'aria-label': 'Text size of this panel' },
         ...PANEL_TEXT.map((t) => h('button', { class: 'btn' + (textFor(layout, id) === t ? ' on' : ''), type: 'button', id: `pg-text-${id}-${t}`, 'aria-pressed': String(textFor(layout, id) === t),
           onclick: () => set(setText(layout, id, t)) }, (textFor(layout, id) === t ? '✓ ' : '') + TEXT_NAMES[t]))),
@@ -88,8 +88,8 @@ export function createLayoutUI({ h, state, render, icon }) {
         step('◀ Narrower', 'narrower', span <= min, () => set(setSpan(layout, o, id, span - 1, min))),
         step('Wider ▶', 'wider', span >= COLS, () => set(setSpan(layout, o, id, span + 1, min)))),
       h('div', { class: 'two' },
-        step('▲ Shorter', 'shorter', tall <= 0, () => set(setTall(layout, o, id, tall - 1))),
-        step('Taller ▼', 'taller', tall >= 8, () => set(setTall(layout, o, id, tall + 1)))));
+        step('▲ Shorter', 'shorter', heightBy(layout, o, id, -1) === layout, () => set(heightBy(layout, o, id, -1))),
+        step('Taller ▼', 'taller', heightBy(layout, o, id, 1) === layout, () => set(heightBy(layout, o, id, 1)))));
   }
 
   /* ---------- resizing by dragging an edge or corner ---------- */
@@ -107,13 +107,15 @@ export function createLayoutUI({ h, state, render, icon }) {
     const min = minSpanOf(id, m);
     const start = { x: ev.clientX, y: ev.clientY, span: Math.max(spanFor(layout, o, id), min), tall: layout[o].tall[id] ?? 0 };
     let now = layout;
+    const base = layout;
     const move = (e) => {
-      let next = layout;
+      let next = base;
       if (g.x) next = setSpan(next, o, id, snapSpan({ startSpan: start.span, dxPx: e.clientX - start.x, sign: g.x, colW: m.colW, gap: m.gap, min }), min);
-      if (g.y) next = setTall(next, o, id, snapTall({ startTall: start.tall, dyPx: e.clientY - start.y, sign: g.y, unit: TALL_STEP_REM * rem }));
+      if (g.y) next = heightBy(next, o, id, Math.round(((e.clientY - start.y) * g.y) / (TALL_STEP_REM * rem)));
       now = next;
       item.style.gridColumn = `span ${Math.max(spanFor(next, o, id), min)}`;
       const body = item.querySelector('.pg-body'); if (body) body.style.paddingBottom = `${(next[o].tall[id] ?? 0) * TALL_STEP_REM}rem`;
+      const rw = rowsFor(next, o, id, [...document.querySelectorAll('.pg-item')].map((x) => x.dataset.panel)); item.style.gridRow = rw > 1 ? `span ${rw}` : '';
     };
     const end = (e, cancel) => {
       window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); window.removeEventListener('pointercancel', cancelUp); window.removeEventListener('keydown', key);

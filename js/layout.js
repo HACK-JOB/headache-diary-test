@@ -170,3 +170,16 @@ export const GRIPS = [
   { key: 'n', x: 0, y: -1 }, { key: 'e', x: 1, y: 0 }, { key: 's', x: 0, y: 1 }, { key: 'w', x: -1, y: 0 },
   { key: 'ne', x: 1, y: -1 }, { key: 'se', x: 1, y: 1 }, { key: 'sw', x: -1, y: 1 }, { key: 'nw', x: -1, y: -1 },
 ];
+
+/** Net height change in steps. Shorter takes off extra height first, then built-in rows (down to 1); taller puts rows back first, then adds height. */
+export function heightBy(layout, orient, id, steps) {
+  if (!IDS.includes(id) || !steps) return layout;
+  const home = DEFAULT_ROWS[id] ?? 1;
+  let rows = layout[orient].rows[id], tall = layout[orient].tall[id];
+  for (let i = 0; i < Math.abs(steps); i++) {
+    if (steps < 0) { if (tall > 0) tall -= 1; else if (rows > 1) rows -= 1; }
+    else if (rows < home) rows += 1; else if (tall < 8) tall += 1;
+  }
+  if (rows === layout[orient].rows[id] && tall === layout[orient].tall[id]) return layout;
+  return put(layout, orient, { rows: { ...layout[orient].rows, [id]: rows }, tall: { ...layout[orient].tall, [id]: tall } });
+}

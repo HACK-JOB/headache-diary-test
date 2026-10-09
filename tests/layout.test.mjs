@@ -212,3 +212,23 @@ test('the grips: four edges and four corners, each with its own direction', () =
   assert.deepEqual([s.x, s.y, n.x, n.y], [0, 1, 0, -1]);
   assert.deepEqual([se.x, se.y, nw.x, nw.y], [1, 1, -1, -1]);
 });
+
+import { heightBy } from '../js/layout.js';
+test('heightBy: shorter removes extra height first, then the built-in rows; taller restores rows first, then adds height', () => {
+  const d = defaultLayout();
+  assert.equal(d.portrait.rows.water, 3);
+  const a = heightBy(d, 'portrait', 'water', -1);
+  assert.equal(a.portrait.rows.water, 2);
+  assert.equal(heightBy(d, 'portrait', 'water', -9).portrait.rows.water, 1);
+  assert.equal(heightBy(d, 'portrait', 'water', -9).portrait.tall.water, 0);
+  assert.equal(heightBy(a, 'portrait', 'water', 1).portrait.rows.water, 3);
+  const t = heightBy(d, 'portrait', 'water', 2);
+  assert.equal(t.portrait.rows.water, 3);
+  assert.equal(t.portrait.tall.water, 2);
+  assert.equal(heightBy(t, 'portrait', 'water', -3).portrait.tall.water, 0);
+  assert.equal(heightBy(t, 'portrait', 'water', -3).portrait.rows.water, 2);
+  assert.equal(heightBy(d, 'portrait', 'water', 0), d);
+  assert.equal(heightBy(d, 'portrait', 'nope', 1), d);
+  assert.equal(heightBy(d, 'landscape', 'water', -1).portrait.rows.water, 3);
+  assert.equal(heightBy(d, 'portrait', 'day', -1), d);                              // already one row, no extra: nothing to remove
+});
