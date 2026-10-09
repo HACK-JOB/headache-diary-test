@@ -470,3 +470,36 @@ test('settleLayout plans from natural heights, so a stretch can shrink back inst
   assert.equal(r.heights.a, 150);
   assert.equal(r.heights.b, 150);                                                          // not 400: the stretch comes from the plan, not the placement
 });
+
+test('a lower panel in a stack grows only until its bottom meets the block bottom (Headache under Day)', () => {
+  const items = [
+    { id: 'glucose', snap: false, locked: false, c0: 0, c1: 3, top: 567, bottom: 1110 },
+    { id: 'day', snap: false, locked: false, c0: 3, c1: 6, top: 567, bottom: 712 },
+    { id: 'headache', snap: true, locked: false, c0: 3, c1: 6, top: 735, bottom: 890 },
+    { id: 'eaten', snap: false, locked: false, c0: 0, c1: 3, top: 1131, bottom: 1238 },
+    { id: 'today', snap: false, locked: false, c0: 0, c1: 3, top: 1259, bottom: 1366 },
+  ];
+  const h = planHeights(items);
+  assert.equal(735 + h.headache, 1110);              // its bottom lines up with Blood glucose, not 388 px past it
+  assert.equal(h.headache, 375);
+  assert.equal(h.day, 145);
+  assert.equal(h.glucose, 543);
+  assert.equal(h.eaten, 107);
+});
+
+test('a block whose stacks start at different heights lines up their bottoms', () => {
+  const items = [
+    { id: 'a', snap: true, locked: false, c0: 0, c1: 3, top: 0, bottom: 400 },
+    { id: 'b', snap: true, locked: false, c0: 3, c1: 6, top: 100, bottom: 200 },
+  ];
+  assert.equal(100 + planHeights(items).b, 400);
+});
+
+test('a locked bottom panel leaves the stack short, and growBlocked uses bottoms too', () => {
+  const items = [
+    { id: 'a', snap: true, locked: false, c0: 0, c1: 3, top: 0, bottom: 400 },
+    { id: 'b', snap: true, locked: true, c0: 3, c1: 6, top: 100, bottom: 200 },
+  ];
+  assert.equal(planHeights(items).b, 100);
+  assert.equal(growBlocked(items, 'a'), true);
+});

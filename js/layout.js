@@ -266,18 +266,19 @@ function lanesOf(members) {
   for (const m of members) { if (!lanes.has(m.c0)) lanes.set(m.c0, []); lanes.get(m.c0).push(m); }
   return [...lanes.values()].map((l) => l.sort((a, b) => a.top - b.top));
 }
-const laneTotal = (lane) => Math.max(...lane.map((m) => m.bottom)) - Math.min(...lane.map((m) => m.top));
+const laneBottom = (lane) => Math.max(...lane.map((m) => m.bottom));
 
-/** Heights after a block settles: every stack in a block ends up as tall as the tallest one. The shorter stack's lowest
- *  unlocked panel takes the difference. A stack with nothing unlocked is left short. Panels outside blocks keep their height. */
+/** Heights after a block settles: every stack in a block ends level with the lowest bottom edge in the block. The shorter
+ *  stack's lowest unlocked panel takes the difference, so a panel under another one grows only by what is left, not by the whole
+ *  stack height. A stack with nothing unlocked is left short. Panels outside blocks keep their height. */
 export function planHeights(items) {
   const out = Object.fromEntries(items.map((i) => [i.id, i.bottom - i.top]));
   const byId = new Map(items.map((i) => [i.id, i]));
   for (const ids of blocksOf(items)) {
     const lanes = lanesOf(ids.map((id) => byId.get(id)));
-    const tallest = Math.max(...lanes.map(laneTotal));
+    const bottom = Math.max(...lanes.map(laneBottom));
     for (const lane of lanes) {
-      const deficit = tallest - laneTotal(lane);
+      const deficit = bottom - laneBottom(lane);
       const taker = [...lane].reverse().find((m) => !m.locked);
       if (deficit > 0 && taker) out[taker.id] += deficit;
     }
@@ -292,7 +293,7 @@ export function growBlocked(items, id) {
   const members = block.map((b) => items.find((i) => i.id === b));
   const lanes = lanesOf(members);
   const mine = lanes.find((l) => l.some((m) => m.id === id));
-  return lanes.some((l) => l !== mine && l.every((m) => m.locked) && laneTotal(l) <= laneTotal(mine));
+  return lanes.some((l) => l !== mine && l.every((m) => m.locked) && laneBottom(l) <= laneBottom(mine));
 }
 
 /** Settle the page: plan heights for the blocks from where panels really sit, place the panels with those heights, read where
