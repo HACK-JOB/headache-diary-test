@@ -3,7 +3,7 @@
 
 export const MAIN_STEPS = [
   { sel: ['.tools'], text: 'Top right: light or dark screen, the layout padlock, this guide (Help), and Options.' },
-  { sel: ['#layout-lock'], text: 'Unlocks the layout so panels can be moved. Nothing can be entered while unlocked.' },
+  { sel: ['#layout-lock'], text: 'Unlocks the layout to move or resize panels and set their text size. Nothing can be entered while unlocked.' },
   { sel: ['#wake'], text: 'Press when waking up. This starts the day.' },
   { sel: ['#end-day'], text: 'Press at the end of the day. A check is asked first.' },
   { sel: ['#w-kg'], text: 'Weight is asked once a day, then confirmed.' },

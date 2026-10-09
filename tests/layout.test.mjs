@@ -88,3 +88,127 @@ test('orientationOf', () => {
   assert.equal(orientationOf(1280, 800), 'landscape');
   assert.equal(orientationOf(800, 800), 'landscape');
 });
+
+/* ---------- step 2: sizes, minimums, per-panel text size ---------- */
+import { MIN_REM, PANEL_TEXT, textFor, setText, zoomFor, minPx, minSpan, effectiveSpans, setSpan, setRows, snapSpan, snapRows, panelWidth, setTall, snapTall, GRIPS } from '../js/layout.js';
+
+test('every panel has a minimum width in rem for every text size, never below 9 rem', () => {
+  for (const t of ['big', 'medium', 'small']) for (const id of ALL) assert.ok(MIN_REM[t][id] >= 9, `${t} ${id}`);
+  assert.ok(MIN_REM.big.intake > MIN_REM.big.water && MIN_REM.big.meds > MIN_REM.big.day);
+});
+
+test('per-panel text size: "same" by default, absolute choices otherwise, junk ignored', () => {
+  assert.deepEqual(PANEL_TEXT, ['same', 'big', 'medium', 'small']);
+  assert.equal(textFor(defaultLayout(), 'water'), 'same');
+  const l = setText(defaultLayout(), 'water', 'small');
+  assert.equal(textFor(l, 'water'), 'small');
+  assert.equal(textFor(setText(l, 'water', 'same'), 'water'), 'same');
+  const d0 = defaultLayout();
+  assert.equal(setText(d0, 'water', 'huge'), d0);                                   // not a size: nothing changes
+  assert.equal(textFor(setText(defaultLayout(), 'nope', 'small'), 'water'), 'same');
+  assert.equal(textFor(normaliseLayout({ text: { water: 'medium', meds: 'giant', bogus: 'big' } }), 'water'), 'medium');
+  assert.equal(textFor(normaliseLayout({ text: { water: 'medium', meds: 'giant', bogus: 'big' } }), 'meds'), 'same');
+  assert.deepEqual(Object.keys(normaliseLayout({ text: { bogus: 'big' } }).text), []);
+  assert.equal(setText(defaultLayout(), 'water', 'small').portrait.order.length, 9);          // other parts survive
+});
+
+test('zoomFor scales a panel from the global size to its own', () => {
+  assert.equal(zoomFor('same', 'big'), 1);
+  assert.equal(zoomFor('big', 'big'), 1);
+  assert.equal(zoomFor('small', 'big'), 14 / 20);
+  assert.equal(zoomFor('big', 'small'), 20 / 14);
+  assert.equal(zoomFor('medium', 'small'), 17 / 14);
+});
+
+test('minimum width in pixels follows the panel\'s own text size', () => {
+  assert.equal(minPx('water', 'big'), MIN_REM.big.water * 20);
+  assert.equal(minPx('water', 'small'), MIN_REM.small.water * 14);
+  assert.ok(minPx('meds', 'small') < minPx('meds', 'big'));
+});
+
+test('minSpan: the fewest of the 6 columns whose width holds the minimum', () => {
+  // 6 columns of 100px with 20px gaps: a span of n is 100n + 20(n-1)
+  assert.equal(minSpan({ minPx: 100, gridWidth: 700, gap: 20 }), 1);
+  assert.equal(minSpan({ minPx: 220, gridWidth: 700, gap: 20 }), 2);
+  assert.equal(minSpan({ minPx: 221, gridWidth: 700, gap: 20 }), 3);
+  assert.equal(minSpan({ minPx: 99999, gridWidth: 700, gap: 20 }), 6);
+  assert.equal(minSpan({ minPx: 1, gridWidth: 0, gap: 20 }), 6);                  // not laid out yet: be safe
+  assert.equal(panelWidth(3, 700, 20), 3 * 100 + 2 * 20);
+});
+
+test('effectiveSpans widens a panel that is saved too narrow for its content, without changing what is saved', () => {
+  const l = setSpan(defaultLayout(), 'portrait', 'water', 1, 1);
+  const mins = { water: 3, headache: 2 };
+  const eff = effectiveSpans(l, 'portrait', mins);
+  assert.equal(eff.portrait.span.water, 3);
+  assert.equal(eff.portrait.span.headache, 3);
+  assert.equal(l.portrait.span.water, 1);
+});
+
+test('setSpan and setRows clamp to what is allowed and never change the input', () => {
+  const l = defaultLayout();
+  assert.equal(setSpan(l, 'portrait', 'water', 2, 3).portrait.span.water, 3);       // below the minimum
+  assert.equal(setSpan(l, 'portrait', 'water', 9, 3).portrait.span.water, 6);       // above 6
+  assert.equal(setSpan(l, 'portrait', 'water', 4, 3).portrait.span.water, 4);
+  assert.equal(setSpan(l, 'portrait', 'water', 3, 3), l);                           // no change returns the same object
+  assert.equal(setSpan(l, 'portrait', 'nope', 3, 1), l);
+  assert.equal(setRows(l, 'portrait', 'water', 2).portrait.rows.water, 2);
+  assert.equal(setRows(l, 'portrait', 'water', 0).portrait.rows.water, 1);
+  assert.equal(setRows(l, 'portrait', 'water', 99).portrait.rows.water, 6);
+  assert.equal(l.portrait.span.water, 3);
+  assert.equal(setSpan(l, 'landscape', 'water', 4, 3).portrait.span.water, 3);       // orientations are separate
+});
+
+test('snapSpan: dragging the right edge by whole columns, left edge the other way, clamped', () => {
+  const base = { startSpan: 3, colW: 100, gap: 20, min: 2 };
+  assert.equal(snapSpan({ ...base, dxPx: 0, sign: 1 }), 3);
+  assert.equal(snapSpan({ ...base, dxPx: 50, sign: 1 }), 3);                         // under half a column step (60 px): no change
+  assert.equal(snapSpan({ ...base, dxPx: 70, sign: 1 }), 4);                         // past half a column: snaps
+  assert.equal(snapSpan({ ...base, dxPx: 400, sign: 1 }), 6);                        // capped at 6
+  assert.equal(snapSpan({ ...base, dxPx: -130, sign: 1 }), 2);
+  assert.equal(snapSpan({ ...base, dxPx: -900, sign: 1 }), 2);                       // floored at the minimum
+  assert.equal(snapSpan({ ...base, dxPx: -130, sign: -1 }), 4);                      // left edge: dragging left widens
+});
+
+test('snapRows: whole rows, floored at 1, capped at 6', () => {
+  const base = { startRows: 3, unit: 100 };
+  assert.equal(snapRows({ ...base, dyPx: 40, sign: 1 }), 3);
+  assert.equal(snapRows({ ...base, dyPx: 60, sign: 1 }), 4);
+  assert.equal(snapRows({ ...base, dyPx: -250, sign: 1 }), 1);
+  assert.equal(snapRows({ ...base, dyPx: 900, sign: 1 }), 6);
+  assert.equal(snapRows({ ...base, dyPx: -150, sign: -1 }), 5);                     // top edge: dragging up makes it taller
+  assert.equal(snapRows({ startRows: 1, unit: 0, dyPx: 50, sign: 1 }), 1);
+});
+
+test('tall: extra height steps, 0 to 8, saved per orientation, repaired when odd', () => {
+  assert.equal(defaultLayout().portrait.tall.water, 0);
+  const l = setTall(defaultLayout(), 'portrait', 'meds', 3);
+  assert.equal(l.portrait.tall.meds, 3);
+  assert.equal(l.landscape.tall.meds, 0);
+  assert.equal(setTall(l, 'portrait', 'meds', 99).portrait.tall.meds, 8);
+  assert.equal(setTall(l, 'portrait', 'meds', -4).portrait.tall.meds, 0);
+  const d = defaultLayout();
+  assert.equal(setTall(d, 'portrait', 'meds', 0), d);
+  assert.equal(setTall(d, 'portrait', 'nope', 2), d);
+  assert.equal(normaliseLayout({ portrait: { tall: { meds: 2, water: 'x', day: 99 } } }).portrait.tall.meds, 2);
+  assert.equal(normaliseLayout({ portrait: { tall: { meds: 2, water: 'x', day: 99 } } }).portrait.tall.water, 0);
+  assert.equal(normaliseLayout({ portrait: { tall: { meds: 2, water: 'x', day: 99 } } }).portrait.tall.day, 0);
+});
+
+test('snapTall: whole steps, floored at 0, capped at 8, top edge works the other way', () => {
+  const base = { startTall: 2, unit: 80 };
+  assert.equal(snapTall({ ...base, dyPx: 30, sign: 1 }), 2);
+  assert.equal(snapTall({ ...base, dyPx: 50, sign: 1 }), 3);
+  assert.equal(snapTall({ ...base, dyPx: -999, sign: 1 }), 0);
+  assert.equal(snapTall({ ...base, dyPx: 9999, sign: 1 }), 8);
+  assert.equal(snapTall({ ...base, dyPx: -100, sign: -1 }), 3);
+  assert.equal(snapTall({ startTall: 1, unit: 0, dyPx: 90, sign: 1 }), 1);
+});
+
+test('the grips: four edges and four corners, each with its own direction', () => {
+  assert.deepEqual(GRIPS.map((g) => g.key), ['n', 'e', 's', 'w', 'ne', 'se', 'sw', 'nw']);
+  const e = GRIPS.find((g) => g.key === 'e'), w = GRIPS.find((g) => g.key === 'w'), s = GRIPS.find((g) => g.key === 's'), n = GRIPS.find((g) => g.key === 'n'), se = GRIPS.find((g) => g.key === 'se'), nw = GRIPS.find((g) => g.key === 'nw');
+  assert.deepEqual([e.x, e.y, w.x, w.y], [1, 0, -1, 0]);
+  assert.deepEqual([s.x, s.y, n.x, n.y], [0, 1, 0, -1]);
+  assert.deepEqual([se.x, se.y, nw.x, nw.y], [1, 1, -1, -1]);
+});

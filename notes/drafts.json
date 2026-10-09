@@ -22,5 +22,9 @@
   {
     "screen": "admin",
     "text": "The old Weight on screen switch is gone. Weight is now turned on or off under Tracking."
+  },
+  {
+    "screen": "main",
+    "text": "Unlocked panels can be resized by dragging an edge or corner, or with the Size button. Each panel can have its own text size."
   }
 ]
