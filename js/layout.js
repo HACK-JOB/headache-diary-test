@@ -27,7 +27,7 @@ export const MIN_REM = {
   small:  { water: 9, headache: 14.5, day: 10.5, glucose: 11, weight: 11, meds: 20.5, today: 9, intake: 33,   eaten: 9 },
 };
 
-const one = () => ({ order: [...IDS], span: { ...DEFAULT_SPAN }, rows: Object.fromEntries(IDS.map((id) => [id, DEFAULT_ROWS[id] ?? 1])), tall: Object.fromEntries(IDS.map((id) => [id, 0])) });
+const one = () => ({ order: [...IDS], span: { ...DEFAULT_SPAN }, rows: Object.fromEntries(IDS.map((id) => [id, DEFAULT_ROWS[id] ?? 1])), tall: Object.fromEntries(IDS.map((id) => [id, 0])), free: false });
 export const defaultLayout = () => ({ portrait: one(), landscape: one(), text: {} });
 
 const int = (v, lo, hi) => (Number.isInteger(v) && v >= lo && v <= hi ? v : null);
@@ -40,6 +40,7 @@ function clean(raw) {
   for (const id of Array.isArray(r.order) ? r.order : []) if (IDS.includes(id) && !seen.has(id)) { seen.add(id); order.push(id); }
   for (const id of IDS) if (!seen.has(id)) order.push(id);
   out.order = order;
+  out.free = r.free === true;
   for (const id of IDS) {
     out.span[id] = int(r.span?.[id], 1, COLS) ?? DEFAULT_SPAN[id];
     out.rows[id] = int(r.rows?.[id], 1, 6) ?? (DEFAULT_ROWS[id] ?? 1);
@@ -79,6 +80,7 @@ export function moveTo(layout, orient, id, targetId, after) {
 
 /** Rows a panel spans. A panel taller than one row only keeps as many rows as there are panels that can sit beside it. */
 export function rowsFor(layout, orient, id, visible) {
+  if (layout[orient].free) return 1;
   const want = layout[orient].rows[id] ?? 1;
   if (want <= 1) return 1;
   const vis = orderFor(layout, orient, visible);
@@ -174,12 +176,26 @@ export const GRIPS = [
 /** Net height change in steps. Shorter takes off extra height first, then built-in rows (down to 1); taller puts rows back first, then adds height. */
 export function heightBy(layout, orient, id, steps) {
   if (!IDS.includes(id) || !steps) return layout;
-  const home = DEFAULT_ROWS[id] ?? 1;
+  const free = layout[orient].free;
+  const home = free ? layout[orient].rows[id] : (DEFAULT_ROWS[id] ?? 1);
   let rows = layout[orient].rows[id], tall = layout[orient].tall[id];
   for (let i = 0; i < Math.abs(steps); i++) {
-    if (steps < 0) { if (tall > 0) tall -= 1; else if (rows > 1) rows -= 1; }
+    if (steps < 0) { if (tall > 0) tall -= 1; else if (rows > 1 && !free) rows -= 1; }
     else if (rows < home) rows += 1; else if (tall < 8) tall += 1;
   }
   if (rows === layout[orient].rows[id] && tall === layout[orient].tall[id]) return layout;
   return put(layout, orient, { rows: { ...layout[orient].rows, [id]: rows }, tall: { ...layout[orient].tall, [id]: tall } });
+}
+
+/** Free flow: every panel has its own height and the one below slides up into any gap. Off means neighbours stay level. */
+export const isFree = (layout, orient) => layout[orient].free === true;
+export function setFree(layout, orient, on) {
+  if (isFree(layout, orient) === !!on) return layout;
+  return put(layout, orient, { free: !!on });
+}
+
+/** Free flow packs panels on a fine grid of small rows. This is how many of them a panel of this height needs, gap included. */
+export function masonrySpan({ heightPx, gapPx, unitPx }) {
+  if (!(unitPx > 0)) return 1;
+  return Math.max(1, Math.ceil((heightPx + gapPx) / unitPx));
 }

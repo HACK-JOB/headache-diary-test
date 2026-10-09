@@ -554,3 +554,11 @@ html.layout-edit .pg-top { margin: 0.8rem 1rem 1rem; }
 .pg-set .btn.on { background: var(--teal-soft); border-color: var(--teal); }
 /* One column (phone): only height can change, so the side grips go and the top, bottom and corners stay */
 @media (max-width: 699px) { .pg-grip-e, .pg-grip-w { display: none; } .pg-item { overflow: visible; } }
+/* Free flow: panels pack on a fine row grid, so a panel can slide up under a shorter neighbour */
+.pgrid.is-free { grid-auto-flow: row dense; row-gap: 0; }
+.pgrid.is-free .pg-item { margin-bottom: 0; align-self: start; }
+.pg-flow { margin: 0 0 0.6rem; }
+.pg-flow .hint { margin: 0 0 0.4rem; }
+.pg-flow .seg { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.pg-flow .seg .btn { flex: 1 1 8rem; }
+.pg-flow .btn.on { background: var(--card); border-color: var(--teal); }

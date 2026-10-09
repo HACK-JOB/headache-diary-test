@@ -26,5 +26,9 @@
   {
     "screen": "main",
     "text": "Unlocked panels can be resized by dragging an edge or corner, or with the Size button. Each panel can have its own text size."
+  },
+  {
+    "screen": "main",
+    "text": "While the layout is unlocked, Free flow lets each panel keep its own height so the panel below slides up into any gap."
   }
 ]

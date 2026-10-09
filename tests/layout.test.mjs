@@ -232,3 +232,41 @@ test('heightBy: shorter removes extra height first, then the built-in rows; tall
   assert.equal(heightBy(d, 'landscape', 'water', -1).portrait.rows.water, 3);
   assert.equal(heightBy(d, 'portrait', 'day', -1), d);                              // already one row, no extra: nothing to remove
 });
+
+import { setFree, isFree } from '../js/layout.js';
+test('free flow: off by default, saved per orientation, repaired when odd', () => {
+  const d = defaultLayout();
+  assert.equal(isFree(d, 'portrait'), false);
+  const f = setFree(d, 'landscape', true);
+  assert.equal(isFree(f, 'landscape'), true);
+  assert.equal(isFree(f, 'portrait'), false);
+  assert.equal(setFree(d, 'portrait', false), d);
+  assert.equal(isFree(normaliseLayout({ landscape: { free: true } }), 'landscape'), true);
+  assert.equal(isFree(normaliseLayout({ landscape: { free: 'yes' } }), 'landscape'), false);
+  assert.equal(isFree(normaliseLayout(JSON.parse(JSON.stringify(f))), 'landscape'), true);
+});
+
+test('free flow ignores built-in rows: a panel is as tall as its content plus its own extra steps', () => {
+  const f = setFree(defaultLayout(), 'portrait', true);
+  assert.equal(rowsFor(f, 'portrait', 'water', ALL), 1);                       // snapped would give 3
+  assert.equal(rowsFor(defaultLayout(), 'portrait', 'water', ALL), 3);
+});
+
+test('free flow: Shorter and Taller only change the extra steps, never the built-in rows', () => {
+  const f = setFree(defaultLayout(), 'portrait', true);
+  const t = heightBy(f, 'portrait', 'water', 2);
+  assert.equal(t.portrait.tall.water, 2);
+  assert.equal(t.portrait.rows.water, 3);
+  const s = heightBy(t, 'portrait', 'water', -5);
+  assert.equal(s.portrait.tall.water, 0);
+  assert.equal(s.portrait.rows.water, 3);
+  assert.equal(heightBy(f, 'portrait', 'water', -1), f);                       // nothing to remove
+});
+
+import { masonrySpan } from '../js/layout.js';
+test('masonrySpan: whole small rows that hold the panel and the gap, at least 1', () => {
+  assert.equal(masonrySpan({ heightPx: 100, gapPx: 20, unitPx: 4 }), 30);
+  assert.equal(masonrySpan({ heightPx: 101, gapPx: 20, unitPx: 4 }), 31);
+  assert.equal(masonrySpan({ heightPx: 0, gapPx: 0, unitPx: 4 }), 1);
+  assert.equal(masonrySpan({ heightPx: 50, gapPx: 10, unitPx: 0 }), 1);
+});

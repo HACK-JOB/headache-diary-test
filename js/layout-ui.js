@@ -2,7 +2,7 @@
 // Unlocked: every panel shows a bar to move it (Earlier / Later buttons, or drag the handle) and its contents are switched off,
 // so nothing can be entered or tapped by mistake. Portrait and landscape keep separate layouts. Saved on this tablet only.
 import { PANELS, COLS, TEXT_PX, PANEL_TEXT, TALL_STEP_REM, GRIPS, normaliseLayout, defaultLayout, orientationOf, orderFor, spanFor, rowsFor, moveStep, moveTo,
-  textFor, setText, zoomFor, minPx, minSpan, setSpan, heightBy, snapSpan, snapTall } from './layout.js';
+  textFor, setText, zoomFor, minPx, minSpan, setSpan, heightBy, snapSpan, snapTall, isFree, setFree, masonrySpan } from './layout.js';
 
 const KEY = 'hd.layout';
 
@@ -40,7 +40,7 @@ export function createLayoutUI({ h, state, render, icon }) {
       item.append(...(editing ? [bar(id, i, order.length, visible), ...(open === id ? [settings(id)] : []), body, ...GRIPS.map((g) => grip(id, g))] : [body]));
       return item;
     });
-    return h('div', { class: 'pgrid', id: 'pgrid', 'data-orient': o }, ...items);
+    return h('div', { class: 'pgrid' + (isFree(layout, o) ? ' is-free' : ''), id: 'pgrid', 'data-orient': o }, ...items);
   }
 
   /* ---------- the bar on each panel while unlocked ---------- */
@@ -70,6 +70,25 @@ export function createLayoutUI({ h, state, render, icon }) {
     for (const item of m.g.querySelectorAll('.pg-item')) {
       const id = item.dataset.panel;
       item.style.gridColumn = `span ${Math.max(spanFor(layout, o, id), minSpanOf(id, m))}`;
+    }
+    pack(m);
+  }
+
+  /** Free flow: give each panel just enough small rows for its own height, so the panel below can slide up beside it. */
+  function pack(m) {
+    const free = isFree(layout, orient()) && m.cols === COLS;
+    const unit = 4, gapPx = m.gap;
+    m.g.style.gridAutoRows = free ? `${unit}px` : '';
+    m.g.style.rowGap = free ? '0px' : '';
+    for (const item of m.g.querySelectorAll('.pg-item')) {
+      if (!free) { item.style.marginBottom = ''; if (item.dataset.packed) { item.style.gridRow = item.dataset.packed === 'x' ? '' : item.dataset.packed; delete item.dataset.packed; } continue; }
+      item.dataset.packed = item.dataset.packed || 'x';
+      item.style.gridRow = 'auto';
+      item.style.alignSelf = 'start';
+      // Measure the content (bar, settings, body), never the grips that stick out past the edge
+      const top = item.getBoundingClientRect().top;
+      const natural = Math.max(0, ...[...item.children].filter((c) => !c.classList.contains('pg-grip')).map((c) => c.getBoundingClientRect().bottom - top));
+      item.style.gridRow = `span ${masonrySpan({ heightPx: natural, gapPx, unitPx: unit })}`;
     }
   }
 
@@ -167,6 +186,11 @@ export function createLayoutUI({ h, state, render, icon }) {
 
   const topBar = () => !unlocked() ? null : h('section', { class: 'pg-top', id: 'pg-top', role: 'region', 'aria-label': 'Page layout is unlocked' },
     h('p', {}, h('strong', {}, 'Layout is unlocked. '), 'Nothing can be entered while it is. Move a panel with its Earlier and Later buttons or its handle. Resize by dragging an edge or corner, or open its Size settings.'),
+    h('div', { class: 'pg-flow', role: 'group', 'aria-label': 'How panels line up' },
+      h('p', { class: 'hint' }, isFree(layout, orient()) ? 'Free flow: each panel keeps its own height and the one below slides up into any gap.' : 'Snapped rows: panels side by side stay level with each other.'),
+      h('div', { class: 'seg' },
+        h('button', { class: 'btn' + (!isFree(layout, orient()) ? ' on' : ''), type: 'button', id: 'pg-flow-snap', 'aria-pressed': String(!isFree(layout, orient())), onclick: () => save(setFree(layout, orient(), false)) }, (!isFree(layout, orient()) ? '✓ ' : '') + 'Snapped rows'),
+        h('button', { class: 'btn' + (isFree(layout, orient()) ? ' on' : ''), type: 'button', id: 'pg-flow-free', 'aria-pressed': String(isFree(layout, orient())), onclick: () => save(setFree(layout, orient(), true)) }, (isFree(layout, orient()) ? '✓ ' : '') + 'Free flow'))),
     h('div', { class: 'two' },
       h('button', { class: 'btn quiet', id: 'pg-reset', onclick: () => save({ ...layout, [orient()]: defaultLayout()[orient()] }) }, 'Reset this layout'),
       h('button', { class: 'btn primary', id: 'pg-done', onclick: () => setUnlocked(false) }, 'Done, lock it')));
