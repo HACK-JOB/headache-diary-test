@@ -1,5 +1,5 @@
 // Weight (once a day after WOKE UP) and blood glucose screens, plus the Admin switch for showing weight back to her.
-import { validateWeight, validateGlucose, GLUCOSE_TAGS, needsWeight, weightToday, weightNeedsCheck, glucoseToday, glucoseStatus, weightShown, weightShownEvent } from './measures.js';
+import { validateWeight, validateGlucose, GLUCOSE_TAGS, needsWeight, weightToday, weightNeedsCheck, glucoseToday, glucoseStatus, weightShown } from './measures.js';
 import { targets, urgentFor, fasting } from './doctors.js';
 
 export function createMeasuresUI(ctx) {
@@ -97,14 +97,5 @@ export function createMeasuresUI(ctx) {
       })) : h('p', { class: 'hint' }, 'No readings yet today.'));
   }
 
-  /* ---------- Admin: show weight back to her? ---------- */
-  function adminSwitch() {
-    const on = weightShown(state.events);
-    const flip = async (shown) => { await log.add({ type: 'config', ...weightShownEvent(shown) }); await reload(); render(); };
-    return h('div', { class: 'setting', id: 'weight-switch' }, h('h3', {}, 'Weight on screen'),
-      h('p', { class: 'hint' }, 'Weight is asked once a day and doctors always see every number. This only decides whether today\'s number is shown back after it is confirmed.'),
-      h('label', { class: 'check' }, h('input', { type: 'checkbox', id: 'weight-shown', checked: on, 'aria-label': 'Show today\'s weight', onchange: (ev) => flip(ev.target.checked) }), 'Show today\'s weight'));
-  }
-
-  return { weightCard, glucoseCard, adminSwitch };
+  return { weightCard, glucoseCard };
 }

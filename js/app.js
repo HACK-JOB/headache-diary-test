@@ -9,6 +9,7 @@ import { createIntakeUI } from './intake-ui.js';
 import { createAdminUI } from './admin-ui.js';
 import { createPatchUI } from './patchnotes-ui.js';
 import { createTrackingUI } from './tracking-ui.js';
+import { createLayoutUI } from './layout-ui.js';
 import { trackedMap } from './tracking.js';
 import { createTesterUI } from './tester-ui.js';
 import { createDoctorUI } from './doctor-ui.js';
@@ -32,6 +33,7 @@ let iui;
 let aui;
 let pn;
 let trk;
+let lay;
 let tui;
 let dcui;
 let mui;
@@ -217,6 +219,7 @@ function renderOptions() {
           h('p', { class: 'hint' }, 'Only the look changes. The same six types are always there.')),
         h('div', { class: 'setting' }, h('h3', {}, 'Text size'), seg('Text size', 'text', [...TEXT_SIZES].reverse().map((t) => [t.key, t.label]))),
         h('div', { class: 'setting' }, h('h3', {}, 'Clock'), seg('Clock', 'clock', [['12', '12 hour'], ['24', '24 hour']])),
+        lay.optionsSection(),
         h('div', { class: 'setting' },
           h('label', { class: 'check' }, h('input', { type: 'checkbox', checked: st.followSystem, onchange: (ev) => saveSettings({ followSystem: ev.target.checked }) }), 'Switch to dark when the tablet does'),
           h('p', { class: 'hint' }, 'Off by default. The moon button on the main page always works.')),
@@ -253,7 +256,7 @@ function trackPanel() {
 }
 const tracked = () => trackedMap(state.events ?? [], state.settings?.track ?? {});
 
-function adminPanel() { return aui.panel(state.adminUntil || !aui.hasPin() ? { screens: h('div', {}, iui.adminSwitches(), mui.adminSwitch()), accounts: dcui.adminAccounts(), tracking: trk.section('admin') } : null); }
+function adminPanel() { return aui.panel(state.adminUntil || !aui.hasPin() ? { screens: h('div', {}, iui.adminSwitches()), accounts: dcui.adminAccounts(), tracking: trk.section('admin') } : null); }
 
 /* Fluid against the doctor's range: water refills plus every drink from the meal log. */
 function waterStatus(total) {
@@ -265,7 +268,7 @@ function waterStatus(total) {
 
 /* ---------- view ---------- */
 function render() {
-  queueMicrotask(() => { rem?.tick(); pn?.place(); });
+  queueMicrotask(() => { rem?.tick(); pn?.place(); lay?.sync(); });
   if (state.view === 'options') { renderOptions(); return; }
   if (state.view === 'headache') { renderHeadache(); return; }
   if (state.view === 'activity') { renderActivity(); return; }
@@ -318,15 +321,22 @@ function render() {
           'aria-label': shown === 'dark' ? 'Dark mode is on. Tap to turn off' : 'Dark mode is off. Tap to turn on',
           onclick: () => saveSettings(toggleDark(state.settings, darkQuery.matches)),
         }, icon(shown === 'dark' ? 'moon' : 'sun')),
+        lay.lockButton(),
         helpButton('main'),
         h('button', { class: 'icon-btn', id: 'cog', 'aria-label': 'Options', onclick: () => { state.view = 'options'; render(); window.scrollTo(0, 0); } }, icon('cog')))),
+    lay.topBar(),
     h('main', { class: 'home' },
-      h('div', { class: 'home-row' + (tm.water ? '' : ' solo') }, tm.water ? waterPanel : null, h('div', { class: 'home-col' }, tm.headache ? hui.mainCard() : null, tm.day ? dui.mainCard() : null, tm.glucose ? mui.glucoseCard() : null)),
-      tm.weight ? mui.weightCard() : null,
-      tm.meds ? rxCard() : null,
-      tm.day ? dui.todayList() : null,
-      tm.intake ? iui.mainCard() : null,
-      tm.intake ? iui.todayList() : null,
+      lay.grid({
+        water: tm.water ? waterPanel : null,
+        headache: tm.headache ? hui.mainCard() : null,
+        day: tm.day ? dui.mainCard() : null,
+        glucose: tm.glucose ? mui.glucoseCard() : null,
+        weight: tm.weight ? mui.weightCard() : null,
+        meds: tm.meds ? rxCard() : null,
+        today: tm.day ? dui.todayList() : null,
+        intake: tm.intake ? iui.mainCard() : null,
+        eaten: tm.intake ? iui.todayList() : null,
+      }),
       Object.values(tm).some(Boolean) ? null : h('section', { class: 'panel', id: 'all-off' }, h('h2', {}, 'Nothing is being tracked'), h('p', {}, 'Every log is switched off. Logs can be turned back on in Options, under Tracking.'))),
     state.toast ? h('div', { class: 'toast', role: 'status' }, state.toast) : null);
 
@@ -356,6 +366,7 @@ async function start() {
     dui = createDayUI({ h, state, log, reload, render, toast, time, icon, fmt, helpButton });
     tui = createTesterUI({ h, render, toast, time, pastUpdates: () => pn.pastList() });
     pn = createPatchUI({ h, state, render });
+    lay = createLayoutUI({ h, state, render, icon });
     trk = createTrackingUI({ h, state, log, reload, render, saveSettings, actor: () => dcui.actorId() });
     aui = createAdminUI({ h, state, log, reload, render, toast, time, icon, doctorInfo: () => dcui.resetInfo() });
     dcui = createDoctorUI({ h, state, log, reload, render, toast, time, icon, ask, trackingSection: () => trk.section('doctor') });

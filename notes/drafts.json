@@ -14,5 +14,13 @@
   {
     "screen": "doctors",
     "text": "Doctors has a Tracking group. Doctor choices beat User choices. A locked log names who locked it."
+  },
+  {
+    "screen": "main",
+    "text": "New padlock button: unlock the layout to move panels with Earlier and Later or by dragging. Nothing can be entered while unlocked."
+  },
+  {
+    "screen": "admin",
+    "text": "The old Weight on screen switch is gone. Weight is now turned on or off under Tracking."
   }
 ]

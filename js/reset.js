@@ -37,7 +37,7 @@ export const SCOPES = [
   { key: 'measures', label: 'Weight and blood glucose', what: 'Every weight and glucose reading.', keeps: 'Targets and the urgent message.', types: ['measure'] },
   { key: 'doses', label: 'Medicine answers', what: 'Every Taken, Skipped and Undo answer.', keeps: 'The prescriptions themselves.', types: ['dose'] },
   { key: 'tester', label: 'Tester notes', what: 'The checklist ticks and every comment.', keeps: 'The diary itself.', storage: ['hd.tester'] },
-  { key: 'display', label: 'Display settings', what: 'Colours, text size, clock, reminder levels and the bottle sizes go back to the starting choices.', keeps: 'The diary and all PINs.', storage: ['hd.settings', 'hd.selected', 'hd.text'] },
+  { key: 'display', label: 'Display settings', what: 'Colours, text size, clock, reminder levels, the page layout and the bottle sizes go back to the starting choices.', keeps: 'The diary and all PINs.', storage: ['hd.settings', 'hd.selected', 'hd.text', 'hd.layout'] },
   { key: 'doctors', label: 'Doctor data', what: 'Doctor accounts and PINs, targets, prescriptions, relief text, urgent message and clinical notes.', keeps: 'The diary entries.', types: ['doctor', 'clinical'], storage: ['hd.doctorTries'] },
 ];
 export const scopeByKey = (k) => SCOPES.find((s) => s.key === k);

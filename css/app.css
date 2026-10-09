@@ -507,3 +507,31 @@ body.scan-open { overflow: hidden; }
 .tab { padding: 0 0.8rem; }
 .tabs { gap: 0.2rem; }
 @media (max-width: 899px) { .tab { padding: 0 0.6rem; } }
+
+/* Main page grid: 6 columns. Narrow screens stack everything. */
+.pgrid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: var(--gap); align-items: stretch; }
+.pg-item { min-width: 0; display: flex; flex-direction: column; position: relative; }
+.pg-body { display: flex; flex-direction: column; flex: 1 1 auto; min-width: 0; }
+.pg-body > * { margin: 0; flex: 1 1 auto; }
+.pg-body > .panel #refill { margin-top: auto; }
+@media (max-width: 699px) { .pgrid { grid-template-columns: 1fr; } .pg-item { grid-column: 1 / -1 !important; grid-row: auto !important; } }
+/* Unlocked: each panel is framed, and its contents are switched off */
+.pg-item.is-edit { outline: 3px dashed var(--teal); outline-offset: 2px; border-radius: var(--radius); }
+.pg-item.is-edit .pg-body { opacity: 0.72; pointer-events: none; user-select: none; }
+.pg-bar { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; padding: 0.4rem; background: var(--teal-soft); border: 2px solid var(--teal); border-radius: var(--radius); margin-bottom: 0.4rem; }
+.pg-handle { flex: 1 1 8rem; min-height: 48px; text-align: left; font: inherit; font-weight: 700; color: var(--ink); background: var(--card); border: 2px solid var(--teal); border-radius: var(--radius); cursor: grab; touch-action: none; padding: 0 0.7rem; }
+.pg-bar .btn { flex: 0 1 auto; }
+.pg-bar [aria-disabled="true"] { opacity: 0.45; }
+.pg-item.is-dragging { opacity: 0.55; }
+.pg-drop-before { box-shadow: -6px 0 0 0 var(--teal); }
+.pg-drop-after { box-shadow: 6px 0 0 0 var(--teal); }
+.pg-top { border: 2px solid var(--teal); background: var(--teal-soft); color: var(--ink); border-radius: var(--radius); padding: 0.7rem 1rem; margin: 0 auto 1rem; max-width: 60rem; }
+.pg-top p { margin: 0 0 0.5rem; }
+html.layout-edit .tools .icon-btn:not(#layout-lock), html.layout-edit #cog { pointer-events: auto; }
+
+#layout-lock[aria-pressed="true"] { background: var(--teal); color: #fff; border-color: var(--teal); opacity: 1; }
+html.layout-edit .pg-top { margin: 0.8rem 1rem 1rem; }
+@media (min-width: 700px) { html.layout-edit .pg-top { margin-left: auto; margin-right: auto; } }
+/* Header: the tools wrap under the title on a narrow screen instead of pushing the page wider */
+.topbar { flex-wrap: wrap; }
+.tools { flex-wrap: wrap; justify-content: flex-end; margin-left: auto; }

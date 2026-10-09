@@ -2,7 +2,8 @@
 // Each step points at the first selector that exists on screen; steps with no match are skipped.
 
 export const MAIN_STEPS = [
-  { sel: ['.tools'], text: 'Top right: light or dark screen, this guide (Help), and Options for settings.' },
+  { sel: ['.tools'], text: 'Top right: light or dark screen, the layout padlock, this guide (Help), and Options.' },
+  { sel: ['#layout-lock'], text: 'Unlocks the layout so panels can be moved. Nothing can be entered while unlocked.' },
   { sel: ['#wake'], text: 'Press when waking up. This starts the day.' },
   { sel: ['#end-day'], text: 'Press at the end of the day. A check is asked first.' },
   { sel: ['#w-kg'], text: 'Weight is asked once a day, then confirmed.' },
@@ -60,7 +61,7 @@ export const FORM_STEPS = {
   ],
   'options-admin': [
     { sel: ['#back'], text: 'Goes back to the diary.' },
-    { sel: ['#weight-switch'], text: 'Shows or hides weight on the diary. Doctors always see it.' },
+    { sel: ['#st-admin'], text: 'Admin sections: screens, tracking, doctor accounts, the PIN and resetting data.' },
     { sel: ['#admin-accounts'], text: 'Doctor accounts are added and removed here.' },
     { sel: ['#reset-zone'], text: 'Master reset: deletes everything on this tablet. DELETE has to be typed first.' },
   ],

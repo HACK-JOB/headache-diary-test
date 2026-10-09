@@ -1,8 +1,8 @@
 // Caches the app files so the diary opens offline. Bump VERSION whenever files change.
-const VERSION = 'hd-v106';
+const VERSION = 'hd-v111';
 const FILES = [
   './', 'index.html', 'manifest.webmanifest', 'css/app.css',
-  'js/app.js', 'js/time.js', 'js/hydration.js', 'js/events.js', 'js/settings.js', 'js/episodes.js', 'js/memory.js', 'js/headache-ui.js', 'js/type-art.js', 'js/day.js', 'js/day-ui.js', 'js/intake.js', 'js/intake-ui.js', 'js/pin.js', 'js/clock-ui.js', 'js/admin-ui.js', 'js/doctors.js', 'js/measures.js', 'js/measures-ui.js', 'js/tour.js', 'js/tour-ui.js', 'js/prescriptions.js', 'js/rx-ui.js', 'js/reminders.js', 'js/reminder-ui.js', 'js/nudges.js', 'js/reset.js', 'js/tester.js', 'js/barcode.js', 'js/barcode-ui.js', 'js/sidetabs.js', 'js/forget.js', 'js/tracking.js', 'js/tracking-ui.js', 'js/patchnotes.js', 'js/patchnotes-ui.js', 'js/releases.js', 'js/tester-ui.js', 'js/reset.js', 'js/doctor-ui.js',
+  'js/app.js', 'js/time.js', 'js/hydration.js', 'js/events.js', 'js/settings.js', 'js/episodes.js', 'js/memory.js', 'js/headache-ui.js', 'js/type-art.js', 'js/day.js', 'js/day-ui.js', 'js/intake.js', 'js/intake-ui.js', 'js/pin.js', 'js/clock-ui.js', 'js/admin-ui.js', 'js/doctors.js', 'js/measures.js', 'js/measures-ui.js', 'js/tour.js', 'js/tour-ui.js', 'js/prescriptions.js', 'js/rx-ui.js', 'js/reminders.js', 'js/reminder-ui.js', 'js/nudges.js', 'js/reset.js', 'js/tester.js', 'js/barcode.js', 'js/barcode-ui.js', 'js/sidetabs.js', 'js/forget.js', 'js/layout.js', 'js/layout-ui.js', 'js/tracking.js', 'js/tracking-ui.js', 'js/patchnotes.js', 'js/patchnotes-ui.js', 'js/releases.js', 'js/tester-ui.js', 'js/reset.js', 'js/doctor-ui.js',
   'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png',
 ];
 self.addEventListener('install', (e) => {
