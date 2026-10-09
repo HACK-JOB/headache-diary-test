@@ -125,68 +125,22 @@ test('plain messages for each outcome, impersonal and with no advice', () => {
   }
 });
 
-/* ---------- barcode + printed number cross-check ---------- */
-import { printedNumbers, sameCode, scanDecision, checkNote, GRACE_MS } from '../js/barcode.js';
+/* ---------- the camera reads the barcode; typing the number is the backup ---------- */
+import * as BC from '../js/barcode.js';
+import { scanDecision } from '../js/barcode.js';
 
-test('printedNumbers finds valid codes in text read from the pack, ignoring spaces and other words', () => {
-  assert.deepEqual(printedNumbers(['9 310645 467023']), ['9310645467023']);
-  assert.deepEqual(printedNumbers(['Barcode 9310645204741 here', 'Coles Chicken']), ['9310645204741']);
-  assert.deepEqual(printedNumbers(['9310645467024']), []);                 // wrong check digit
-  assert.deepEqual(printedNumbers(['350 g', 'Best before 12 05 2027']), []);
-  assert.deepEqual(printedNumbers(['9 310645 467023', '9310645467023']), ['9310645467023']); // no repeats
-  assert.deepEqual(printedNumbers([]), []);
-  assert.deepEqual(printedNumbers(undefined), []);
+test('scanDecision: a barcode seen by the camera finishes the scan at once', () => {
+  const d = scanDecision({ barcodes: ['9310645467023'] });
+  assert.deepEqual([d.done, d.code], [true, '9310645467023']);
+  assert.equal(scanDecision({ barcodes: ['9310645467023', '9310645204741'] }).code, '9310645467023');   // the first one seen
 });
 
-test('sameCode ignores the leading zero a 12-digit UPC-A gets as an EAN-13', () => {
-  assert.equal(sameCode('9310645467023', '9310645467023'), true);
-  assert.equal(sameCode('012345678905', '0012345678905'), true);
-  assert.equal(sameCode('9310645467023', '9310645204741'), false);
-  assert.equal(sameCode('', '9310645467023'), false);
+test('scanDecision: nothing seen yet keeps looking', () => {
+  assert.equal(scanDecision({ barcodes: [] }).done, false);
+  assert.equal(scanDecision({}).done, false);
 });
 
-test('scanDecision: both read and equal finishes at once, as verified', () => {
-  const d = scanDecision({ barcodes: ['9310645467023'], numbers: ['9310645467023'], ocr: true, waitedMs: 0 });
-  assert.deepEqual([d.done, d.kind, d.code], [true, 'both', '9310645467023']);
-});
-
-test('scanDecision: with no digit reader on the tablet, a barcode alone finishes at once as barcode-only', () => {
-  const d = scanDecision({ barcodes: ['9310645467023'], numbers: [], ocr: false, waitedMs: 0 });
-  assert.deepEqual([d.done, d.kind], [true, 'barcode']);
-});
-
-test('scanDecision: one read, the other still being looked for, waits for the grace time then finishes', () => {
-  assert.equal(scanDecision({ barcodes: ['9310645467023'], numbers: [], ocr: true, waitedMs: 500 }).done, false);
-  const b = scanDecision({ barcodes: ['9310645467023'], numbers: [], ocr: true, waitedMs: GRACE_MS });
-  assert.deepEqual([b.done, b.kind, b.code], [true, 'barcode', '9310645467023']);
-  assert.equal(scanDecision({ barcodes: [], numbers: ['9310645467023'], ocr: true, waitedMs: 1000 }).done, false);
-  const n = scanDecision({ barcodes: [], numbers: ['9310645467023'], ocr: true, waitedMs: GRACE_MS });
-  assert.deepEqual([n.done, n.kind, n.code], [true, 'number', '9310645467023']);
-});
-
-test('scanDecision: a barcode and a different printed number is a mismatch after the grace time, using the barcode', () => {
-  assert.equal(scanDecision({ barcodes: ['9310645467023'], numbers: ['9310645204741'], ocr: true, waitedMs: 800 }).done, false);
-  const d = scanDecision({ barcodes: ['9310645467023'], numbers: ['9310645204741'], ocr: true, waitedMs: GRACE_MS });
-  assert.deepEqual([d.done, d.kind, d.code], [true, 'mismatch', '9310645467023']);
-});
-
-test('scanDecision: a matching number among several read is still a match', () => {
-  const d = scanDecision({ barcodes: ['9310645467023'], numbers: ['9310645204741', '9310645467023'], ocr: true, waitedMs: 0 });
-  assert.equal(d.kind, 'both');
-});
-
-test('scanDecision: nothing read yet keeps waiting', () => {
-  assert.equal(scanDecision({ barcodes: [], numbers: [], ocr: true, waitedMs: 99999 }).done, false);
-});
-
-test('checkNote gives neutral wording for each outcome, and only a match is a plain tick', () => {
-  const k = ['both', 'barcode', 'number', 'typed', 'mismatch'];
-  for (const x of k) { assert.ok(checkNote(x).text.length > 10, x); assert.ok(!/\b(you|your)\b/i.test(checkNote(x).text), x); }
-  assert.equal(checkNote('both').ok, true);
-  for (const x of ['barcode', 'number', 'typed', 'mismatch']) assert.equal(checkNote(x).ok, false, x);
-  assert.match(checkNote('barcode').text, /product matches/i);
-  assert.match(checkNote('number').text, /product matches/i);
-  assert.match(checkNote('typed').text, /product matches/i);
-  assert.match(checkNote('mismatch').text, /do not match/i);
-  assert.equal(checkNote('nope').text, '');
+test('the printed-number cross-check and its warnings are gone', () => {
+  for (const name of ['printedNumbers', 'sameCode', 'checkNote', 'GRACE_MS']) assert.equal(name in BC, false, name);
+  for (const k of ['barcode', 'number', 'typed', 'mismatch', 'both']) assert.ok(!/check it against|do not match|only the barcode was read/i.test(BC.scanMessage(k)), k);
 });

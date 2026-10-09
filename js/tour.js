@@ -57,7 +57,6 @@ export const FORM_STEPS = {
     { sel: ['#back'], text: 'Goes back without saving anything.' },
     { sel: ['#f-name'], text: 'Type or tap the food or drink. Past choices are remembered.' },
     { sel: ['#scan-open'], text: 'Scan a barcode with the camera, or type its number. The name and numbers fill in to check.' },
-    { sel: ['#scan-note'], text: 'After a scan, a note says whether the barcode and the printed number agree.' },
     { sel: ['.time-panel'], text: 'The time it was had.' },
     { sel: ['#f-amount'], text: 'How many servings, or how much for a drink.' },
     { sel: ['#f-nutrition'], text: 'Numbers from the label, per serving or per 100 g. All optional, and remembered for next time.' },

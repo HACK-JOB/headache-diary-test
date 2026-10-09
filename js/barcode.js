@@ -100,40 +100,9 @@ const MESSAGES = {
 };
 export const scanMessage = (k) => MESSAGES[k] ?? '';
 
-/* ---------- barcode + printed number cross-check ---------- */
-export const GRACE_MS = 2500;   // after one of the two is read, how long to keep looking for the other
-
-/** Valid barcode numbers found in text read off the pack (spaces inside the number are allowed). */
-export function printedNumbers(lines) {
-  const out = [];
-  for (const line of Array.isArray(lines) ? lines : []) {
-    for (const m of String(line ?? '').matchAll(/\d(?: ?\d){7,13}/g)) {
-      const c = cleanBarcode(m[0].replace(/ /g, ''));
-      if (c && !out.includes(c)) out.push(c);
-    }
-  }
-  return out;
+/* ---------- what to do with what the camera has read ---------- */
+/** The camera reads the barcode. The first one seen finishes the scan. Typing the number is the backup, handled on the scan screen. */
+export function scanDecision({ barcodes = [] } = {}) {
+  const code = barcodes[0];
+  return code ? { done: true, code } : { done: false };
 }
-
-/** Equal once padded to 14 digits, so a 12-digit UPC-A matches its 13-digit form with a leading zero. */
-export const sameCode = (a, b) => !!a && !!b && String(a).padStart(14, '0') === String(b).padStart(14, '0');
-
-/** What to do with what the camera has read so far. `ocr` is whether this tablet can read printed digits at all. */
-export function scanDecision({ barcodes = [], numbers = [], ocr = false, waitedMs = 0 }) {
-  const b = barcodes[0];
-  if (b && numbers.some((n) => sameCode(n, b))) return { done: true, kind: 'both', code: b };
-  if (b && !ocr) return { done: true, kind: 'barcode', code: b };
-  if (waitedMs < GRACE_MS) return { done: false };
-  if (b) return { done: true, kind: numbers.length ? 'mismatch' : 'barcode', code: b };
-  if (numbers.length) return { done: true, kind: 'number', code: numbers[0] };
-  return { done: false };
-}
-
-const CHECKS = {
-  both: { ok: true, text: 'The barcode and the printed number match.' },
-  barcode: { ok: false, text: 'Only the barcode was read, with no printed number to check it against. Please check the product matches the description on the pack.' },
-  number: { ok: false, text: 'Only the printed number was read, with no barcode to check it against. Please check the product matches the description on the pack.' },
-  typed: { ok: false, text: 'The number was typed in, so there was no barcode to check it against. Please check the product matches the description on the pack.' },
-  mismatch: { ok: false, text: 'The barcode and the printed number do not match. Please check the product matches the description on the pack.' },
-};
-export const checkNote = (kind) => CHECKS[kind] ?? { ok: false, text: '' };

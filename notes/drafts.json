@@ -14,5 +14,9 @@
   {
     "screen": "main",
     "text": "The Help guide now has its own steps for the unlocked layout, and covers the newest features."
+  },
+  {
+    "screen": "intake",
+    "text": "Scan a barcode now reads the barcode only, with no warnings. If the camera cannot read it, the number under it can be typed."
   }
 ]

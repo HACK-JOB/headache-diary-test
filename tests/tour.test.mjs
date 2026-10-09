@@ -117,7 +117,7 @@ test('each Options tour has a step for every side tab, so no section is left une
   }
 });
 
-test('the tours cover the newer features: updates, colours, tabs, resets, tracking, notes cards, printed-number check', () => {
+test('the tours cover the newer features: updates, colours, tabs, resets, tracking, notes cards, barcode', () => {
   const all = (k) => TOURS[k].flatMap((x) => x.sel).join(' ');
   const text = (k) => TOURS[k].map((x) => x.text).join(' ');
   assert.match(all('main'), /pn-card/);
@@ -129,5 +129,5 @@ test('the tours cover the newer features: updates, colours, tabs, resets, tracki
   assert.match(all('options-admin'), /st-admin-reset/);
   assert.match(all('options-admin'), /st-admin-pin/);
   assert.match(all('options-doctors'), /st-doctors-tracking/);
-  assert.match(text('intake'), /printed/i);
+  assert.match(all('intake'), /scan-open/);
 });
