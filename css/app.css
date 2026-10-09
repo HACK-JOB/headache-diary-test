@@ -640,3 +640,9 @@ html.sheet-open body { padding-bottom: calc(var(--sheet-h, 0px) + 1rem); }
 /* Unlock the layout (Options): own colours, so the browser's grey never shows through */
 #layout-open { background: var(--teal); color: var(--on-teal); border-color: var(--teal); }
 .swatch-tick { font-weight: 700; }
+
+/* Restore: the real file input stays reachable by keyboard but is drawn as the button next to it */
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.visually-hidden:focus-visible + *, #restore-pick:focus-within { outline: 3px solid var(--teal); outline-offset: 2px; }
+#restore-pick { display: inline-flex; align-items: center; min-height: 48px; cursor: pointer; }
+.reset-row .check { min-height: 48px; }

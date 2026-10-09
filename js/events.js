@@ -16,6 +16,8 @@ const nextSeq = () => { lastSeq = Math.max(lastSeq + 1, Date.now() * 1000); retu
 export const byTime = (a, b) => a.ms - b.ms || (a.seq ?? 0) - (b.seq ?? 0);
 
 export function createEventLog(store) {
+  /** The entry and its history record are saved together, so an interruption cannot leave one without the other. */
+  const write = async (e, h) => { if (store.putWithHistory) await store.putWithHistory(e, h); else { await store.putEvent(e); await store.addHistory(h); } };
   return {
     async add(fields, ms = Date.now()) {
       const e = { id: newId(), ms, createdAt: Date.now(), seq: nextSeq(), ...fields };
@@ -33,8 +35,7 @@ export function createEventLog(store) {
       const before = await store.getEvent(id);
       if (!before) throw new Error(`Entry ${id} not found`);
       const after = { ...before, ...changes, id, editedAt: at };
-      await store.putEvent(after);
-      await store.addHistory({ eventId: id, action: 'edit', before, after, reason: String(reason).trim(), at });
+      await write(after, { eventId: id, action: 'edit', before, after, reason: String(reason).trim(), at });
       return after;
     },
     async remove(id, reason, at = Date.now()) {
@@ -42,13 +43,21 @@ export function createEventLog(store) {
       const before = await store.getEvent(id);
       if (!before) throw new Error(`Entry ${id} not found`);
       const after = { ...before, deleted: true, editedAt: at };
-      await store.putEvent(after);
-      await store.addHistory({ eventId: id, action: 'delete', before, after, reason: String(reason).trim(), at });
+      await write(after, { eventId: id, action: 'delete', before, after, reason: String(reason).trim(), at });
     },
     /** Master reset: remove every entry and every history record. */
     async clearAll() { await store.clearAll(); },
     /** Physically remove every entry the test accepts, with its change history. Used only by the Admin reset screens. */
     async purge(test) { const ids = (await store.allEvents()).filter(test).map((e) => e.id); await store.purgeEvents(ids); return ids.length; },
+    /** Put entries and their change history back exactly as saved (used by Restore). Entries already here are left alone. */
+    async restoreRaw(events, history) {
+      const have = new Set((await store.allEvents()).map((e) => e.id));
+      let n = 0;
+      for (const e of events) if (!have.has(e.id)) { await store.putEvent(e); n++; }
+      const ids = new Set(events.map((e) => e.id));
+      for (const h of history) if (ids.has(h.eventId) && !have.has(h.eventId)) await store.addHistory(h);
+      return n;
+    },
     async allHistory() { return store.allHistory(); },
     async history(id) {
       return store.historyFor(id);

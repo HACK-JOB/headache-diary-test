@@ -18,6 +18,7 @@ import { createDoctorUI } from './doctor-ui.js';
 import { createMeasuresUI } from './measures-ui.js';
 import { createTour } from './tour-ui.js';
 import { mainTourKey } from './tour.js';
+import { gate, NO_REASON } from './editrules.js';
 import { rxMainCard } from './rx-ui.js';
 import { createReminderUI } from './reminder-ui.js';
 import { clockPicker } from './clock-ui.js';
@@ -112,7 +113,9 @@ function useCustom() {
   render();
 }
 
-function ask(titleText) {
+function ask(titleText, action) {
+  const g = action ? gate(state.events, action) : { ok: true, askReason: true };
+  if (!g.ok) { toast(g.message); return Promise.resolve(null); }
   const dlg = document.getElementById('reason');
   const form = document.getElementById('reason-form');
   const text = document.getElementById('reason-text');
@@ -120,6 +123,9 @@ function ask(titleText) {
   document.getElementById('reason-title').textContent = titleText;
   text.value = '';
   err.hidden = true;
+  const needs = g.askReason;
+  text.hidden = !needs; document.querySelector('label[for="reason-text"]').hidden = !needs;
+  document.getElementById('reason-ok').textContent = needs ? 'Remove' : 'Yes, go ahead';
   return new Promise((resolve) => {
     const done = (val) => {
       form.onsubmit = null;
@@ -129,6 +135,7 @@ function ask(titleText) {
     };
     form.onsubmit = (ev) => {
       ev.preventDefault();
+      if (!needs) { done(NO_REASON); return; }
       if (!text.value.trim()) { err.hidden = false; text.focus(); return; }
       done(text.value.trim());
     };
@@ -140,7 +147,7 @@ function ask(titleText) {
 }
 
 async function removeEntry(e) {
-  const reason = await ask('Remove this entry?');
+  const reason = await ask('Remove this entry?', 'undo');
   if (!reason) return;
   await log.remove(e.id, reason);
   await reload();

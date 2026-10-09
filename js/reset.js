@@ -72,3 +72,45 @@ export function resetNote(e) {
   if (!s.types) return `${s.label} reset`;
   return `${s.label} reset: ${e.count} ${e.count === 1 ? 'entry' : 'entries'} removed`;
 }
+
+/* ---------- restore from a backup file ---------- */
+/** Read a backup file's text. Only this app's own file, in a version this code knows, is accepted. */
+export function parseBackup(text) {
+  let f;
+  try { f = JSON.parse(text); } catch { return { ok: false, message: 'That is not a backup file from this diary.' }; }
+  if (!f || f.app !== 'headache-diary') return { ok: false, message: 'That is not a backup file from this diary.' };
+  if (f.version !== 1) return { ok: false, message: 'That backup is from a different version and cannot be loaded.' };
+  if (!Array.isArray(f.events) || !Array.isArray(f.history ?? [])) return { ok: false, message: 'That backup file is damaged.' };
+  return { ok: true, file: { ...f, history: f.history ?? [] } };
+}
+
+/** The kinds of data a merge can include or leave out. */
+const RESTORE_GROUPS = [
+  ['water', 'Water', ['water']], ['food', 'Food and drink', ['intake']], ['headaches', 'Headaches', ['headache']],
+  ['days', 'Days and activities', ['day', 'activity']], ['measures', 'Weight and blood glucose', ['measure']], ['doses', 'Medicine answers', ['dose']],
+  ['doctors', 'Doctor data (accounts, PINs, targets, medicines, notes)', ['doctor', 'clinical']], ['admin', 'Admin choices (screens, tracking, edit rules)', ['config']],
+];
+export function restoreGroups(file) {
+  return RESTORE_GROUPS.map(([key, label, types]) => ({ key, label, types, count: file.events.filter((e) => types.includes(e.type) && !e.deleted).length }))
+    .filter((g) => g.count > 0);
+}
+
+/** What a restore would do. Merge adds only chosen groups and skips entries already here; full takes everything. */
+export function planRestore(file, have, { mode, groups = [] }) {
+  if (mode === 'full') return { add: file.events, skipped: 0 };
+  const types = new Set(RESTORE_GROUPS.filter(([k]) => groups.includes(k)).flatMap(([, , t]) => t));
+  const ids = new Set(have.map((e) => e.id));
+  const chosen = file.events.filter((e) => types.has(e.type));
+  return { add: chosen.filter((e) => !ids.has(e.id)), skipped: chosen.filter((e) => ids.has(e.id)).length };
+}
+
+/** Do the restore. Full wipes the diary first, then loads the file and its display settings. Returns how many entries were added. */
+export async function applyRestore(file, log, { mode, groups = [], storage } = {}) {
+  const plan = planRestore(file, await log.all(), { mode, groups });
+  if (mode === 'full') {
+    await log.clearAll();
+    for (const [k, v] of Object.entries(file.settings ?? {})) if (k.startsWith('hd.')) storage?.setItem?.(k, v);
+  }
+  const n = await log.restoreRaw(plan.add, file.history);
+  return n;
+}

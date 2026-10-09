@@ -70,3 +70,32 @@ test('events with the same time come back in the order they were added', async (
   assert.deepEqual((await log.all()).map((e) => e.n), [1, 2, 3]);
   assert.ok(a.seq < b.seq && b.seq < c.seq);
 });
+
+/* ---------- atomic saves: an edit and its history record land together or not at all ---------- */
+test('edit and remove use one combined write (putWithHistory) when the store has it', async () => {
+  const calls = [];
+  const inner = createMemoryStore();
+  const store = { ...inner, async putWithHistory(e, h) { calls.push('both'); await inner.putEvent(e); await inner.addHistory(h); }, putEvent: async (e) => { calls.push('put'); return inner.putEvent(e); }, addHistory: async (h) => { calls.push('hist'); return inner.addHistory(h); } };
+  const log = createEventLog(store);
+  const a = await log.add({ type: 'water', ml: 1 }, 1);
+  await log.edit(a.id, { ml: 2 }, 'typo', 2);
+  await log.remove(a.id, 'mistake', 3);
+  assert.deepEqual(calls, ['put', 'both', 'both']);
+});
+
+test('a failed combined write changes nothing: no edit without its history', async () => {
+  const inner = createMemoryStore();
+  const store = { ...inner, async putWithHistory() { throw new Error('interrupted'); } };
+  const log = createEventLog(store);
+  const a = await log.add({ type: 'water', ml: 1 }, 1);
+  await assert.rejects(() => log.edit(a.id, { ml: 2 }, 'typo', 2), /interrupted/);
+  assert.equal((await log.all())[0].ml, 1);
+  assert.deepEqual(await log.history(a.id), []);
+});
+
+test('the memory store also has putWithHistory, so tests and the app behave the same', async () => {
+  const s = createMemoryStore();
+  await s.putWithHistory({ id: 'x', ms: 1 }, { eventId: 'x', action: 'edit' });
+  assert.equal((await s.allEvents()).length, 1);
+  assert.equal((await s.historyFor('x')).length, 1);
+});

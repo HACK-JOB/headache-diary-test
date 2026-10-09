@@ -108,7 +108,7 @@ test('the unlocked layout has its own tour: banner, panel bar, handle, grips, Si
 test('each Options tour has a step for every side tab, so no section is left unexplained', () => {
   const sides = {
     'options-doctors': ['doctors', ['people', 'tracking', 'targets', 'rx', 'relief', 'notes', 'log']],
-    'options-admin': ['admin', ['screens', 'tracking', 'accounts', 'pin', 'reset']],
+    'options-admin': ['admin', ['screens', 'tracking', 'accounts', 'pin', 'editing', 'restore', 'reset']],
     'options-prefs': ['prefs', ['colour', 'look', 'layout', 'reminders', 'general']],
   };
   for (const [tour, [id, keys]] of Object.entries(sides)) {

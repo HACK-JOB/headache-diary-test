@@ -29,6 +29,14 @@ export async function createIdbStore() {
     putEvent: (e) => wrap(tx('events', 'readwrite').put(e)),
     getEvent: (id) => wrap(tx('events').get(id)),
     allEvents: () => wrap(tx('events').getAll()),
+    /** One transaction: both records are saved, or neither is. */
+    putWithHistory(e, h) {
+      return new Promise((res, rej) => {
+        const t = db.transaction(['events', 'history'], 'readwrite');
+        t.objectStore('events').put(e); t.objectStore('history').add(h);
+        t.oncomplete = () => res(); t.onerror = () => rej(t.error); t.onabort = () => rej(t.error);
+      });
+    },
     addHistory: (h) => wrap(tx('history', 'readwrite').add(h)),
     clearAll: () => Promise.all([wrap(tx('events', 'readwrite').clear()), wrap(tx('history', 'readwrite').clear())]).then(() => undefined),
     async purgeEvents(ids) {

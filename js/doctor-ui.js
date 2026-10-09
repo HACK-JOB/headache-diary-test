@@ -101,7 +101,7 @@ export function createDoctorUI(ctx) {
   }
 
   async function adminRemove(d) {
-    const reason = await ask(`Remove ${d.name}?`);
+    const reason = await ask(`Remove ${d.name}?`, 'doctor');
     if (!reason) return;
     await log.add({ type: 'doctor', kind: 'remove', doctorId: d.id, by: 'admin', reason });
     if (state.doctorId === d.id) lock();

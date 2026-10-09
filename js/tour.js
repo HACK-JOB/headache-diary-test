@@ -90,6 +90,8 @@ export const FORM_STEPS = {
     { sel: ['#st-admin-tracking'], text: 'Tracking: Admin\'s choice for a log wins over a doctor\'s and the user\'s. A log can be left to others.' },
     { sel: ['#st-admin-accounts'], text: 'Doctor accounts: add or remove a doctor, and reset a PIN that was lost.' },
     { sel: ['#st-admin-pin'], text: 'Admin PIN: until one is set, Admin stays open. It locks again after 5 minutes.' },
+    { sel: ['#st-admin-editing'], text: 'Editing: allow or turn off each Remove and Undo, and choose whether a reason is asked.' },
+    { sel: ['#st-admin-restore'], text: 'Restore: load a backup file, either a full restore or a merge of chosen kinds of data.' },
     { sel: ['#st-admin-reset'], text: 'Reset data: one kind of data, or everything. A backup can be saved first, and DELETE is typed.' },
     { sel: ['#admin-accounts'], text: 'Doctor accounts are added and removed here.' },
     { sel: ['#reset-zone'], text: 'Master reset: deletes everything on this tablet. DELETE has to be typed first.' },

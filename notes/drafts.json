@@ -18,5 +18,13 @@
   {
     "screen": "intake",
     "text": "Scan a barcode now reads the barcode only, with no warnings. If the camera cannot read it, the number under it can be typed."
+  },
+  {
+    "screen": "admin",
+    "text": "Admin has an Editing tab to allow or turn off each Remove and Undo, and to choose whether a reason is asked."
+  },
+  {
+    "screen": "admin",
+    "text": "Admin has a Restore tab. A backup file can be loaded back in as a full restore, or merged with chosen kinds of data."
   }
 ]

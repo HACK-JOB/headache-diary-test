@@ -1,13 +1,16 @@
 // The Admin tab. Open until a PIN has been set up here; after that it is locked behind the PIN.
 // The PIN is a convenience lock for the family (see pin.js). There is no "forgot PIN" in v1.
 import { sideTabs } from './sidetabs.js';
-import { RESET_WORD, confirmsReset, diaryKeys, backupFile, backupName, SCOPES, scopeByKey, countScope, scopeAllowed, applyScope, resetNote } from './reset.js';
+import { ACTIONS, ruleFor, ruleEvent } from './editrules.js';
+import { RESET_WORD, confirmsReset, diaryKeys, backupFile, backupName, SCOPES, scopeByKey, countScope, scopeAllowed, applyScope, resetNote, parseBackup, restoreGroups, applyRestore } from './reset.js';
 import { validPinFormat, makeRecord, checkPin, afterFail, afterSuccess, lockedFor, unlockUntil, isUnlocked } from './pin.js';
 
 const KEY = 'hd.adminPin';
 const RESET_TEXT = { mode: 'closed', typed: '', error: '' };
 const ONE = { key: '', typed: '', error: '' };
 const TRIES = 'hd.adminTries';
+const REST = { file: null, name: '', mode: '', groups: [], confirm: false, error: '', done: sessionStorage.getItem('hd.restored') || '' };
+sessionStorage.removeItem('hd.restored');
 const read = (k) => { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } };
 
 export function createAdminUI(ctx) {
@@ -141,6 +144,79 @@ export function createAdminUI(ctx) {
         h('ul', {}, ...recent.map((e) => h('li', {}, `${resetNote(e)} · ${new Date(e.ms).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })}, ${time(e.ms)}`)))) : null);
   }
 
+  /* ---------- editing rules ---------- */
+  function editingSection() {
+    const flip = async (key, patch) => { await log.add(ruleEvent(key, { ...ruleFor(state.events, key), ...patch })); await reload(); render(); };
+    return h('div', { class: 'setting', id: 'edit-rules' },
+      h('h3', {}, 'Removing and undoing'),
+      h('p', { class: 'hint' }, 'For each action: allow it or turn it off, and choose whether a reason is asked. Removed entries stay in the change history for doctors.'),
+      h('ul', { class: 'reset-rows' }, ...ACTIONS.map((a) => {
+        const r = ruleFor(state.events, a.key);
+        return h('li', { class: 'reset-row', 'data-rule': a.key },
+          h('div', { class: 'reset-info' }, h('strong', {}, a.label), h('p', { class: 'hint' }, a.what)),
+          h('label', { class: 'check' }, h('input', { type: 'checkbox', id: `rule-${a.key}-on`, checked: r.allowed, 'aria-label': `Allow: ${a.label}`, onchange: (ev) => flip(a.key, { allowed: ev.target.checked }) }), 'Allowed'),
+          h('label', { class: 'check' }, h('input', { type: 'checkbox', id: `rule-${a.key}-reason`, checked: r.reason, disabled: !r.allowed, 'aria-label': `Ask for a reason: ${a.label}`, onchange: (ev) => flip(a.key, { reason: ev.target.checked }) }), 'Ask for a reason'));
+      })));
+  }
+
+  /* ---------- restore from a backup file ---------- */
+  const restoreReset = () => { REST.file = null; REST.name = ''; REST.mode = ''; REST.groups = []; REST.confirm = false; REST.error = ''; };
+  async function pickFile(ev) {
+    const f = ev.target.files?.[0];
+    if (!f) return;
+    REST.done = ''; REST.error = '';
+    const r = parseBackup(await f.text());
+    if (!r.ok) { restoreReset(); REST.error = r.message; render(); return; }
+    REST.file = r.file; REST.name = f.name; REST.mode = ''; REST.groups = restoreGroups(r.file).map((g) => g.key); REST.confirm = false;
+    render();
+  }
+  async function doRestore() {
+    const n = await applyRestore(REST.file, log, { mode: REST.mode, groups: REST.groups, storage: localStorage });
+    const full = REST.mode === 'full';
+    restoreReset(); REST.done = full ? `Restored: ${n} entries loaded.` : `Merged: ${n} ${n === 1 ? 'entry' : 'entries'} added.`;
+    if (full) { try { for (const c of await caches.keys()) await caches.delete(c); } catch { /* none */ } sessionStorage.setItem('hd.restored', REST.done); location.reload(); return; }
+    await reload(); st.info = REST.done; render();
+  }
+  function restoreSection() {
+    const f = REST.file;
+    const head = [h('h3', {}, 'Restore from a backup file'),
+      h('p', { class: 'hint' }, 'Loads a file saved with Save a backup file. The file keeps entries and their change history, and doctor PINs as scrambled records.'),
+      REST.done ? h('p', { class: 'meta', role: 'status' }, REST.done) : null,
+      REST.error ? h('p', { class: 'error', role: 'alert' }, REST.error) : null];
+    if (!f) {
+      return h('div', { class: 'setting', id: 'restore-zone' }, ...head,
+        h('label', { class: 'btn', for: 'restore-file', id: 'restore-pick' }, 'Choose a backup file'),
+        h('input', { type: 'file', id: 'restore-file', accept: '.json,application/json', class: 'visually-hidden', onchange: pickFile }));
+    }
+    const groups = restoreGroups(f);
+    const total = f.events.filter((e) => !e.deleted).length;
+    const body = [h('p', {}, h('strong', {}, REST.name), ` · saved ${new Date(f.savedAt).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })} · ${total} entries`)];
+    if (!REST.mode) {
+      body.push(h('div', { class: 'two' },
+        h('button', { class: 'btn', id: 'restore-full', onclick: () => { REST.mode = 'full'; REST.confirm = false; render(); } }, 'Full restore'),
+        h('button', { class: 'btn', id: 'restore-merge', onclick: () => { REST.mode = 'merge'; render(); } }, 'Merge')),
+        h('p', { class: 'hint' }, 'Full restore replaces everything on this tablet with the file. Merge adds what is chosen and keeps what is here.'),
+        h('button', { class: 'btn quiet', id: 'restore-cancel', onclick: () => { restoreReset(); render(); } }, 'Cancel'));
+    } else if (REST.mode === 'merge') {
+      body.push(h('p', {}, 'Include these kinds of data (untick to leave out):'),
+        h('div', { class: 'switch-list' }, ...groups.map((g) => h('label', { class: 'check' },
+          h('input', { type: 'checkbox', 'data-group': g.key, checked: REST.groups.includes(g.key), onchange: (ev) => { REST.groups = ev.target.checked ? [...REST.groups, g.key] : REST.groups.filter((k) => k !== g.key); render(); } }), `${g.label} (${g.count})`))),
+        h('p', { class: 'hint' }, 'Entries already on this tablet are skipped, never doubled or changed.'),
+        h('div', { class: 'two' },
+          h('button', { class: 'btn quiet', id: 'restore-back', onclick: () => { REST.mode = ''; render(); } }, 'Back'),
+          h('button', { class: 'btn primary', id: 'restore-go', disabled: !REST.groups.length, 'aria-disabled': String(!REST.groups.length), onclick: doRestore }, 'Merge these')));
+    } else {
+      body.push(h('div', { class: 'setting danger', id: 'restore-warn', role: 'group' },
+        h('h3', {}, '⚠ Full restore: everything on this tablet is replaced'),
+        h('p', {}, 'This will wipe any unsaved data on this tablet and load the file instead. Are you sure?'),
+        h('button', { class: 'btn', id: 'restore-save-first', onclick: saveBackup }, 'Save a backup file of this tablet first'),
+        h('div', { class: 'two' },
+          h('button', { class: 'btn quiet', id: 'restore-back', onclick: () => { REST.mode = ''; render(); } }, 'No, go back'),
+          h('button', { class: 'btn danger', id: 'restore-go', onclick: doRestore }, 'Yes, replace everything'))));
+    }
+    return h('div', { class: 'setting', id: 'restore-zone' }, ...head, ...body);
+  }
+
   function resetSection() {
     if (RESET_TEXT.mode === 'closed') {
       return h('div', { class: 'setting danger', id: 'reset-zone' }, h('h3', {}, 'Master reset'),
@@ -152,7 +228,7 @@ export function createAdminUI(ctx) {
       h('p', {}, 'This permanently deletes from this tablet:'),
       h('ul', { class: 'reset-list' },
         ...['every diary entry (water, meals, headaches, activities, weight, glucose, medicine answers)', 'all doctor accounts, targets, prescriptions and notes', 'the Admin and Doctor PINs', 'remembered foods and notes', 'all settings'].map((t) => h('li', {}, t))),
-      h('p', { class: 'hint' }, 'A backup file keeps the diary entries and their history. It does not keep PINs. It cannot be loaded back in yet.'),
+      h('p', { class: 'hint' }, 'A backup file keeps the diary entries and their history. It keeps doctor PINs as scrambled records, but not the Admin PIN. It can be loaded back in under Restore.'),
       h('button', { class: 'btn', id: 'reset-backup', onclick: saveBackup }, 'Save a backup file first'),
       h('div', { class: 'num-field' }, h('label', { for: 'reset-type' }, `To continue, type ${RESET_WORD}`),
         h('input', { id: 'reset-type', class: 'text', type: 'text', autocomplete: 'off', autocapitalize: 'characters', spellcheck: 'false', value: RESET_TEXT.typed,
@@ -214,6 +290,8 @@ export function createAdminUI(ctx) {
       { key: 'tracking', label: 'Tracking', nodes: [extra?.tracking] },
       { key: 'accounts', label: 'Doctor accounts', nodes: [extra?.accounts] },
       { key: 'pin', label: 'Admin PIN', nodes: [pinSection()] },
+      { key: 'editing', label: 'Editing', nodes: [editingSection()] },
+      { key: 'restore', label: 'Restore', nodes: [restoreSection()] },
       { key: 'reset', label: 'Reset data', nodes: [oneSection(), resetSection()] },
     ];
     const active = st.mode !== 'view' ? 'pin' : state.side.admin;

@@ -64,7 +64,7 @@ export function createMeasuresUI(ctx) {
     render(); saved(`Saved · glucose ${fmt(mmol)}`);
   }
   async function removeGlucose(e) {
-    const reason = await ask('Remove this reading?');
+    const reason = await ask('Remove this reading?', 'reading');
     if (!reason) return;
     await log.remove(e.id, reason); await reload(); render(); saved('Saved · reading removed');
   }

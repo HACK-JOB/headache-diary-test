@@ -28,7 +28,7 @@ export function rxMainCard(ctx) {
     if (state.settings.savedCue) toast(action === 'taken' ? `Saved · ${d.name} taken` : `Saved · ${d.name} skipped`);
   };
   const undo = async (d) => {
-    const reason = await ask(`Undo the answer for ${d.name}?`);
+    const reason = await ask(`Undo the answer for ${d.name}?`, 'dose');
     if (!reason) return;
     const e = [...state.events].reverse().find((x) => x.type === 'dose' && !x.deleted && x.rxId === d.rxId && x.slot === d.slot && x.forDay === state.key);
     if (e) { await log.remove(e.id, reason); await reload(); render(); }
@@ -94,7 +94,7 @@ export function createRxDoctor(ctx, getHelpers) {
 
   async function setStatus(p, status) {
     let reason = '';
-    if (status === 'ended') { reason = await ask(`End ${p.name}? It stops appearing. The history stays.`); if (!reason) return; }
+    if (status === 'ended') { reason = await ask(`End ${p.name}? It stops appearing. The history stays.`, 'rxend'); if (!reason) return; }
     const { rxId, name, dose, food, days, slots, instructions, nag } = p;
     await log.add({ type: 'clinical', kind: 'rx', rxId, status, name, dose, food, days, slots, instructions, nag, reason, by: H().actor() });
     await reload(); H().say(`${name}: ${status === 'active' ? 'resumed' : status}.`);

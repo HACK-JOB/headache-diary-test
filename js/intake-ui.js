@@ -65,7 +65,7 @@ export function createIntakeUI(ctx) {
   }
 
   async function removeItem(e) {
-    const reason = await ctx.ask('Remove this entry?');
+    const reason = await ctx.ask('Remove this entry?', 'food');
     if (!reason) return;
     await log.remove(e.id, reason);
     await reload();
