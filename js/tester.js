@@ -35,6 +35,7 @@ export const CHECKLIST = [
   { id: 'lay-move', group: 'Layout', text: 'Move a panel with its Earlier and Later buttons, then by dragging its handle. Do both work?' },
   { id: 'lay-resize', group: 'Layout', text: 'Resize a panel by dragging an edge or corner, and with the Size button. Do the panels below move up?' },
   { id: 'lay-free', group: 'Layout', text: 'Unlocked, open one panel\'s Size box and switch off Snap to neighbours, then make its neighbour taller. Does the panel below slide up into the gap? Try Free flow too.' },
+  { id: 'lay-snap', group: 'Layout', text: 'Leave Snap to neighbours on for one panel and make it taller. Do the panels it touches grow with it? Then tap Lock size on one of them. Does that one stay the same?' },
   { id: 'lay-text', group: 'Layout', text: 'In a panel\'s Size settings, change that panel\'s text size. Do the other panels stay the same?' },
   { id: 'lay-rotate', group: 'Layout', text: 'Set a layout, then turn the tablet sideways. Is the sideways layout separate? Then tap Reset this layout.' },
 ];

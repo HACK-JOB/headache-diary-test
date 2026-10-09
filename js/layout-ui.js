@@ -2,7 +2,7 @@
 // Unlocked: every panel shows a bar to move it (Earlier / Later buttons, or drag the handle) and its contents are switched off,
 // so nothing can be entered or tapped by mistake. Portrait and landscape keep separate layouts. Saved on this tablet only.
 import { PANELS, COLS, TEXT_PX, PANEL_TEXT, TALL_STEP_REM, GRIPS, normaliseLayout, defaultLayout, orientationOf, orderFor, spanFor, rowsFor, moveStep, moveTo,
-  textFor, setText, zoomFor, minPx, minSpan, setSpan, heightBy, snapSpan, snapTall, isFree, setFree, isLoose, anyLoose, setLoose, levelHeights, masonrySpan } from './layout.js';
+  textFor, setText, zoomFor, minPx, minSpan, setSpan, heightBy, snapSpan, snapTall, isFree, setFree, isLoose, anyLoose, setLoose, isLocked, setLocked, planHeights, growBlocked, masonrySpan } from './layout.js';
 
 const KEY = 'hd.layout';
 
@@ -90,14 +90,24 @@ export function createLayoutUI({ h, state, render, icon }) {
       return Math.max(0, ...[...item.children].filter((c) => !c.classList.contains('pg-grip')).map((c) => c.getBoundingClientRect().bottom - top));
     };
     for (const item of items) { item.dataset.packed = '1'; item.style.gridRow = 'auto'; item.style.alignSelf = 'start'; item.style.minHeight = ''; }
-    // Row-by-row: lay out natural heights, find which snapped panels share a line, then raise them to the tallest.
-    const rowsOf = () => items.map((item) => ({ id: item.dataset.panel, snap: !isLoose(layout, o, item.dataset.panel), top: Math.round(item.getBoundingClientRect().top), h: measure(item) }));
+    // Lay every panel out at its natural height, read where each one landed, then let each block of snapped panels settle.
     const settle = (heights) => { for (const item of items) { const h = heights[item.dataset.panel]; item.style.minHeight = `${h}px`; item.style.gridRow = `span ${masonrySpan({ heightPx: h, gapPx: m.gap, unitPx: unit })}`; } };
-    const first = rowsOf();
-    settle(Object.fromEntries(first.map((i) => [i.id, i.h])));
-    const lines = rowsOf();
-    settle(levelHeights(lines, 6));
+    const natural = Object.fromEntries(items.map((item) => [item.dataset.panel, measure(item)]));
+    settle(natural);
+    settle(planHeights(geometry(m, items)));
   }
+
+  /** Where every panel sits now, in columns and pixels, for the block logic. */
+  function geometry(m, items = [...m.g.querySelectorAll('.pg-item')]) {
+    const o = orient(), gr = m.g.getBoundingClientRect(), step = m.colW + m.gap;
+    return items.map((item) => {
+      const r = item.getBoundingClientRect(), id = item.dataset.panel;
+      const c0 = Math.round((r.left - gr.left) / step), c1 = c0 + Math.max(spanFor(layout, o, id), minSpanOf(id, m));
+      return { id, snap: !isLoose(layout, o, id), locked: isLocked(layout, o, id), c0, c1, top: r.top, bottom: r.bottom };
+    });
+  }
+  /** Growing this panel would need the panels beside it to grow, and they are all size-locked. */
+  const growStopped = (id) => { const m = gridMetrics(); return !!m && m.cols === COLS && growBlocked(geometry(m), id); };
 
   /* ---------- the settings under a panel's bar: text size, width and height buttons ---------- */
   function settings(id) {
@@ -113,13 +123,18 @@ export function createLayoutUI({ h, state, render, icon }) {
       h('div', { class: 'setting-row' },
         h('button', { class: 'btn' + (isLoose(layout, o, id) ? '' : ' on'), type: 'button', id: `pg-snap-${id}`, 'aria-pressed': String(!isLoose(layout, o, id)),
           onclick: () => set(setLoose(layout, o, id, !isLoose(layout, o, id))) }, (isLoose(layout, o, id) ? '' : '✓ ') + 'Snap to neighbours'),
-        h('p', { class: 'hint' }, isLoose(layout, o, id) ? 'Loose: keeps its own height, and the panel below slides up beside it.' : 'Snapped: stays level with the snapped panels beside it.')),
+        h('p', { class: 'hint' }, isLoose(layout, o, id) ? 'Loose: keeps its own height, and the panel below slides up beside it.' : 'Snapped: stays tied to every panel it touches, and they resize together.')),
+      h('div', { class: 'setting-row' },
+        h('button', { class: 'btn' + (isLocked(layout, o, id) ? ' on' : ''), type: 'button', id: `pg-lock-${id}`, 'aria-pressed': String(isLocked(layout, o, id)),
+          onclick: () => set(setLocked(layout, o, id, !isLocked(layout, o, id))) }, (isLocked(layout, o, id) ? '✓ ' : '') + 'Lock size'),
+        h('p', { class: 'hint' }, isLocked(layout, o, id) ? 'Size locked: this panel stays the same height when the panels it is tied to grow.' : 'Not locked: this panel can take extra height when the panels it is tied to grow.')),
+      growStopped(id) ? h('p', { class: 'hint pg-warn', id: `pg-blocked-${id}`, role: 'status' }, 'Cannot grow: everything beside this panel is size-locked.') : null,
       h('div', { class: 'two' },
         step('◀ Narrower', 'narrower', span <= min, () => set(setSpan(layout, o, id, span - 1, min))),
         step('Wider ▶', 'wider', span >= COLS, () => set(setSpan(layout, o, id, span + 1, min)))),
       h('div', { class: 'two' },
-        step('▲ Shorter', 'shorter', heightBy(layout, o, id, -1) === layout, () => set(heightBy(layout, o, id, -1))),
-        step('Taller ▼', 'taller', heightBy(layout, o, id, 1) === layout, () => set(heightBy(layout, o, id, 1)))));
+        step('▲ Shorter', 'shorter', heightBy(layout, o, id, -1) === layout || isLocked(layout, o, id), () => set(heightBy(layout, o, id, -1))),
+        step('Taller ▼', 'taller', heightBy(layout, o, id, 1) === layout || isLocked(layout, o, id) || growStopped(id), () => set(heightBy(layout, o, id, 1)))));
   }
 
   /* ---------- resizing by dragging an edge or corner ---------- */
@@ -136,13 +151,15 @@ export function createLayoutUI({ h, state, render, icon }) {
     const o = orient(), item = ev.currentTarget.closest('.pg-item');
     const zoom = parseFloat(item.querySelector('.pg-body')?.style.zoom) || 1, rem = parseFloat(getComputedStyle(document.documentElement).fontSize) * zoom;
     const min = minSpanOf(id, m);
+    const stopped = growStopped(id);                   // everything beside it is size-locked: it may shrink but not grow
     const start = { x: ev.clientX, y: ev.clientY, span: Math.max(spanFor(layout, o, id), min), tall: layout[o].tall[id] ?? 0 };
     let now = layout;
     const base = layout;
     const move = (e) => {
       let next = base;
       if (g.x && !one) next = setSpan(next, o, id, snapSpan({ startSpan: start.span, dxPx: e.clientX - start.x, sign: g.x, colW: m.colW, gap: m.gap, min }), min);
-      if (g.y) next = heightBy(next, o, id, Math.round(((e.clientY - start.y) * g.y) / (TALL_STEP_REM * rem)));
+      const dsteps = Math.round(((e.clientY - start.y) * g.y) / (TALL_STEP_REM * rem));
+      if (g.y && !isLocked(layout, o, id) && !(stopped && dsteps > 0)) next = heightBy(next, o, id, dsteps);
       now = next;
       item.style.gridColumn = `span ${Math.max(spanFor(next, o, id), min)}`;
       const body = item.querySelector('.pg-body'); if (body) body.style.paddingBottom = `${(next[o].tall[id] ?? 0) * TALL_STEP_REM}rem`;
@@ -198,9 +215,9 @@ export function createLayoutUI({ h, state, render, icon }) {
   const topBar = () => !unlocked() ? null : h('section', { class: 'pg-top', id: 'pg-top', role: 'region', 'aria-label': 'Page layout is unlocked' },
     h('p', {}, h('strong', {}, 'Layout is unlocked. '), 'Nothing can be entered while it is. Move a panel with its Earlier and Later buttons or its handle. Resize by dragging an edge or corner, or open its Size settings.'),
     h('div', { class: 'pg-flow', role: 'group', 'aria-label': 'How panels line up' },
-      h('p', { class: 'hint' }, isFree(layout, orient()) ? 'Free flow: every panel keeps its own height.' : anyLoose(layout, orient()) ? 'Mixed: each panel has its own Snap to neighbours switch in its Size box.' : 'Snapped rows: panels side by side stay level with each other.'),
+      h('p', { class: 'hint' }, isFree(layout, orient()) ? 'Free flow: every panel keeps its own height.' : anyLoose(layout, orient()) ? 'Mixed: each panel has its own Snap to neighbours switch in its Size box.' : 'Snapped: every panel is tied to the panels it touches and they resize together.'),
       h('div', { class: 'seg' },
-        h('button', { class: 'btn' + (!isFree(layout, orient()) ? ' on' : ''), type: 'button', id: 'pg-flow-snap', 'aria-pressed': String(!isFree(layout, orient())), onclick: () => save(setFree(layout, orient(), false)) }, (!isFree(layout, orient()) ? '✓ ' : '') + 'Snapped rows'),
+        h('button', { class: 'btn' + (!anyLoose(layout, orient()) ? ' on' : ''), type: 'button', id: 'pg-flow-snap', 'aria-pressed': String(!anyLoose(layout, orient())), onclick: () => save(setFree(layout, orient(), false)) }, (!anyLoose(layout, orient()) ? '✓ ' : '') + 'Snapped rows'),
         h('button', { class: 'btn' + (isFree(layout, orient()) ? ' on' : ''), type: 'button', id: 'pg-flow-free', 'aria-pressed': String(isFree(layout, orient())), onclick: () => save(setFree(layout, orient(), true)) }, (isFree(layout, orient()) ? '✓ ' : '') + 'Free flow'))),
     h('div', { class: 'two' },
       h('button', { class: 'btn quiet', id: 'pg-reset', onclick: () => save({ ...layout, [orient()]: defaultLayout()[orient()] }) }, 'Reset this layout'),

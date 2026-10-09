@@ -313,3 +313,82 @@ test('levelHeights: snapped panels that start on the same line share the tallest
   assert.deepEqual(levelHeights(items, 4), { a: 160, b: 160, c: 90, d: 80, e: 80, f: 60 });
   assert.deepEqual(levelHeights([], 4), {});
 });
+
+import { isLocked, setLocked, blocksOf, planHeights, growBlocked } from '../js/layout.js';
+test('lock size: off by default, saved per panel and orientation, repaired when odd', () => {
+  const d = defaultLayout();
+  assert.equal(isLocked(d, 'portrait', 'day'), false);
+  const l = setLocked(d, 'portrait', 'day', true);
+  assert.equal(isLocked(l, 'portrait', 'day'), true);
+  assert.equal(isLocked(l, 'landscape', 'day'), false);
+  assert.equal(setLocked(d, 'portrait', 'day', false), d);
+  assert.equal(setLocked(d, 'portrait', 'nope', true), d);
+  assert.equal(isLocked(normaliseLayout(JSON.parse(JSON.stringify(l))), 'portrait', 'day'), true);
+  assert.equal(isLocked(normaliseLayout({ portrait: { locked: { day: 1, water: true } } }), 'portrait', 'day'), false);
+});
+
+// The picture: Water full width on top. Left: Blood glucose. Right stack: Day, Today so far, Eaten today. Headache under the stack.
+const pic = (over = {}) => {
+  const base = [
+    { id: 'water', snap: false, locked: false, c0: 0, c1: 6, top: 0, bottom: 100 },
+    { id: 'glucose', snap: false, locked: false, c0: 0, c1: 3, top: 120, bottom: 620 },
+    { id: 'day', snap: false, locked: false, c0: 3, c1: 6, top: 120, bottom: 220 },
+    { id: 'today', snap: false, locked: false, c0: 3, c1: 6, top: 240, bottom: 340 },
+    { id: 'eaten', snap: false, locked: false, c0: 3, c1: 6, top: 360, bottom: 420 },
+    { id: 'headache', snap: false, locked: false, c0: 3, c1: 6, top: 640, bottom: 740 },
+  ];
+  return base.map((i) => ({ ...i, ...(over[i.id] || {}) }));
+};
+const sorted = (a) => a.map((b) => [...b].sort());
+
+test('blocks: a snapped panel is tied to every panel it touches at the side; nothing else', () => {
+  assert.deepEqual(blocksOf(pic()), []);                                                       // nothing snapped: no blocks
+  const b = blocksOf(pic({ glucose: { snap: true } }));
+  assert.deepEqual(sorted(b), [['day', 'eaten', 'glucose', 'today']]);                         // not Water (above) and not Headache (below)
+  const d = blocksOf(pic({ day: { snap: true } }));
+  assert.deepEqual(sorted(d), [['day', 'glucose']]);                                           // Today so far is only below Day
+});
+
+test('Blood glucose snapped and taller: the right stack grows to match, Headache is left to move down', () => {
+  const h = planHeights(pic({ glucose: { snap: true } }));
+  assert.equal(h.glucose, 500);
+  assert.equal(h.day, 100);
+  assert.equal(h.today, 100);
+  assert.equal(h.eaten, 60 + 200);                                       // right stack is 300 tall in a block 500 tall: the lowest panel takes the 200
+  assert.equal(h.headache, 100);                                         // not in the block
+  assert.equal(h.water, 100);
+});
+
+test('Day snapped: it levels up with the one beside it, and Today so far and Eaten are left to move down', () => {
+  const h = planHeights(pic({ day: { snap: true } }));
+  assert.equal(h.day, 500);
+  assert.equal(h.glucose, 500);
+  assert.equal(h.today, 100);
+});
+
+test('lock size: the locked panel keeps its height and the next unlocked one up takes the growth', () => {
+  const h = planHeights(pic({ glucose: { snap: true }, eaten: { locked: true } }));
+  assert.equal(h.eaten, 60);
+  assert.equal(h.today, 100 + 200);
+  const all = planHeights(pic({ glucose: { snap: true }, day: { locked: true }, today: { locked: true }, eaten: { locked: true } }));
+  assert.equal(all.eaten, 60);                                           // nothing can take it: a gap is left
+});
+
+test('growBlocked: growing a panel is refused when everything beside it is size-locked', () => {
+  const items = pic({ glucose: { snap: true }, day: { locked: true }, today: { locked: true }, eaten: { locked: true } });
+  assert.equal(growBlocked(items, 'glucose'), true);
+  assert.equal(growBlocked(pic({ glucose: { snap: true }, day: { locked: true } }), 'glucose'), false);
+  assert.equal(growBlocked(pic(), 'glucose'), false);                    // not in a block
+  assert.equal(growBlocked(items, 'water'), false);
+});
+
+test('a second snapped pair on its own line is a separate block', () => {
+  const items = [
+    { id: 'a', snap: true, locked: false, c0: 0, c1: 3, top: 0, bottom: 200 },
+    { id: 'b', snap: true, locked: false, c0: 3, c1: 6, top: 0, bottom: 100 },
+    { id: 'c', snap: true, locked: false, c0: 0, c1: 3, top: 300, bottom: 350 },
+    { id: 'd', snap: true, locked: false, c0: 3, c1: 6, top: 300, bottom: 400 },
+  ];
+  const h = planHeights(items);
+  assert.deepEqual([h.a, h.b, h.c, h.d], [200, 200, 100, 100]);
+});

@@ -566,3 +566,4 @@ html.layout-edit .pg-top { margin: 0.8rem 1rem 1rem; }
 .pg-set .setting-row .hint { flex: 1 1 10rem; }
 .pg-set .setting-row .btn.on { background: var(--teal-soft); border-color: var(--teal); }
 .pg-flow .btn.on { background: var(--teal-soft); }
+.pg-set .pg-warn { color: var(--ink); background: var(--teal-soft); border: 2px solid var(--teal); border-radius: var(--radius); padding: 0.4rem 0.6rem; }

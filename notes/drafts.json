@@ -29,6 +29,6 @@
   },
   {
     "screen": "main",
-    "text": "Each panel's Size box has Snap to neighbours. Loose panels keep their own height so the panel below slides up."
+    "text": "Each panel's Size box has Snap to neighbours and Lock size. Snapped panels resize together with the panels they touch."
   }
 ]

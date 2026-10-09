@@ -27,7 +27,7 @@ export const MIN_REM = {
   small:  { water: 9, headache: 14.5, day: 10.5, glucose: 11, weight: 11, meds: 20.5, today: 9, intake: 33,   eaten: 9 },
 };
 
-const one = () => ({ order: [...IDS], span: { ...DEFAULT_SPAN }, rows: Object.fromEntries(IDS.map((id) => [id, DEFAULT_ROWS[id] ?? 1])), tall: Object.fromEntries(IDS.map((id) => [id, 0])), loose: {} });
+const one = () => ({ order: [...IDS], span: { ...DEFAULT_SPAN }, rows: Object.fromEntries(IDS.map((id) => [id, DEFAULT_ROWS[id] ?? 1])), tall: Object.fromEntries(IDS.map((id) => [id, 0])), loose: {}, locked: {} });
 export const defaultLayout = () => ({ portrait: one(), landscape: one(), text: {} });
 
 const int = (v, lo, hi) => (Number.isInteger(v) && v >= lo && v <= hi ? v : null);
@@ -40,6 +40,7 @@ function clean(raw) {
   for (const id of Array.isArray(r.order) ? r.order : []) if (IDS.includes(id) && !seen.has(id)) { seen.add(id); order.push(id); }
   for (const id of IDS) if (!seen.has(id)) order.push(id);
   out.order = order;
+  for (const id of IDS) if (r.locked?.[id] === true) out.locked[id] = true;
   // 'free: true' is the earlier single switch: it meant every panel is loose
   for (const id of IDS) if (r.loose?.[id] === true || r.free === true) out.loose[id] = true;
   for (const id of IDS) {
@@ -225,4 +226,64 @@ export function levelHeights(items, tol) {
 export function masonrySpan({ heightPx, gapPx, unitPx }) {
   if (!(unitPx > 0)) return 1;
   return Math.max(1, Math.ceil((heightPx + gapPx) / unitPx));
+}
+
+/** Lock size: a locked panel never takes up extra height when the block it is in grows. */
+export const isLocked = (layout, orient, id) => layout[orient].locked?.[id] === true;
+export function setLocked(layout, orient, id, on) {
+  if (!IDS.includes(id) || isLocked(layout, orient, id) === !!on) return layout;
+  const locked = { ...layout[orient].locked };
+  if (on) locked[id] = true; else delete locked[id];
+  return put(layout, orient, { locked });
+}
+
+/* Blocks. items: { id, snap, locked, c0, c1 (columns, c1 exclusive), top, bottom } measured from the page.
+   Two panels touch when one ends in the column where the other starts and they share some height. A snapped panel is tied to
+   every panel it touches, loose or not. A panel that is only below or above another is not touching it. */
+const touches = (a, b) => (a.c1 === b.c0 || b.c1 === a.c0) && Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 1;
+
+export function blocksOf(items) {
+  const parent = new Map(items.map((i) => [i.id, i.id]));
+  const find = (x) => { while (parent.get(x) !== x) { parent.set(x, parent.get(parent.get(x))); x = parent.get(x); } return x; };
+  for (let i = 0; i < items.length; i++) for (let j = i + 1; j < items.length; j++) {
+    if ((items[i].snap || items[j].snap) && touches(items[i], items[j])) parent.set(find(items[i].id), find(items[j].id));
+  }
+  const groups = new Map();
+  for (const it of items) { const r = find(it.id); if (!groups.has(r)) groups.set(r, []); groups.get(r).push(it); }
+  return [...groups.values()].filter((g) => g.length > 1).map((g) => g.map((i) => i.id));
+}
+
+/** The stacks side by side inside a block: panels sharing a starting column, top to bottom. */
+function lanesOf(members) {
+  const lanes = new Map();
+  for (const m of members) { if (!lanes.has(m.c0)) lanes.set(m.c0, []); lanes.get(m.c0).push(m); }
+  return [...lanes.values()].map((l) => l.sort((a, b) => a.top - b.top));
+}
+const laneTotal = (lane) => Math.max(...lane.map((m) => m.bottom)) - Math.min(...lane.map((m) => m.top));
+
+/** Heights after a block settles: every stack in a block ends up as tall as the tallest one. The shorter stack's lowest
+ *  unlocked panel takes the difference. A stack with nothing unlocked is left short. Panels outside blocks keep their height. */
+export function planHeights(items) {
+  const out = Object.fromEntries(items.map((i) => [i.id, i.bottom - i.top]));
+  const byId = new Map(items.map((i) => [i.id, i]));
+  for (const ids of blocksOf(items)) {
+    const lanes = lanesOf(ids.map((id) => byId.get(id)));
+    const tallest = Math.max(...lanes.map(laneTotal));
+    for (const lane of lanes) {
+      const deficit = tallest - laneTotal(lane);
+      const taker = [...lane].reverse().find((m) => !m.locked);
+      if (deficit > 0 && taker) out[taker.id] += deficit;
+    }
+  }
+  return out;
+}
+
+/** Growing this panel would need the stacks beside it to grow, and none of them has an unlocked panel to do it. */
+export function growBlocked(items, id) {
+  const block = blocksOf(items).find((ids) => ids.includes(id));
+  if (!block) return false;
+  const members = block.map((b) => items.find((i) => i.id === b));
+  const lanes = lanesOf(members);
+  const mine = lanes.find((l) => l.some((m) => m.id === id));
+  return lanes.some((l) => l !== mine && l.every((m) => m.locked) && laneTotal(l) <= laneTotal(mine));
 }
