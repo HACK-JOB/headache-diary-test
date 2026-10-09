@@ -596,3 +596,8 @@ html.sheet-open body { padding-bottom: calc(var(--sheet-h, 0px) + 1rem); }
 .pg-item.is-resizing { outline: 5px solid var(--teal); outline-offset: 3px; }
 /* Panels tied to the one being edited (they will resize with it) */
 .pg-item.is-tied { outline: 4px dotted var(--teal); outline-offset: 3px; }
+/* The update button sets its own colours, so no browser default shows through in any theme */
+#update-check, #update-now { background: var(--card); color: var(--ink); border-color: var(--line); }
+#update-now { margin-top: 0.5rem; background: var(--teal); color: var(--on-teal); border-color: var(--teal); }
+#update-check[aria-disabled="true"] { opacity: 0.6; }
+#update-setting .hint { margin-top: 0.4rem; }

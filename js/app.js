@@ -10,6 +10,7 @@ import { createAdminUI } from './admin-ui.js';
 import { createPatchUI } from './patchnotes-ui.js';
 import { createTrackingUI } from './tracking-ui.js';
 import { createLayoutUI } from './layout-ui.js';
+import { checkNow, outcomeText, versionFrom } from './updatecheck.js';
 import { trackedMap } from './tracking.js';
 import { createTesterUI } from './tester-ui.js';
 import { createDoctorUI } from './doctor-ui.js';
@@ -220,6 +221,7 @@ function renderOptions() {
         h('div', { class: 'setting' }, h('h3', {}, 'Text size'), seg('Text size', 'text', [...TEXT_SIZES].reverse().map((t) => [t.key, t.label]))),
         h('div', { class: 'setting' }, h('h3', {}, 'Clock'), seg('Clock', 'clock', [['12', '12 hour'], ['24', '24 hour']])),
         lay.optionsSection(),
+        updateSection(),
         h('div', { class: 'setting' },
           h('label', { class: 'check' }, h('input', { type: 'checkbox', checked: st.followSystem, onchange: (ev) => saveSettings({ followSystem: ev.target.checked }) }), 'Switch to dark when the tablet does'),
           h('p', { class: 'hint' }, 'Off by default. The moon button on the main page always works.')),
@@ -392,11 +394,27 @@ async function start() {
 start();
 
 /* ---------- app updates ---------- */
+let swReg = null;
+/** Options > My preferences: check for a new version now. The answer shows in place, so the screen is not redrawn. */
+function updateSection() {
+  const note = h('p', { class: 'hint', id: 'update-note', role: 'status', 'aria-live': 'polite' }, 'The app also checks by itself each time it opens.');
+  const btn = h('button', { class: 'btn', id: 'update-check', type: 'button' }, 'Check for update');
+  btn.addEventListener('click', async () => {
+    btn.setAttribute('aria-disabled', 'true'); note.textContent = outcomeText('checking');
+    const outcome = await checkNow(swReg, { online: navigator.onLine });
+    const version = versionFrom(await caches.keys().catch(() => []));
+    note.textContent = outcomeText(outcome, version);
+    btn.removeAttribute('aria-disabled');
+    if (outcome === 'found') btn.after(h('button', { class: 'btn primary', id: 'update-now', type: 'button', onclick: () => location.reload() }, 'Refresh now'));
+  });
+  return h('div', { class: 'setting', id: 'update-setting' }, h('h3', {}, 'App updates'), btn, note);
+}
 function watchForUpdates() {
   if (!('serviceWorker' in navigator)) return;
   const hadController = !!navigator.serviceWorker.controller;
   navigator.serviceWorker.addEventListener('controllerchange', () => { if (hadController) showUpdateBanner(); });
   navigator.serviceWorker.register('sw.js').then((reg) => {
+    swReg = reg;
     const check = () => reg.update().catch(() => {});
     document.addEventListener('visibilitychange', () => { if (!document.hidden) check(); });
     setInterval(check, 60 * 60 * 1000);

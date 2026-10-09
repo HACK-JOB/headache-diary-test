@@ -1,1 +1,6 @@
-[]
+[
+  {
+    "screen": "prefs",
+    "text": "New Check for update button under App updates. It looks for a newer version now and offers a refresh."
+  }
+]
