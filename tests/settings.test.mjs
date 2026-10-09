@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { DEFAULTS, normalise, activeTheme, toggleDark, TEXT_SIZES } from '../js/settings.js';
+import { DEFAULTS, normalise, activeTheme, toggleDark, chooseTheme, TEXT_SIZES } from '../js/settings.js';
 
 test('defaults are warm paper, biggest text, 12 hour clock, saved cue on', () => {
   assert.equal(DEFAULTS.theme, 'paper');
@@ -61,4 +61,40 @@ test('text sizes: Biggest (the old Normal), Medium and Small; old saved sizes ma
   assert.equal(normalise({ text: 'huge' }).text, 'big');
   assert.ok(TEXT_SIZES[0].px > TEXT_SIZES[1].px && TEXT_SIZES[1].px > TEXT_SIZES[2].px);
   assert.equal(TEXT_SIZES[0].px, 20);          // the old Normal size is now the biggest
+});
+
+import { LIGHT_THEMES, DARK_THEMES, isDark } from '../js/settings.js';
+test('a remembered dark theme: default is Calm dark, junk is repaired', () => {
+  assert.equal(DEFAULTS.darkTheme, 'dark');
+  assert.equal(normalise({ darkTheme: 'graphite' }).darkTheme, 'graphite');
+  assert.equal(normalise({ darkTheme: 'paper' }).darkTheme, 'dark');          // a light theme is not a dark one
+  assert.equal(normalise({ darkTheme: 'neon' }).darkTheme, 'dark');
+  assert.equal(normalise({ lightTheme: 'mist' }).lightTheme, 'mist');
+  assert.equal(normalise({ lightTheme: 'graphite' }).lightTheme, 'paper');
+  assert.equal(normalise({ theme: 'graphite' }).theme, 'graphite');
+});
+
+test('toggleDark goes to the remembered dark theme and back to the remembered light one', () => {
+  const s = { ...DEFAULTS, theme: 'mist', lightTheme: 'mist', darkTheme: 'graphite' };
+  const on = toggleDark(s, false);
+  assert.equal(on.theme, 'graphite');
+  assert.equal(on.lightTheme, 'mist');
+  assert.equal(toggleDark(on, false).theme, 'mist');
+  const from = toggleDark({ ...DEFAULTS, theme: 'ember', lightTheme: 'bright', darkTheme: 'ember' }, false);
+  assert.equal(from.theme, 'bright');
+});
+
+test('choosing a theme is remembered in its own group', () => {
+  const light = chooseTheme({ ...DEFAULTS, theme: 'dark' }, 'mist');
+  assert.equal(light.theme, 'mist'); assert.equal(light.lightTheme, 'mist'); assert.equal(light.darkTheme, 'dark');
+  const dark = chooseTheme({ ...DEFAULTS }, 'ember');
+  assert.equal(dark.theme, 'ember'); assert.equal(dark.darkTheme, 'ember'); assert.equal(dark.lightTheme, 'paper');
+  assert.equal(chooseTheme(DEFAULTS, 'neon'), DEFAULTS);
+});
+
+test('following the tablet uses the remembered dark and light themes', () => {
+  const s = { ...DEFAULTS, followSystem: true, lightTheme: 'mist', darkTheme: 'graphite' };
+  assert.equal(activeTheme(s, true), 'graphite');
+  assert.equal(activeTheme(s, false), 'mist');
+  assert.equal(toggleDark(s, true).theme, 'mist');                                // tablet is dark: toggling goes to the light theme
 });

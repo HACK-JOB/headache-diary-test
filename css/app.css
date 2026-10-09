@@ -29,7 +29,37 @@ html[data-theme="dark"] {
   --was-bg: #4a3f12; --was-ink: #fff3b8; --changed-bg: #5a2a22; --changed-ink: #ffd6cc;
   --head-font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
-html { color-scheme: light; } html[data-theme="dark"] { color-scheme: dark; }
+html[data-theme="mist"] {
+  --bg: #e4e7eb; --card: #f3f5f7; --ink: #1c2128; --muted: #4a5560; --line: #c2c9d1;
+  --teal: #3a4f7a; --teal-dark: #2a3b5e; --teal-soft: #d3dcec; --on-teal: #ffffff;
+  --red: #a63d2b; --on-red: #ffffff; --field: #ffffff;
+  --toast-bg: #1c2128; --toast-ink: #ffffff; --update-bg: #fff3cd; --update-ink: #3d3000;
+  --alert: #b3382a; --on-alert: #ffffff; --amber: #7a5200; --on-amber: #ffffff;
+  --was-bg: #fff3b8; --was-ink: #4a3d00; --changed-bg: #f7c9bf; --changed-ink: #6e1f10;
+  --head-fill: #d6dbe2; --head-line: #3a4452; --pain: #d6402f; --pain-line: #8f2417; --art-bg: #f3f5f7;
+  --head-font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+html[data-theme="graphite"] {
+  --bg: #000000; --card: #1a1a1a; --ink: #f2f2f2; --muted: #b3b3b3; --line: #3d3d3d;
+  --teal: #d0d0d0; --teal-dark: #e6e6e6; --teal-soft: #2e2e2e; --on-teal: #111111;
+  --red: #e8806b; --on-red: #000000; --field: #0d0d0d;
+  --toast-bg: #f2f2f2; --toast-ink: #111111; --update-bg: #3d3510; --update-ink: #fff3cd;
+  --head-fill: #3a3a3a; --head-line: #d0d0d0; --pain: #ff7a63; --pain-line: #ffc2b5; --art-bg: #141414;
+  --alert: #e8806b; --alert-text: #f2a595; --on-alert: #000000; --amber: #e6b450; --on-amber: #000000;
+  --was-bg: #3d3510; --was-ink: #fff3b8; --changed-bg: #4a2118; --changed-ink: #ffd6cc;
+  --head-font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+html[data-theme="ember"] {
+  --bg: #2a1f1a; --card: #3a2c24; --ink: #f4e9dd; --muted: #c9b8a6; --line: #5c4637;
+  --teal: #e8a96b; --teal-dark: #f2c493; --teal-soft: #4d3b2c; --on-teal: #2a1f1a;
+  --red: #ee8a72; --on-red: #2a1f1a; --field: #241a15;
+  --toast-bg: #f4e9dd; --toast-ink: #2a1f1a; --update-bg: #4d3a12; --update-ink: #fff3cd;
+  --head-fill: #55402f; --head-line: #e6d2bd; --pain: #ff7a63; --pain-line: #ffc2b5; --art-bg: #33261f;
+  --alert: #ee8a72; --alert-text: #f5ab98; --on-alert: #2a1f1a; --amber: #e8b455; --on-amber: #2a1f1a;
+  --was-bg: #4d3a12; --was-ink: #fff3b8; --changed-bg: #5a2a22; --changed-ink: #ffd6cc;
+  --head-font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+html { color-scheme: light; } html[data-theme="dark"], html[data-theme="graphite"], html[data-theme="ember"] { color-scheme: dark; }
 html { font-size: 20px; -webkit-text-size-adjust: 100%; }
 html[data-text="medium"] { font-size: 17px; }
 html[data-text="small"] { font-size: 14px; }
@@ -145,6 +175,7 @@ dialog .row { display: flex; gap: 0.6rem; justify-content: flex-end; margin-top:
 .check { display: flex; align-items: center; gap: 0.7rem; min-height: 3rem; cursor: pointer; font-weight: 700; }
 .check input { width: 2.4rem; height: 2.4rem; flex: 0 0 2.4rem; accent-color: var(--teal); }
 .swatches { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.6rem; }
+.swatch-group { margin: 0.2rem 0 0.4rem; font-weight: 700; color: var(--muted); }
 .swatch {
   border: 3px solid var(--line); border-radius: 0.9rem; padding: 0.6rem; background: var(--card); color: var(--ink);
   font: inherit; font-weight: 700; cursor: pointer; text-align: center;
@@ -154,6 +185,9 @@ dialog .row { display: flex; gap: 0.6rem; justify-content: flex-end; margin-top:
 .swatch[data-t="paper"] i { background: linear-gradient(90deg,#f3e9d6 60%,#2d5a4c 60%); }
 .swatch[data-t="bright"] i { background: linear-gradient(90deg,#ffffff 60%,#0b5cad 60%); }
 .swatch[data-t="dark"] i { background: linear-gradient(90deg,#17232b 60%,#8fd6c9 60%); }
+.swatch[data-t="mist"] i { background: linear-gradient(90deg,#e4e7eb 60%,#3a4f7a 60%); }
+.swatch[data-t="graphite"] i { background: linear-gradient(90deg,#000000 60%,#d0d0d0 60%); }
+.swatch[data-t="ember"] i { background: linear-gradient(90deg,#2a1f1a 60%,#e8a96b 60%); }
 .page-head { display: flex; align-items: center; gap: 1rem; margin-bottom: 0.8rem; }
 .page-head h2 { margin: 0; text-transform: none; font-size: 1.3rem; color: var(--ink); letter-spacing: 0; font-family: var(--head-font); }
 

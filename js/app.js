@@ -2,7 +2,7 @@ import { dayKey, msUntilNextMidnight, formatLongDate, formatTime } from './time.
 import { parseVolume, recentSizes, addSizeToRecent } from './hydration.js';
 import { createEventLog } from './events.js';
 import { createIdbStore } from './store-idb.js';
-import { THEMES, TEXT_SIZES, normalise, activeTheme, toggleDark } from './settings.js';
+import { THEMES, LIGHT_THEMES, DARK_THEMES, TEXT_SIZES, normalise, activeTheme, toggleDark, chooseTheme, isDark } from './settings.js';
 import { createHeadacheUI } from './headache-ui.js';
 import { createDayUI } from './day-ui.js';
 import { createIntakeUI } from './intake-ui.js';
@@ -83,9 +83,10 @@ function applyLook() {
   const theme = activeTheme(state.settings, darkQuery.matches);
   document.documentElement.dataset.theme = theme;
   document.documentElement.dataset.text = state.settings.text;
-  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'dark' ? '#17232b' : theme === 'bright' ? '#0b5cad' : '#2d5a4c');
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', BAR_COLOURS[theme] ?? '#2d5a4c');
 }
 darkQuery.addEventListener?.('change', () => { if (state.settings?.followSystem) { applyLook(); render(); } });
+const BAR_COLOURS = { paper: '#2d5a4c', bright: '#0b5cad', mist: '#3a4f7a', dark: '#17232b', graphite: '#000000', ember: '#2a1f1a' };
 const time = (ms) => formatTime(ms, state.settings.clock);
 
 /* ---------- actions ---------- */
@@ -210,9 +211,11 @@ function renderOptions() {
             onkeydown: (ev) => { if (ev.key === 'ArrowRight' || ev.key === 'ArrowLeft') { const i = TABS.findIndex(([x]) => x === k); state.optTab = TABS[(i + (ev.key === 'ArrowRight' ? 1 : TABS.length - 1)) % TABS.length][0]; render(); document.getElementById('tab-' + state.optTab)?.focus(); } } }, t))),
       state.optTab === 'track' ? trackPanel() : state.optTab === 'doctors' ? dcui.panel() : state.optTab === 'admin' ? adminPanel() : state.optTab === 'tester' ? tui.panel() : h('section', { class: 'panel', id: 'tabpanel', role: 'tabpanel', 'aria-labelledby': 'tab-prefs' },
         h('div', { class: 'setting' }, h('h3', {}, 'Colour theme'),
-          h('div', { class: 'swatches' }, ...Object.entries(THEMES).map(([k, name]) =>
-            h('button', { class: 'swatch', 'data-t': k, 'aria-pressed': String(st.theme === k), onclick: () => saveSettings({ theme: k, ...(k !== 'dark' ? { lightTheme: k } : {}) }) },
-              h('i', {}), name)))),
+          ...[['Light', LIGHT_THEMES], ['Dark', DARK_THEMES]].flatMap(([title, keys]) => [
+            h('p', { class: 'swatch-group' }, title),
+            h('div', { class: 'swatches', role: 'group', 'aria-label': `${title} themes` }, ...keys.map((k) =>
+              h('button', { class: 'swatch', 'data-t': k, 'aria-pressed': String(st.theme === k), onclick: () => saveSettings(chooseTheme(st, k)) },
+                h('i', {}), THEMES[k])))])),
         h('div', { class: 'setting' }, h('h3', {}, 'Head pictures'),
           h('div', { class: 'art-picks' }, ...Object.entries(STYLES).map(([k, name]) =>
             h('button', { class: 'art-pick', 'aria-pressed': String(st.artStyle === k), onclick: () => saveSettings({ artStyle: k }) },
@@ -319,10 +322,10 @@ function render() {
         h('div', {}, h('h1', {}, 'Headache Diary'), h('p', { class: 'date' }, formatLongDate(Date.now())))),
       h('div', { class: 'tools' },
         h('button', {
-          class: 'icon-btn toggle', id: 'dark-toggle', 'aria-pressed': String(shown === 'dark'),
-          'aria-label': shown === 'dark' ? 'Dark mode is on. Tap to turn off' : 'Dark mode is off. Tap to turn on',
+          class: 'icon-btn toggle', id: 'dark-toggle', 'aria-pressed': String(isDark(shown)),
+          'aria-label': isDark(shown) ? 'Dark mode is on. Tap to turn off' : 'Dark mode is off. Tap to turn on',
           onclick: () => saveSettings(toggleDark(state.settings, darkQuery.matches)),
-        }, icon(shown === 'dark' ? 'moon' : 'sun')),
+        }, icon(isDark(shown) ? 'moon' : 'sun')),
         lay.lockButton(),
         helpButton('main'),
         h('button', { class: 'icon-btn', id: 'cog', 'aria-label': 'Options', onclick: () => { state.view = 'options'; render(); window.scrollTo(0, 0); } }, icon('cog')))),

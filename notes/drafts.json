@@ -2,5 +2,9 @@
   {
     "screen": "prefs",
     "text": "New Check for update button under App updates. The installed app can also check overnight, when the browser allows it."
+  },
+  {
+    "screen": "prefs",
+    "text": "Three new colour themes: Soft grey (light), Black and grey (dark) and Warm dark. Colour theme is now split into Light and Dark."
   }
 ]

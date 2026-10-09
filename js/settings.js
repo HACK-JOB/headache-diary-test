@@ -7,13 +7,19 @@ export const TEXT_SIZES = [
   { key: 'medium', label: 'Medium', px: 17 },
   { key: 'small', label: 'Small', px: 14 },
 ];
-export const THEMES = { paper: 'Warm paper', bright: 'Bright', dark: 'Calm dark' };
+export const THEMES = {
+  paper: 'Warm paper', bright: 'Bright', mist: 'Soft grey',
+  dark: 'Calm dark', graphite: 'Black and grey', ember: 'Warm dark',
+};
+export const LIGHT_THEMES = ['paper', 'bright', 'mist'];
+export const DARK_THEMES = ['dark', 'graphite', 'ember'];
+export const isDark = (key) => DARK_THEMES.includes(key);
 import { validTimes } from './nudges.js';
-const LIGHT = ['paper', 'bright'];
+const LIGHT = LIGHT_THEMES;
 const TRACK_KEYS = ['water', 'headache', 'day', 'intake', 'weight', 'glucose', 'meds'];
 
 export const DEFAULTS = Object.freeze({
-  theme: 'paper', lightTheme: 'paper', followSystem: false,
+  theme: 'paper', lightTheme: 'paper', darkTheme: 'dark', followSystem: false,
   text: 'big', clock: '12', savedCue: true, artStyle: 'frontOutline', nag: 'normal', chime: true,
   track: {},
   wakeOn: false, wakeAt: '09:00', glucoseOn: false, glucoseTimes: ['07:30'], sitOn: false, sitMins: 60,
@@ -25,6 +31,7 @@ export function normalise(raw) {
   return {
     theme: pick(r.theme, Object.keys(THEMES), DEFAULTS.theme),
     lightTheme: pick(r.lightTheme, LIGHT, DEFAULTS.lightTheme),
+    darkTheme: pick(r.darkTheme, DARK_THEMES, DEFAULTS.darkTheme),
     followSystem: r.followSystem === true,
     text: pick(r.text, TEXT_SIZES.map((t) => t.key), DEFAULTS.text),
     clock: pick(r.clock, ['12', '24'], DEFAULTS.clock),
@@ -44,13 +51,19 @@ export function normalise(raw) {
 
 /** The theme actually shown right now. */
 export function activeTheme(s, systemPrefersDark) {
-  if (s.followSystem) return systemPrefersDark ? 'dark' : s.lightTheme;
+  if (s.followSystem) return systemPrefersDark ? s.darkTheme : s.lightTheme;
   return s.theme;
 }
 
-/** One-tap dark/light switch. Taking manual control turns off "follow the tablet". */
+/** One-tap dark/light switch. Goes to the dark or light theme last used. Taking manual control turns off "follow the tablet". */
 export function toggleDark(s, systemPrefersDark) {
   const showing = activeTheme(s, systemPrefersDark);
-  if (showing === 'dark') return { ...s, followSystem: false, theme: s.lightTheme };
-  return { ...s, followSystem: false, theme: 'dark', lightTheme: LIGHT.includes(showing) ? showing : s.lightTheme };
+  if (isDark(showing)) return { ...s, followSystem: false, theme: s.lightTheme, darkTheme: showing };
+  return { ...s, followSystem: false, theme: s.darkTheme, lightTheme: LIGHT.includes(showing) ? showing : s.lightTheme };
+}
+
+/** Pick a theme from the colour list. It is remembered in its own group (light or dark) for the moon/sun button. */
+export function chooseTheme(s, key) {
+  if (!THEMES[key]) return s;
+  return isDark(key) ? { ...s, theme: key, darkTheme: key } : { ...s, theme: key, lightTheme: key };
 }
