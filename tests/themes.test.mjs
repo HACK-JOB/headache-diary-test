@@ -74,3 +74,33 @@ test('each theme has a colour-scheme, a swatch and a browser bar colour', () => 
   }
   assert.match(css, /color-scheme: dark/);
 });
+
+/** The rule that styles a selector in css/app.css, as a map of property to value. */
+function rule(sel) {
+  const esc = sel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const m = new RegExp(`(?:^|\\n)${esc}\\s*\\{([^}]*)\\}`).exec(css);
+  return m ? Object.fromEntries([...m[1].matchAll(/([a-z-]+):\s*([^;]+);/g)].map((x) => [x[1], x[2].trim()])) : null;
+}
+const resolve = (val, v) => { const m = /var\(--([a-z-]+)\)/.exec(val ?? ''); return m ? v[m[1]] : val; };
+
+test('the light/dark button icon is visible against its own background, pressed or not, in every theme', () => {
+  const off = { ...rule('.icon-btn') }, on = { ...rule('.toggle[aria-pressed="true"]') };
+  const onIcon = rule('.toggle[aria-pressed="true"] svg');
+  assert.ok(onIcon?.stroke, 'a pressed icon colour is set');
+  for (const k of Object.keys(THEMES)) {
+    const v = vars(k);
+    const card = resolve(off.background, v), ink = resolve(off.color, v);
+    assert.ok(ratio(ink, card) >= 4.5, `${k}: unpressed icon ${ratio(ink, card).toFixed(2)}`);
+    const bg = resolve(on.background ?? off.background, v), stroke = resolve(onIcon.stroke, v);
+    assert.ok(ratio(stroke, bg) >= 4.5, `${k}: pressed icon ${stroke} on ${bg} is ${ratio(stroke, bg).toFixed(2)}`);
+  }
+});
+
+test('every icon button that sets its own colours keeps 4.5:1 in every theme (layout padlock pressed too)', () => {
+  const lockOn = rule('#layout-lock[aria-pressed="true"]');
+  for (const k of Object.keys(THEMES)) {
+    const v = vars(k);
+    const bg = resolve(lockOn.background, v), fg = resolve(lockOn.color, v);
+    assert.ok(ratio(fg, bg) >= 4.5, `${k}: pressed padlock ${ratio(fg, bg).toFixed(2)}`);
+  }
+});

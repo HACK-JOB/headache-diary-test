@@ -161,6 +161,7 @@ dialog .row { display: flex; gap: 0.6rem; justify-content: flex-end; margin-top:
   background: var(--card); color: var(--ink); cursor: pointer; display: grid; place-items: center;
 }
 .icon-btn svg { width: 1.5rem; height: 1.5rem; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.toggle[aria-pressed="true"] { background: var(--teal); border-color: var(--teal); color: var(--on-teal); }
 .toggle[aria-pressed="true"] svg { stroke: var(--on-teal); }
 
 .seg { display: flex; gap: 0.4rem; flex-wrap: wrap; }
@@ -564,7 +565,7 @@ body.scan-open { overflow: hidden; }
 .pg-top p { margin: 0 0 0.5rem; }
 html.layout-edit .tools .icon-btn:not(#layout-lock), html.layout-edit #cog { pointer-events: auto; }
 
-#layout-lock[aria-pressed="true"] { background: var(--teal); color: #fff; border-color: var(--teal); opacity: 1; }
+#layout-lock[aria-pressed="true"] { background: var(--teal); color: var(--on-teal); border-color: var(--teal); opacity: 1; }
 html.layout-edit .pg-top { margin: 0.8rem 1rem 1rem; }
 @media (min-width: 700px) { html.layout-edit .pg-top { margin-left: auto; margin-right: auto; } }
 /* Header: the tools wrap under the title on a narrow screen instead of pushing the page wider */
