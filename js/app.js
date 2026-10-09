@@ -17,6 +17,7 @@ import { createTesterUI } from './tester-ui.js';
 import { createDoctorUI } from './doctor-ui.js';
 import { createMeasuresUI } from './measures-ui.js';
 import { createTour } from './tour-ui.js';
+import { mainTourKey } from './tour.js';
 import { rxMainCard } from './rx-ui.js';
 import { createReminderUI } from './reminder-ui.js';
 import { clockPicker } from './clock-ui.js';
@@ -42,7 +43,7 @@ let mui;
 let rxCard;
 let rem;
 const tour = createTour({ h });
-const helpButton = (key) => h('button', { class: 'help-btn', id: 'help', onclick: (ev) => tour.open(ev.currentTarget, key) }, icon('help'), h('span', {}, 'Help'));
+const helpButton = (key) => h('button', { class: 'help-btn', id: 'help', onclick: (ev) => { lay?.closeSize?.(); tour.open(document.getElementById('help') ?? ev.currentTarget, key === 'main' ? mainTourKey(!!lay?.unlocked()) : key); } }, icon('help'), h('span', {}, 'Help'));
 
 /* ---------- small helpers ---------- */
 function h(tag, attrs = {}, ...kids) {

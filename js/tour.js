@@ -2,20 +2,34 @@
 // Each step points at the first selector that exists on screen; steps with no match are skipped.
 
 export const MAIN_STEPS = [
-  { sel: ['.tools'], text: 'Top right: light or dark screen, the layout padlock, this guide (Help), and Options.' },
+  { sel: ['.tools'], text: 'Header buttons: light or dark screen, the layout padlock, this guide (Help), and Options.' },
   { sel: ['#layout-lock'], text: 'Unlocks the layout to move or resize panels and set their text size. Nothing can be entered while unlocked.' },
   { sel: ['#wake'], text: 'Press when waking up. This starts the day.' },
   { sel: ['#end-day'], text: 'Press at the end of the day. A check is asked first.' },
   { sel: ['#w-kg'], text: 'Weight is asked once a day, then confirmed.' },
   { sel: ['#headache-start'], text: 'Press when a headache begins. Press again to change or resolve it.' },
   { sel: ['.active-card #hd-h'], text: 'A headache is active. Doctor-written text appears here when set.' },
-  { sel: ['#rx-card'], text: 'Medicines today: Taken or Skipped for each dose. A reminder bar at the top offers the same buttons.' },
+  { sel: ['#rx-card'], text: 'Medicines today: Taken or Skipped for each dose. A reminder bar offers the same buttons when one is due.' },
   { sel: ['#acts-h'], text: 'Today so far: every activity, with where and how long.' },
   { sel: ['.quick-foods'], text: 'Most used: the five foods and drinks logged most often. One tap opens the form filled in.' },
   { sel: ['.tiles'], text: 'Food and drink: tap a meal type, then fill in what was had.' },
   { sel: ['#in-h'], text: 'Eaten today: totals. A coloured word and sign show the doctor\'s limits.' },
   { sel: ['#g-mmol'], text: 'Type a glucose reading from the meter, then Save.' },
-  { sel: ['#refill'], text: 'Adds one bottle of water. Undo is right below.' },
+  { sel: ['#refill'], text: 'Adds one bottle of water. The Undo button stays with it.' },
+  { sel: ['.pn-card'], text: 'What\'s new: changes made to this screen. Got it hides the note once read.' },
+];
+
+/** The unlocked layout is a different screen (bars, grips, a banner), so it has its own tour. */
+export const mainTourKey = (unlocked) => (unlocked ? 'main-unlocked' : 'main');
+export const UNLOCKED_STEPS = [
+  { sel: ['#pg-top'], text: 'Layout is unlocked. Nothing can be entered until Done, lock it is pressed.' },
+  { sel: ['.pg-bar .pg-handle', '.pg-handle'], text: 'Drag the handle to move a panel. A line shows where it will land.' },
+  { sel: ['.pg-bar [id^="pg-earlier-"]', '.pg-bar [id^="pg-later-"]'], text: 'Earlier and Later move a panel one step. They work where dragging is awkward.' },
+  { sel: ['.pg-grip-se', '.pg-grip-s', '.pg-grip-e', '.pg-grip'], text: 'Grips on the edges and corners resize a panel. An outline shows the new size, applied on release.' },
+  { sel: ['.pg-bar [id^="pg-set-"]'], text: 'Size opens a bar: text size for this panel, and Narrower, Wider, Shorter and Taller steps.' },
+  { sel: ['#pg-flow-snap', '.pg-flow'], text: 'Snapped panels resize together. Lock size in a Size bar keeps one panel at its height.' },
+  { sel: ['#pg-reset'], text: 'Reset this layout puts the panels back in the standard arrangement.' },
+  { sel: ['#pg-done'], text: 'Done, lock it keeps the layout and allows entries again.' },
 ];
 
 const HELP = { sel: ['#help'], text: 'Opens this guide again.' };
@@ -43,6 +57,7 @@ export const FORM_STEPS = {
     { sel: ['#back'], text: 'Goes back without saving anything.' },
     { sel: ['#f-name'], text: 'Type or tap the food or drink. Past choices are remembered.' },
     { sel: ['#scan-open'], text: 'Scan a barcode with the camera, or type its number. The name and numbers fill in to check.' },
+    { sel: ['#scan-note'], text: 'After a scan, a note says whether the barcode and the printed number agree.' },
     { sel: ['.time-panel'], text: 'The time it was had.' },
     { sel: ['#f-amount'], text: 'How many servings, or how much for a drink.' },
     { sel: ['#f-nutrition'], text: 'Numbers from the label, per serving or per 100 g. All optional, and remembered for next time.' },
@@ -51,8 +66,15 @@ export const FORM_STEPS = {
   'options-prefs': [
     { sel: ['#back'], text: 'Goes back to the diary.' },
     { sel: ['.tabs'], text: 'Options sections. Doctors and Admin are for the family and doctors.' },
-    { sel: ['#st-prefs'], text: 'Preferences are in groups: Colours, Pictures and text, Layout, Reminders and General.' },
-    { sel: ['#st-prefs-reminders'], text: 'Reminders holds the level and sound, and optional reminders that all start off.' },
+    { sel: ['#st-prefs'], text: 'Groups: Colours, Pictures and text, Layout, Reminders, General. Help explains the open one.' },
+    { sel: ['.pn-card'], text: 'What\'s new: changes made to this screen. Got it hides the note once read.' },
+    { sel: ['.swatches'], text: 'Pick one light and one dark theme. The moon button, or Device dark mode setting, swaps them.' },
+    { sel: ['.art-picks'], text: 'Head pictures: only the look changes. The same six types are always there.' },
+    { sel: ['.seg[aria-label="Text size"]'], text: 'Text size for the whole app. Panels can have their own size in the unlocked layout.' },
+    { sel: ['#layout-open'], text: 'Unlocks the layout. Panels can then be moved and resized, and nothing can be entered.' },
+    { sel: ['#st-prefs-reminders'], text: 'Reminders: the level and sound, and optional reminders that all start off.' },
+    { sel: ['#own-reminders'], text: 'Optional reminders for waking up, blood glucose and sitting. All start off.' },
+    { sel: ['#update-check'], text: 'Check for update looks for a new version now. The installed app also checks overnight.' },
   ],
   'options-track': [
     { sel: ['#back'], text: 'Goes back to the diary.' },
@@ -63,11 +85,16 @@ export const FORM_STEPS = {
   'options-admin': [
     { sel: ['#back'], text: 'Goes back to the diary.' },
     { sel: ['#st-admin'], text: 'Admin sections: screens, tracking, doctor accounts, the PIN and resetting data.' },
+    { sel: ['#st-admin-tracking'], text: 'Tracking: Admin\'s choice for a log wins over a doctor\'s and the user\'s. A log can be left to others.' },
+    { sel: ['#st-admin-pin'], text: 'Admin PIN: until one is set, this screen stays open. It locks again after 5 minutes.' },
+    { sel: ['#st-admin-reset'], text: 'Reset data: one kind of data, or everything. A backup can be saved first, and DELETE is typed.' },
     { sel: ['#admin-accounts'], text: 'Doctor accounts are added and removed here.' },
     { sel: ['#reset-zone'], text: 'Master reset: deletes everything on this tablet. DELETE has to be typed first.' },
   ],
   'options-doctors': [
     { sel: ['#back'], text: 'Goes back to the diary.' },
+    { sel: ['#st-doctors'], text: 'Doctors sections: accounts, tracking, targets, medicines, messages, notes and the change log.' },
+    { sel: ['#st-doctors-tracking'], text: 'Tracking: a doctor\'s choice for a log, unless Admin has set it. Changes go in the change log.' },
     { sel: ['#targets'], text: 'Targets and limits. They colour the totals on the diary.' },
     { sel: ['#prescriptions'], text: 'Medicines, with exact times or ranges, and an optional fixed reminder level.' },
     { sel: ['#notes'], text: 'Clinical notes. Entries are added, never changed.' },
@@ -80,7 +107,8 @@ export const FORM_STEPS = {
   ],
 };
 for (const k of Object.keys(FORM_STEPS)) FORM_STEPS[k].push(HELP);
-export const TOURS = { main: MAIN_STEPS, ...FORM_STEPS };
+UNLOCKED_STEPS.push(HELP);
+export const TOURS = { main: MAIN_STEPS, 'main-unlocked': UNLOCKED_STEPS, ...FORM_STEPS };
 
 const GAP = 14;
 const hit = (a, b, pad = 0) => a.x < b.x + b.w + pad && a.x + a.w + pad > b.x && a.y < b.y + b.h + pad && a.y + a.h + pad > b.y;

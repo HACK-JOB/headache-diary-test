@@ -285,5 +285,7 @@ export function createLayoutUI({ h, state, render, icon }) {
   let last = orient();
   window.addEventListener('resize', () => { const o = orient(); if (o !== last) { last = o; if (state.view === 'main') render(); } else fit(); });
 
-  return { grid, lockButton, topBar, optionsSection, sync, unlocked, reload };
+  /** Help opens over the page, so the docked Size bar is put away first (the tour would sit on top of it). */
+  const closeSize = () => { if (open) { open = null; render(); } };
+  return { grid, lockButton, topBar, optionsSection, sync, unlocked, reload, closeSize };
 }

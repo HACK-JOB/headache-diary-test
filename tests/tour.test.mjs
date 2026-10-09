@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { layoutCallouts, pagesFor, MAIN_STEPS, TOURS } from '../js/tour.js';
+import { layoutCallouts, pagesFor, MAIN_STEPS, TOURS, mainTourKey } from '../js/tour.js';
 
 const vp = { w: 1280, h: 800, top: 70 };
 const hit = (a, b, pad = 0) => a.x < b.x + b.w + pad && a.x + a.w + pad > b.x && a.y < b.y + b.h + pad && a.y + a.h + pad > b.y;
@@ -55,7 +55,7 @@ test('every main-page step has a selector list, a short plain sentence and no pe
 });
 
 test('there is a tour for the main page and each form, all short, plain and impersonal', () => {
-  assert.deepEqual(Object.keys(TOURS).sort(), ['activity', 'headache', 'intake', 'main', 'options-admin', 'options-doctors', 'options-prefs', 'options-tester', 'options-track']);
+  assert.deepEqual(Object.keys(TOURS).sort(), ['activity', 'headache', 'intake', 'main', 'main-unlocked', 'options-admin', 'options-doctors', 'options-prefs', 'options-tester', 'options-track']);
   assert.equal(TOURS.main, MAIN_STEPS);
   for (const [name, steps] of Object.entries(TOURS)) {
     assert.ok(steps.length >= 4, name);
@@ -88,4 +88,34 @@ test('the tours mention the newer features: chips, medicines, reminders, barcode
   assert.match(all('options-admin'), /reset-zone/);
   assert.match(all('options-tester'), /tn-share/);
   assert.match(all('options-prefs'), /st-prefs-reminders/);
+});
+
+test('main-page steps never say where a panel is, because panels can be moved', () => {
+  for (const st of MAIN_STEPS) assert.ok(!/\b(top|bottom|left|right|below|above|beside|next to|under)\b/i.test(st.text), st.text);
+});
+
+test('the unlocked layout has its own tour: banner, panel bar, handle, grips, Size, Done', () => {
+  assert.equal(mainTourKey(false), 'main');
+  assert.equal(mainTourKey(true), 'main-unlocked');
+  const all = TOURS['main-unlocked'].flatMap((x) => x.sel).join(' ');
+  for (const id of ['pg-top', 'pg-handle', 'pg-grip', 'pg-set-', 'pg-flow', 'pg-done', 'pg-earlier-']) assert.ok(all.includes(id), id);
+  const text = TOURS['main-unlocked'].map((x) => x.text).join(' ');
+  assert.match(text, /nothing can be entered/i);
+  assert.match(text, /snap/i);
+  assert.match(text, /lock size/i);
+});
+
+test('the tours cover the newer features: updates, colours, tabs, resets, tracking, notes cards, printed-number check', () => {
+  const all = (k) => TOURS[k].flatMap((x) => x.sel).join(' ');
+  const text = (k) => TOURS[k].map((x) => x.text).join(' ');
+  assert.match(all('main'), /pn-card/);
+  assert.match(all('options-prefs'), /swatches/);
+  assert.match(all('options-prefs'), /layout-open/);
+  assert.match(all('options-prefs'), /update-check/);
+  assert.match(text('options-prefs'), /overnight/i);
+  assert.match(all('options-admin'), /st-admin-tracking/);
+  assert.match(all('options-admin'), /st-admin-reset/);
+  assert.match(all('options-admin'), /st-admin-pin/);
+  assert.match(all('options-doctors'), /st-doctors-tracking/);
+  assert.match(text('intake'), /printed/i);
 });

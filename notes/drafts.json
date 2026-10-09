@@ -10,5 +10,9 @@
   {
     "screen": "prefs",
     "text": "My preferences is now sorted into tabs down the left: Colours, Pictures and text, Main page layout, Reminders and General."
+  },
+  {
+    "screen": "main",
+    "text": "The Help guide now has its own steps for the unlocked layout, and covers the newest features."
   }
 ]
