@@ -39,3 +39,42 @@ export async function checkNow(reg, { online = true, waitMs = 8000 } = {}) {
     return 'failed';
   }
 }
+
+/* ---------- overnight check (periodic background sync) ---------- */
+export const AUTO_TAG = 'hd-update-check';
+export const AUTO_MIN_MS = 12 * 60 * 60 * 1000;     // at most about twice a day; the browser decides the actual time
+
+const AUTO = {
+  on: 'Automatic checks are on. The browser picks the time, usually overnight, and only when the app is installed.',
+  unsupported: 'Automatic overnight checks are not available here. The app checks when it opens and every hour while open.',
+  denied: 'Automatic overnight checks are not allowed here. The browser only allows them for the installed app. The app checks when it opens and every hour while open.',
+  unknown: 'The app checks when it opens and every hour while open.',
+};
+export const autoText = (status) => AUTO[status] ?? AUTO.unknown;
+
+/** Ask for the overnight check. Returns 'on', 'unsupported' or 'denied'. */
+export async function registerAuto(reg, perms = navigator.permissions) {
+  if (!reg?.periodicSync) return 'unsupported';
+  try {
+    const p = await perms?.query?.({ name: 'periodic-background-sync' });
+    if (p && p.state === 'denied') return 'denied';
+    await reg.periodicSync.register(AUTO_TAG, { minInterval: AUTO_MIN_MS });
+    return 'on';
+  } catch { return 'denied'; }
+}
+
+const pad = (n) => String(n).padStart(2, '0');
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+function clockText(d, clock) {
+  if (clock === '12') return `${d.getHours() % 12 || 12}:${pad(d.getMinutes())} ${d.getHours() < 12 ? 'AM' : 'PM'}`;
+  return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+/** "Last checked today at 05:07." in the tablet's own time and clock style. */
+export function lastCheckedText(ms, now, clock = '12') {
+  if (typeof ms !== 'number' || !Number.isFinite(ms)) return 'Not checked yet.';
+  const d = new Date(ms), n = new Date(now);
+  const day = (x) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+  const diff = Math.round((day(n) - day(d)) / 86400000);
+  const when = diff === 0 ? 'today' : diff === 1 ? 'yesterday' : `${d.getDate()} ${MONTHS[d.getMonth()]}`;
+  return `Last checked ${when} at ${clockText(d, clock)}.`;
+}

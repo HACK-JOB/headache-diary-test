@@ -10,7 +10,7 @@ import { createAdminUI } from './admin-ui.js';
 import { createPatchUI } from './patchnotes-ui.js';
 import { createTrackingUI } from './tracking-ui.js';
 import { createLayoutUI } from './layout-ui.js';
-import { checkNow, outcomeText, versionFrom } from './updatecheck.js';
+import { checkNow, outcomeText, versionFrom, registerAuto, autoText, lastCheckedText } from './updatecheck.js';
 import { trackedMap } from './tracking.js';
 import { createTesterUI } from './tester-ui.js';
 import { createDoctorUI } from './doctor-ui.js';
@@ -395,19 +395,24 @@ start();
 
 /* ---------- app updates ---------- */
 let swReg = null;
+let autoStatus = 'unknown';
+const LAST_KEY = 'hd.lastUpdateCheck';
+const lastCheck = () => { const v = Number(localStorage.getItem(LAST_KEY)); return Number.isFinite(v) && v > 0 ? v : null; };
+const stampCheck = () => { localStorage.setItem(LAST_KEY, String(Date.now())); const n = document.getElementById('update-last'); if (n) n.textContent = lastCheckedText(lastCheck(), Date.now(), state.settings.clock); };
 /** Options > My preferences: check for a new version now. The answer shows in place, so the screen is not redrawn. */
 function updateSection() {
-  const note = h('p', { class: 'hint', id: 'update-note', role: 'status', 'aria-live': 'polite' }, 'The app also checks by itself each time it opens.');
+  const note = h('p', { class: 'hint', id: 'update-note', role: 'status', 'aria-live': 'polite' }, autoText(autoStatus));
+  const last = h('p', { class: 'hint', id: 'update-last' }, lastCheckedText(lastCheck(), Date.now(), state.settings.clock));
   const btn = h('button', { class: 'btn', id: 'update-check', type: 'button' }, 'Check for update');
   btn.addEventListener('click', async () => {
     btn.setAttribute('aria-disabled', 'true'); note.textContent = outcomeText('checking');
     const outcome = await checkNow(swReg, { online: navigator.onLine });
     const version = versionFrom(await caches.keys().catch(() => []));
-    note.textContent = outcomeText(outcome, version);
+    note.textContent = outcomeText(outcome, version); if (outcome !== 'offline') stampCheck();
     btn.removeAttribute('aria-disabled');
     if (outcome === 'found') btn.after(h('button', { class: 'btn primary', id: 'update-now', type: 'button', onclick: () => location.reload() }, 'Refresh now'));
   });
-  return h('div', { class: 'setting', id: 'update-setting' }, h('h3', {}, 'App updates'), btn, note);
+  return h('div', { class: 'setting', id: 'update-setting' }, h('h3', {}, 'App updates'), btn, note, last);
 }
 function watchForUpdates() {
   if (!('serviceWorker' in navigator)) return;
@@ -415,7 +420,9 @@ function watchForUpdates() {
   navigator.serviceWorker.addEventListener('controllerchange', () => { if (hadController) showUpdateBanner(); });
   navigator.serviceWorker.register('sw.js').then((reg) => {
     swReg = reg;
-    const check = () => reg.update().catch(() => {});
+    registerAuto(reg).then((st) => { autoStatus = st; const n = document.getElementById('update-note'); if (n && n.textContent === autoText('unknown')) n.textContent = autoText(st); });
+    const check = () => reg.update().then(stampCheck).catch(() => {});
+    check();
     document.addEventListener('visibilitychange', () => { if (!document.hidden) check(); });
     setInterval(check, 60 * 60 * 1000);
   }).catch(() => {});
