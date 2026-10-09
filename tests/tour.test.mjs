@@ -105,6 +105,18 @@ test('the unlocked layout has its own tour: banner, panel bar, handle, grips, Si
   assert.match(text, /lock size/i);
 });
 
+test('each Options tour has a step for every side tab, so no section is left unexplained', () => {
+  const sides = {
+    'options-doctors': ['doctors', ['people', 'tracking', 'targets', 'rx', 'relief', 'notes', 'log']],
+    'options-admin': ['admin', ['screens', 'tracking', 'accounts', 'pin', 'reset']],
+    'options-prefs': ['prefs', ['colour', 'look', 'layout', 'reminders', 'general']],
+  };
+  for (const [tour, [id, keys]] of Object.entries(sides)) {
+    const all = TOURS[tour].flatMap((x) => x.sel).join(' ');
+    for (const k of keys) assert.ok(all.includes(`#st-${id}-${k}`), `${tour} is missing a step for ${k}`);
+  }
+});
+
 test('the tours cover the newer features: updates, colours, tabs, resets, tracking, notes cards, printed-number check', () => {
   const all = (k) => TOURS[k].flatMap((x) => x.sel).join(' ');
   const text = (k) => TOURS[k].map((x) => x.text).join(' ');

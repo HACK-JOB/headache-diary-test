@@ -27,7 +27,7 @@ export function createDoctorUI(ctx) {
     clearTimeout(timer);
     timer = setTimeout(() => { lock(); if (state.view === 'options') render(); }, state.doctorUntil - Date.now() + 50);
   }
-  const leave = () => { if (state.doctorId) lock(); };
+  const leave = () => { st.adminAdd = false; if (state.doctorId) lock(); };
 
   const val = (id) => document.getElementById(id)?.value ?? '';
   const err = () => st.error ? h('p', { class: 'error', role: 'alert' }, st.error) : null;
@@ -49,7 +49,7 @@ export function createDoctorUI(ctx) {
     const id = (globalThis.crypto?.randomUUID?.() ?? String(Date.now()));
     await log.add({ type: 'doctor', kind: 'add', doctorId: id, name: name.trim(), role: role.trim(), pin: skipPin ? null : await makeRecord(a), by: open() ? 'open' : by });
     await reload();
-    st.mode = 'view'; st.error = ''; st.info = skipPin ? `${name.trim()} was added. Set a PIN below to lock this tab.` : `${name.trim()} was added.`;
+    st.mode = 'view'; st.adminAdd = false; st.error = ''; st.info = skipPin ? `${name.trim()} was added. Set a PIN below to lock this tab.` : `${name.trim()} was added.`;
     if (by === 'setup' && !skipPin) unlock(id);
     render();
   }
@@ -118,7 +118,7 @@ export function createDoctorUI(ctx) {
     pinField('d-pin', open() ? 'PIN (4 to 6 numbers, or leave empty for now)' : 'PIN (4 to 6 numbers)'),
     pinField('d-pin2', 'Type the PIN again', { onkeydown: (ev) => { if (ev.key === 'Enter') { ev.preventDefault(); addDoctor(by); } } }),
     h('div', { class: 'two' },
-      list().length ? h('button', { class: 'btn quiet', id: 'd-cancel', onclick: () => { st.mode = 'view'; st.error = ''; render(); } }, 'Cancel') : h('span', {}),
+      list().length ? h('button', { class: 'btn quiet', id: 'd-cancel', onclick: () => { st.mode = 'view'; st.adminAdd = false; st.error = ''; render(); } }, 'Cancel') : h('span', {}),
       h('button', { class: 'btn primary', id: 'd-save', onclick: () => addDoctor(by) }, 'Add doctor')));
 
   function loginView() {
@@ -131,7 +131,7 @@ export function createDoctorUI(ctx) {
           ...ds.map((d) => h('option', { value: d.id, selected: d.id === st.pick }, `${d.name} (${d.role})`)))),
       pinField('d-pin-in', 'PIN', { onkeydown: (ev) => { if (ev.key === 'Enter') { ev.preventDefault(); signIn(); } } }),
       h('button', { class: 'btn primary', id: 'd-go', onclick: signIn }, 'Open doctors'),
-      h('p', { class: 'hint' }, 'A lost PIN is reset by the family in the Admin tab.'));
+      h('p', { class: 'hint' }, 'A lost PIN is reset by the family in the Admin tab. A new doctor is also added there.'));
   }
 
   function logView() {
@@ -338,7 +338,7 @@ export function createDoctorUI(ctx) {
     return h('div', { class: 'setting', id: 'admin-accounts' }, h('h3', {}, 'Doctor accounts'),
       h('p', { class: 'hint' }, 'Doctors can be added or removed and PINs reset here. Nothing clinical is shown in this section.'),
       st.info ? h('p', { class: 'meta', role: 'status' }, st.info) : null,
-      st.mode === 'add' && !unlocked() ? addForm('admin', 'Add a doctor') : null,
+      st.adminAdd ? addForm('admin', 'Add a doctor') : null,
       ds.length ? h('ul', { class: 'account-list' }, ...ds.map((d) => h('li', {},
         h('span', { class: 'who' }, `${d.name} (${d.role})`),
         st.resetId === d.id
@@ -347,7 +347,7 @@ export function createDoctorUI(ctx) {
           : h('div', { class: 'two' },
             h('button', { class: 'btn quiet', 'data-reset': d.id, onclick: () => { st.resetId = d.id; st.error = ''; st.info = ''; render(); } }, d.pin ? 'Reset PIN' : 'Set PIN'),
             h('button', { class: 'btn quiet', 'data-remove': d.id, onclick: () => adminRemove(d) }, 'Remove'))))) : h('p', { class: 'hint' }, 'No doctors yet.'),
-      st.mode !== 'add' ? h('button', { class: 'btn quiet', id: 'a-add', onclick: () => { st.mode = 'add'; st.error = ''; st.info = ''; render(); } }, 'Add a doctor') : null);
+      !st.adminAdd ? h('button', { class: 'btn quiet', id: 'a-add', onclick: () => { st.adminAdd = true; st.error = ''; st.info = ''; render(); } }, 'Add a doctor') : null);
   }
 
   /** For the Admin reset screen: has any doctor got a PIN, and is a doctor signed in right now? */
