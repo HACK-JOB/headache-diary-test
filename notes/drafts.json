@@ -6,5 +6,9 @@
   {
     "screen": "prefs",
     "text": "Three new colour themes. Pick one light and one dark. The moon and sun button, or Device dark mode setting, switches between them."
+  },
+  {
+    "screen": "prefs",
+    "text": "My preferences is now sorted into tabs down the left: Colours, Pictures and text, Main page layout, Reminders and General."
   }
 ]

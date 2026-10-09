@@ -87,5 +87,5 @@ test('the tours mention the newer features: chips, medicines, reminders, barcode
   assert.match(text('intake'), /100 g/);
   assert.match(all('options-admin'), /reset-zone/);
   assert.match(all('options-tester'), /tn-share/);
-  assert.match(all('options-prefs'), /own-reminders/);
+  assert.match(all('options-prefs'), /st-prefs-reminders/);
 });

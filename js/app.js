@@ -10,6 +10,7 @@ import { createAdminUI } from './admin-ui.js';
 import { createPatchUI } from './patchnotes-ui.js';
 import { createTrackingUI } from './tracking-ui.js';
 import { createLayoutUI } from './layout-ui.js';
+import { sideTabs } from './sidetabs.js';
 import { checkNow, outcomeText, versionFrom, registerAuto, autoText, lastCheckedText } from './updatecheck.js';
 import { trackedMap } from './tracking.js';
 import { createTesterUI } from './tester-ui.js';
@@ -210,6 +211,10 @@ function renderOptions() {
             onclick: () => { if (k !== 'admin') aui.leave(); if (k !== 'doctors') dcui.leave(); state.optTab = k; render(); document.getElementById('tab-' + k)?.focus(); },
             onkeydown: (ev) => { if (ev.key === 'ArrowRight' || ev.key === 'ArrowLeft') { const i = TABS.findIndex(([x]) => x === k); state.optTab = TABS[(i + (ev.key === 'ArrowRight' ? 1 : TABS.length - 1)) % TABS.length][0]; render(); document.getElementById('tab-' + state.optTab)?.focus(); } } }, t))),
       state.optTab === 'track' ? trackPanel() : state.optTab === 'doctors' ? dcui.panel() : state.optTab === 'admin' ? adminPanel() : state.optTab === 'tester' ? tui.panel() : h('section', { class: 'panel', id: 'tabpanel', role: 'tabpanel', 'aria-labelledby': 'tab-prefs' },
+        sideTabs(h, { id: 'prefs', label: 'My preferences sections', active: state.side.prefs,
+          onPick: (k, focus) => { state.side.prefs = k; render(); if (focus) document.getElementById('st-prefs-' + k)?.focus(); },
+          groups: [
+            { key: 'colour', label: 'Colours', nodes: [
         h('div', { class: 'setting' }, h('h3', {}, 'Colour theme'),
           h('p', { class: 'hint' }, 'Pick one light and one dark. The moon and sun button, or the device dark mode setting, switches between the two.'),
           ...[['Light', LIGHT_THEMES, st.lightTheme], ['Dark', DARK_THEMES, st.darkTheme]].flatMap(([title, keys, pick]) => [
@@ -217,18 +222,21 @@ function renderOptions() {
             h('div', { class: 'swatches', role: 'group', 'aria-label': `${title} theme` }, ...keys.map((k) =>
               h('button', { class: 'swatch', 'data-t': k, 'aria-pressed': String(pick === k), onclick: () => saveSettings(chooseTheme(st, k)) },
                 h('i', {}), THEMES[k], pick === k ? h('span', { class: 'swatch-tick' }, ' (picked)') : null)))])),
+        h('div', { class: 'setting' },
+          h('label', { class: 'check' }, h('input', { type: 'checkbox', checked: st.followSystem, onchange: (ev) => saveSettings({ followSystem: ev.target.checked }) }), 'Device dark mode setting'),
+          h('p', { class: 'hint' }, 'Off by default. When on, the app shows the picked dark theme while the device is in dark mode, and the picked light theme otherwise.')),
+          ] },
+            { key: 'look', label: 'Pictures and text', nodes: [
         h('div', { class: 'setting' }, h('h3', {}, 'Head pictures'),
           h('div', { class: 'art-picks' }, ...Object.entries(STYLES).map(([k, name]) =>
             h('button', { class: 'art-pick', 'aria-pressed': String(st.artStyle === k), onclick: () => saveSettings({ artStyle: k }) },
               h('span', { class: 'art-mini' }, ...['cluster', 'sinus', 'oneSided', 'tmj'].map((t) => artElement(t, k))), h('span', { class: 'art-name' }, name)))),
           h('p', { class: 'hint' }, 'Only the look changes. The same six types are always there.')),
         h('div', { class: 'setting' }, h('h3', {}, 'Text size'), seg('Text size', 'text', [...TEXT_SIZES].reverse().map((t) => [t.key, t.label]))),
-        h('div', { class: 'setting' }, h('h3', {}, 'Clock'), seg('Clock', 'clock', [['12', '12 hour'], ['24', '24 hour']])),
-        lay.optionsSection(),
-        updateSection(),
-        h('div', { class: 'setting' },
-          h('label', { class: 'check' }, h('input', { type: 'checkbox', checked: st.followSystem, onchange: (ev) => saveSettings({ followSystem: ev.target.checked }) }), 'Device dark mode setting'),
-          h('p', { class: 'hint' }, 'Off by default. When on, the app shows the picked dark theme while the device is in dark mode, and the picked light theme otherwise.')),
+        h('div', { class: 'setting' }, h('h3', {}, 'Clock'), seg('Clock', 'clock', [['12', '12 hour'], ['24', '24 hour']])) ] },
+            { key: 'layout', label: 'Main page layout', nodes: [
+        lay.optionsSection() ] },
+            { key: 'reminders', label: 'Reminders', nodes: [
         h('div', { class: 'setting', id: 'reminder-prefs' }, h('h3', {}, 'Reminder level and sound'),
           seg('Reminder level', 'nag', [['gentle', 'Gentle'], ['normal', 'Normal'], ['persistent', 'Persistent']]),
           h('p', { class: 'hint' }, 'Gentle reminds once. Normal reminds 4 times, 10 minutes apart. Persistent reminds every 5 minutes until answered. A doctor can fix the level for a particular medicine.'),
@@ -248,9 +256,12 @@ function renderOptions() {
           st.sitOn ? h('div', { class: 'num-field' }, h('label', { for: 'own-sit-mins' }, 'Sitting for'),
             h('select', { id: 'own-sit-mins', class: 'text', onchange: (ev) => saveSettings({ sitMins: Number(ev.target.value) }) },
               ...SIT_CHOICES.map((m) => h('option', { value: String(m), selected: m === st.sitMins }, m >= 60 && m % 60 === 0 ? `${m / 60} hour${m > 60 ? 's' : ''}` : `${m} minutes`))),
-            h('p', { class: 'hint' }, 'A plain note after this long in the position "Sitting". It gives no advice.')) : null),
+            h('p', { class: 'hint' }, 'A plain note after this long in the position "Sitting". It gives no advice.')) : null) ] },
+            { key: 'general', label: 'General', nodes: [
+        updateSection(),
         h('div', { class: 'setting' },
-          h('label', { class: 'check' }, h('input', { type: 'checkbox', checked: st.savedCue, onchange: (ev) => saveSettings({ savedCue: ev.target.checked }) }), 'Show "Saved" message'))),
+          h('label', { class: 'check' }, h('input', { type: 'checkbox', checked: st.savedCue, onchange: (ev) => saveSettings({ savedCue: ev.target.checked }) }), 'Show "Saved" message')) ] },
+          ] })),
       state.optTab === 'prefs' ? h('p', { class: 'meta' }, 'These are only display preferences. Health settings are kept separate.') : null));
   app.replaceChildren(view);
   if (!document.activeElement || document.activeElement === document.body) document.getElementById('back')?.focus();

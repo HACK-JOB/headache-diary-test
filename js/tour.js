@@ -51,7 +51,8 @@ export const FORM_STEPS = {
   'options-prefs': [
     { sel: ['#back'], text: 'Goes back to the diary.' },
     { sel: ['.tabs'], text: 'Options sections. Doctors and Admin are for the family and doctors.' },
-    { sel: ['#own-reminders'], text: 'Optional reminders for waking up, blood glucose and sitting too long. All start off.' },
+    { sel: ['#st-prefs'], text: 'Preferences are in groups: Colours, Pictures and text, Layout, Reminders and General.' },
+    { sel: ['#st-prefs-reminders'], text: 'Reminders holds the level and sound, and optional reminders that all start off.' },
   ],
   'options-track': [
     { sel: ['#back'], text: 'Goes back to the diary.' },
